@@ -29,7 +29,7 @@ DartScore is **released on the App Store** for iOS and on Google Play Store for 
     <img src="https://img.shields.io/badge/App_Store-0D96F6?logo=app-store&logoColor=white" alt="Download on the App Store" height="48" />
   </a>
   
-  <a href="https://play.google.com/apps/testing/com.ratka.dartscore">
+  <a href="https://play.google.com/store/apps/details?id=com.ratka.dartscore">
     <img src="https://img.shields.io/badge/Google%20Play-34A853?style=flat&logo=google-play&logoColor=white" alt="Download on the Google Play Store" height="48" />
   </a>
 </p>
