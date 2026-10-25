@@ -7,11 +7,12 @@ import '../models/player.dart';
 import '../models/game.dart';
 import '../models/dart_throw.dart';
 import '../utils/bot_strategy_x01.dart';
+import '../utils/finish_calculator.dart';
 import 'bot_runner.dart';
 import '../utils/placement.dart';
 import '../utils/throw_stats.dart';
 import '../utils/player_label.dart';
-import '../widgets/dartboard_input.dart' show DartEntry;
+import '../widgets/dartboard_input.dart' show DartEntry, DartboardInputSource;
 
 /// Minimum darts to finish a game from a given start score (double-out).
 const Map<int, int> minimumDartsForScore = {
@@ -321,7 +322,8 @@ class PlayerState implements LabelledSlot {
 /// rebuilds the full state by replaying stored throws, which is also how undo
 /// and redo recompute the board.
 class GameProvider extends ChangeNotifier
-    with WidgetsBindingObserver, BotRunner {
+    with WidgetsBindingObserver, BotRunner
+    implements DartboardInputSource {
   final DbHelper _db = DbHelper.instance;
 
   Game?              _game;
@@ -356,6 +358,7 @@ class GameProvider extends ChangeNotifier
   int?               get winnerId           => _winnerId;
 
   /// Darts entered so far for the current player's in-progress visit.
+  @override
   List<DartEntry>    get currentVisitDarts  => List.unmodifiable(_currentVisitDarts);
 
   /// Number of darts entered so far in the current in-progress visit.
@@ -369,12 +372,14 @@ class GameProvider extends ChangeNotifier
   ///
   /// Not while a bot is throwing, and not when every recorded visit is a
   /// bot's: those are never undone on their own, see [undoLastDart].
+  @override
   bool               get canUndoDart        =>
       !isBotTurn &&
       (_currentVisitDarts.isNotEmpty ||
           allThrows().any((t) => !_isBotId(t.playerId)));
 
   /// Whether a previously undone dart (or legacy visit) can be restored.
+  @override
   bool               get canRedoDart        => !isBotTurn && _redoStack.isNotEmpty;
 
   /// The slot that throws after the current one.
@@ -425,6 +430,7 @@ class GameProvider extends ChangeNotifier
 
   /// Whether the in-progress visit would currently bust (negative remaining,
   /// or stuck on 1 with double/master-out while checked in).
+  @override
   bool get liveBust {
     final running = liveRunningRemaining;
     final stuck = running == 1 &&
@@ -1363,16 +1369,9 @@ class GameProvider extends ChangeNotifier
       bust     = true;
       endVisit = true;
     } else if (newRemaining == 0) {
-      bool valid = true;
-      if (checkoutMode == CheckoutMode.doubleOut) {
-        valid = modifier == 2;
-      } else if (checkoutMode == CheckoutMode.masterOut) {
-        valid = field == 25 ? modifier != 3 : (modifier == 2 || modifier == 3);
-      }
-      bust     = !valid;
+      bust     = !FinishCalculator.finishesOn(field, modifier, checkoutMode);
       endVisit = true;
-    } else if (newRemaining == 1 &&
-        checkoutMode != CheckoutMode.straightOut &&
+    } else if (!FinishCalculator.canStillFinish(newRemaining, checkoutMode) &&
         isCheckedIn) {
       bust     = true;
       endVisit = true;
@@ -1394,6 +1393,7 @@ class GameProvider extends ChangeNotifier
   /// Handles a tap on [field] (0=miss, 1-20, 25=bull) with the given
   /// [modifier] (1=single, 2=double, 3=triple) for the current player's
   /// in-progress visit. Any new dart invalidates the redo stack.
+  @override
   Future<void> tapField(int field, int modifier) async {
     if (_game == null || _gameOver || _currentVisitDarts.length >= 3) return;
     if (inputLocked) return;
@@ -1420,6 +1420,7 @@ class GameProvider extends ChangeNotifier
   /// visit. Undo over a bot's visit removes every bot visit since the last
   /// human dart, then that dart, and the bot throws afresh once the person
   /// has thrown again.
+  @override
   Future<void> undoLastDart() async {
     if (_game == null || isBotTurn) return;
 
@@ -1482,6 +1483,7 @@ class GameProvider extends ChangeNotifier
   /// Redoes the last undone dart: restores it to the in-progress visit
   /// (committing the visit again if that completes it), or, for a legacy
   /// whole-visit redo, re-inserts the previously removed visit verbatim.
+  @override
   Future<void> redoLastDart() async {
     if (_game == null || _redoStack.isEmpty || inputLocked) return;
 

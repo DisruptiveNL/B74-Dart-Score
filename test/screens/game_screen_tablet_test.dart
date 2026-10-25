@@ -70,7 +70,7 @@ void main() {
 
     /// The horizontal centre of the input, and of the live stats beside it.
     (double, double) paneCentres(WidgetTester tester) => (
-          tester.getRect(find.byType(DartboardInput)).center.dx,
+          tester.getRect(find.byType(DartboardInput<GameProvider>)).center.dx,
           tester.getRect(find.byType(LivePlayerStatsPanel)).center.dx,
         );
 
@@ -81,7 +81,7 @@ void main() {
       expect(find.byType(LivePlayerStatsPanel), findsOneWidget);
       // The panel names the slot it describes, and Ada throws first.
       expect(find.text('Ada'), findsWidgets);
-      expect(find.byType(DartboardInput), findsOneWidget);
+      expect(find.byType(DartboardInput<GameProvider>), findsOneWidget);
     });
 
     testWidgets('follows the turn without being asked', (tester) async {
@@ -146,14 +146,14 @@ void main() {
       // The scoreboard spans the full width above both panes rather than
       // sharing a row with them.
       final board = tester.getRect(find.text('501').first);
-      final inputTop = tester.getRect(find.byType(DartboardInput)).top;
+      final inputTop = tester.getRect(find.byType(DartboardInput<GameProvider>)).top;
       expect(board.bottom, lessThan(inputTop));
     });
 
     testWidgets('gives the input the full height of its pane', (tester) async {
       await pumpGame(tester, surface: _tabletLandscape);
 
-      final pane = tester.getRect(find.byType(DartboardInput));
+      final pane = tester.getRect(find.byType(DartboardInput<GameProvider>));
       // Bull closes the action column, so it is what has to reach the bottom.
       final bull = tester.getRect(find.widgetWithText(InkWell, 'Bull (25)').first);
       final field = tester.getRect(find.widgetWithText(InkWell, '20').first);
@@ -248,7 +248,7 @@ void main() {
       await pumpGame(tester, surface: _tabletPortrait);
 
       final hint    = tester.getRect(find.byType(FinishSuggestionWidget));
-      final input   = tester.getRect(find.byType(DartboardInput));
+      final input   = tester.getRect(find.byType(DartboardInput<GameProvider>));
       final stats   = tester.getRect(find.byType(LivePlayerStatsPanel));
       final divider = tester.getRect(find.byKey(kPaneDividerKey));
 
@@ -261,7 +261,7 @@ void main() {
     testWidgets('starts with the divider in the middle', (tester) async {
       await pumpGame(tester, surface: _tabletLandscape);
 
-      final input = tester.getRect(find.byType(DartboardInput));
+      final input = tester.getRect(find.byType(DartboardInput<GameProvider>));
       final stats = tester.getRect(find.byType(LivePlayerStatsPanel));
 
       expect((input.width - stats.width).abs(), lessThan(kDividerHitWidth + 2));
@@ -270,7 +270,7 @@ void main() {
     testWidgets('rebalances the panes when the divider is dragged',
         (tester) async {
       await pumpGame(tester, surface: _tabletLandscape);
-      final before = tester.getRect(find.byType(DartboardInput)).width;
+      final before = tester.getRect(find.byType(DartboardInput<GameProvider>)).width;
 
       // The input sits on the left, so dragging the divider right grows it.
       // No touch slop, so the pane moves by exactly what the drag says.
@@ -278,7 +278,7 @@ void main() {
           touchSlopX: 0);
       await tester.pumpAndSettle();
 
-      final after = tester.getRect(find.byType(DartboardInput)).width;
+      final after = tester.getRect(find.byType(DartboardInput<GameProvider>)).width;
       expect(after - before, closeTo(120, 4));
       expect(inputSide.splitFraction(SplitPane.game, landscape: true),
           greaterThan(kDefaultSplitFraction));
@@ -316,7 +316,7 @@ void main() {
       await tester.drag(find.byKey(kPaneDividerKey), const Offset(-600, 0),
           touchSlopX: 0);
       await tester.pumpAndSettle();
-      expect(tester.getRect(find.byType(DartboardInput)).width,
+      expect(tester.getRect(find.byType(DartboardInput<GameProvider>)).width,
           greaterThanOrEqualTo(kMinPaneWidth));
 
       await tester.drag(find.byKey(kPaneDividerKey), const Offset(600, 0),
@@ -341,7 +341,7 @@ void main() {
       await pumpGame(tester, surface: const Size(375, 812));
 
       expect(find.byType(LivePlayerStatsPanel), findsNothing);
-      expect(find.byType(DartboardInput), findsOneWidget);
+      expect(find.byType(DartboardInput<GameProvider>), findsOneWidget);
     });
 
     testWidgets('moves the checkout hint over the input once it is wide',
@@ -356,7 +356,7 @@ void main() {
 
       final hint = tester.getRect(find.byType(FinishSuggestionWidget));
       final board = tester.getRect(find.text('501').first);
-      final input = tester.getRect(find.byType(DartboardInput));
+      final input = tester.getRect(find.byType(DartboardInput<GameProvider>));
 
       // Below the scoreboard it used to hang under, and inside the pane the
       // input has to itself.
@@ -375,7 +375,7 @@ void main() {
       );
 
       final hint = tester.getRect(find.byType(FinishSuggestionWidget));
-      final input = tester.getRect(find.byType(DartboardInput));
+      final input = tester.getRect(find.byType(DartboardInput<GameProvider>));
 
       // Spanning the width above both panes, not sitting in one of them.
       expect(hint.width, greaterThan(input.width));
@@ -386,7 +386,7 @@ void main() {
       await pumpGame(tester, surface: _tabletLandscape);
 
       final segment = tester.getRect(find.byType(SegmentedButton<int>));
-      final pane    = tester.getRect(find.byType(DartboardInput));
+      final pane    = tester.getRect(find.byType(DartboardInput<GameProvider>));
 
       // A switch for the whole input, so it sits on the middle line of the
       // pane rather than over one column of it.

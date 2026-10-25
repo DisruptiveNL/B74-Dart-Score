@@ -10,6 +10,7 @@ import '../models/dart_throw.dart';
 import '../models/cricket_game.dart';
 import '../models/shanghai_game.dart';
 import '../models/around_the_clock_game.dart';
+import '../models/checkout_ladder_game.dart' show CheckoutLadderGame, CheckoutLadderThrow;
 import '../services/sync_service.dart' show SyncOrigin, kLegacyOrigin;
 import '../utils/finish_calculator.dart';
 import '../utils/game_winner.dart';
@@ -27,7 +28,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 24;
+  static const int schemaVersion = 25;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -267,6 +268,9 @@ class DbHelper {
       await db.execute(
           'UPDATE players SET bot_ordinal = 1 WHERE bot_level IS NOT NULL');
     }
+    if (oldVersion < 25) {
+      await _createCheckoutLadder(db);
+    }
   }
 
   /// Recomputes `dart_throws.checkout_darts` for every visit already on the
@@ -378,6 +382,38 @@ class DbHelper {
       )
     ''';
 
+  /// The Checkout Ladder games, created by [_createCheckoutLadder].
+  static const String _kCreateCheckoutLadderGames = '''
+      CREATE TABLE IF NOT EXISTS checkout_ladder_games (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        variant INTEGER NOT NULL,
+        start_number INTEGER NOT NULL,
+        target_number INTEGER,
+        darts_per_attempt INTEGER NOT NULL,
+        step_from INTEGER,
+        step_darts INTEGER,
+        checkout_mode INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        finished_at INTEGER,
+        player_ids TEXT NOT NULL,
+        team_config_json TEXT,
+        starting_order INTEGER NOT NULL DEFAULT 0
+      )
+    ''';
+
+  /// The darts of the Checkout Ladder games, one row per dart. Nothing but the
+  /// hit is stored: number, rest, attempt and floor are replayed from them.
+  static const String _kCreateCheckoutLadderThrows = '''
+      CREATE TABLE IF NOT EXISTS checkout_ladder_throws (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_id INTEGER NOT NULL,
+        player_id INTEGER NOT NULL,
+        field INTEGER NOT NULL,
+        multiplier INTEGER NOT NULL,
+        thrown_at INTEGER NOT NULL
+      )
+    ''';
+
   /// Per-device stats snapshots for one player.
   ///
   /// The column on `players` holds only what this device produced itself.
@@ -421,6 +457,18 @@ class DbHelper {
         'ON shanghai_throws(game_id)');
     await db.execute('CREATE INDEX IF NOT EXISTS idx_atc_throws_game '
         'ON around_the_clock_throws(game_id)');
+  }
+
+  /// Creates the Checkout Ladder tables and their index, for a fresh install
+  /// and for the upgrade to version 25 alike.
+  ///
+  /// The index is created here rather than in [_createIndexes], because the
+  /// upgrade to version 19 runs that one long before these tables exist.
+  Future<void> _createCheckoutLadder(Database db) async {
+    await db.execute(_kCreateCheckoutLadderGames);
+    await db.execute(_kCreateCheckoutLadderThrows);
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_ladder_throws_game '
+        'ON checkout_ladder_throws(game_id)');
   }
 
   /// Generates a random RFC 4122 version-4 UUID for migrating rows that predate
@@ -576,6 +624,7 @@ class DbHelper {
     ''');
     await db.execute(_kCreateAppMeta);
     await _createIndexes(db);
+    await _createCheckoutLadder(db);
   }
 
   // Players
@@ -1685,6 +1734,63 @@ class DbHelper {
     await d.delete('around_the_clock_games', where: 'id = ?', whereArgs: [gameId]);
   }
 
+  // ── Checkout Ladder ──────────────────────────────────────────────────────────
+
+  /// Inserts a Checkout Ladder game and returns its id.
+  Future<int> insertCheckoutLadderGame(CheckoutLadderGame g) async {
+    final d = await db;
+    final map = g.toMap()..remove('id');
+    return d.insert('checkout_ladder_games', map);
+  }
+
+  /// Updates a Checkout Ladder game row (e.g. to mark it finished).
+  Future<void> updateCheckoutLadderGame(CheckoutLadderGame g) async {
+    final d = await db;
+    await d.update('checkout_ladder_games', g.toMap(),
+        where: 'id = ?', whereArgs: [g.id]);
+  }
+
+  /// Inserts a Checkout Ladder dart and returns its id.
+  Future<int> insertCheckoutLadderThrow(CheckoutLadderThrow t) async {
+    final d = await db;
+    final map = t.toMap()..remove('id');
+    return d.insert('checkout_ladder_throws', map);
+  }
+
+  /// Deletes the Checkout Ladder dart with [id] (used by undo).
+  Future<void> deleteCheckoutLadderThrow(int id) async {
+    final d = await db;
+    await d.delete('checkout_ladder_throws', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// All Checkout Ladder darts for a game in chronological order.
+  Future<List<CheckoutLadderThrow>> getCheckoutLadderThrowsForGame(int gameId) async {
+    final d = await db;
+    final rows = await d.query(
+      'checkout_ladder_throws',
+      where: 'game_id = ?',
+      whereArgs: [gameId],
+      // Ties on the millisecond are possible, so the row id decides. The
+      // replay in every provider depends on a stable order.
+      orderBy: 'thrown_at ASC, id ASC',
+    );
+    return rows.map(CheckoutLadderThrow.fromMap).toList();
+  }
+
+  /// All Checkout Ladder games, newest first.
+  Future<List<CheckoutLadderGame>> getCheckoutLadderGames() async {
+    final d = await db;
+    final rows = await d.query('checkout_ladder_games', orderBy: 'created_at DESC');
+    return rows.map(CheckoutLadderGame.fromMap).toList();
+  }
+
+  /// Permanently deletes a Checkout Ladder game and its darts.
+  Future<void> deleteCheckoutLadderGame(int gameId) async {
+    final d = await db;
+    await d.delete('checkout_ladder_throws', where: 'game_id = ?', whereArgs: [gameId]);
+    await d.delete('checkout_ladder_games', where: 'id = ?', whereArgs: [gameId]);
+  }
+
   // ── Backup and restore ───────────────────────────────────────────────────────
 
   /// Value of the `format` row that marks a file as a DartScore backup.
@@ -1760,6 +1866,7 @@ class DbHelper {
         'cricket_games',
         'shanghai_games',
         'around_the_clock_games',
+        'checkout_ladder_games',
       ]) {
         if (!tables.contains(table)) continue;
         games += Sqflite.firstIntValue(
@@ -1907,6 +2014,7 @@ extension LocalBackupSummary on DbHelper {
       'cricket_games',
       'shanghai_games',
       'around_the_clock_games',
+      'checkout_ladder_games',
     ]) {
       games +=
           Sqflite.firstIntValue(await d.rawQuery('SELECT COUNT(*) FROM $table')) ??

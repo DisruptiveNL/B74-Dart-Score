@@ -16,6 +16,7 @@ const _expectedIndexes = {
   'idx_cricket_throws_game',
   'idx_shanghai_throws_game',
   'idx_atc_throws_game',
+  'idx_ladder_throws_game',
 };
 
 /// The names of every index the schema defines itself, ignoring the ones
@@ -101,6 +102,9 @@ void main() {
       // Versions 23 and 24 gave players a bot tier and a number within it.
       await db.execute('ALTER TABLE players DROP COLUMN bot_ordinal');
       await db.execute('ALTER TABLE players DROP COLUMN bot_level');
+      // Version 25 added the Checkout Ladder.
+      await db.execute('DROP TABLE checkout_ladder_throws');
+      await db.execute('DROP TABLE checkout_ladder_games');
       await db.execute('PRAGMA user_version = 18');
     }
 
@@ -113,6 +117,17 @@ void main() {
       final upgraded = await DbHelper.instance.db;
 
       expect(await _indexNames(upgraded), containsAll(_expectedIndexes));
+    });
+
+    test('gets the Checkout Ladder tables', () async {
+      final fresh = await DbHelper.instance.db;
+      await windBackTo18(fresh);
+      await DbHelper.debugReset();
+
+      final db = DbHelper.instance;
+
+      expect(await db.getCheckoutLadderGames(), isEmpty);
+      expect(await db.getCheckoutLadderThrowsForGame(1), isEmpty);
     });
 
     test('keeps the rows it already held', () async {

@@ -292,6 +292,32 @@ class FinishCalculator {
 
   // ── Public API ─────────────────────────────────────────────────────────────
 
+  /// Whether a dart on [field] (25 = bull) with [multiplier] may be the one
+  /// that takes the rest to zero under [checkoutMode]. A dart that reaches zero
+  /// any other way is a bust.
+  ///
+  /// Master out accepts the single bull as well as the double, the same reading
+  /// [canFinishWithOneDart] takes, and no triple of the bull exists to accept.
+  static bool finishesOn(
+      int field, int multiplier, CheckoutMode checkoutMode) {
+    switch (checkoutMode) {
+      case CheckoutMode.straightOut:
+        return true;
+      case CheckoutMode.doubleOut:
+        return multiplier == 2;
+      case CheckoutMode.masterOut:
+        return field == 25
+            ? multiplier != 3
+            : (multiplier == 2 || multiplier == 3);
+    }
+  }
+
+  /// Whether a rest of [remaining] above zero can still be finished under
+  /// [checkoutMode]. A rest of one cannot, except straight out, so a dart that
+  /// leaves it is a bust.
+  static bool canStillFinish(int remaining, CheckoutMode checkoutMode) =>
+      remaining > 1 || (remaining == 1 && checkoutMode == CheckoutMode.straightOut);
+
   /// Whether [remaining] can be taken to exactly zero by a single dart that is
   /// also a valid finish under [checkoutMode].
   ///

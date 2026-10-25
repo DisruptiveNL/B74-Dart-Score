@@ -6,7 +6,7 @@ The building blocks the screens are assembled from. Owns rendering and local UI 
 
 ### Input and dartboard
 
-- `dartboard_input.dart`, dartboard-style tap input
+- `dartboard_input.dart`, dartboard-style tap input for the modes scored like X01, generic over the provider it reads, `DartboardInput<GameProvider>` in X01. `GameProvider` and `CheckoutLadderProvider` both implement `DartboardInputSource`, so a mode scored per dart implements that rather than copying the input
 - `dartboard_icon.dart`, decorative dartboard SVG widget
 - `dartboard_target_painter.dart`, paints a dartboard with a target segment highlighted
 - `visit_darts_row.dart`, the darts of a visit as chips, one slot per dart the visit may hold: triple blue, double green, single plain, miss dimmed, empty an outline. What Cricket, Shanghai and Around the Clock show instead of counting dots, on the board and in the live info

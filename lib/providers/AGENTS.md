@@ -9,6 +9,7 @@ The state machines. Owns the rules of each game mode, the in-flight game state, 
 - `cricket_provider.dart`, Cricket: marks, scoring, cut-throat logic; its bot aims through `cricketTarget`
 - `shanghai_provider.dart`, Shanghai: round targets, scoring, the Shanghai win; its bot aims through `shanghaiTarget` and a dart on any other number is recorded as a miss, since a Shanghai dart is scored on the target alone
 - `around_the_clock_provider.dart`, Around the Clock: per-player target progress; its bot aims through `aroundTheClockTarget`
+- `checkout_ladder_provider.dart`, Checkout Ladder: persists the darts and feeds them to `CheckoutLadderEngine`, which holds every rule, so live play, undo, redo and resume are one replay. Its bot aims through `x01Target` at the rest of the attempt. A visit there ends early on a check or a bust, so it is never counted in threes
 - `players_provider.dart`, player CRUD, loads from the DB and notifies listeners. Keeps the computer opponents apart in `bots` and creates a tier's row on first use through `botFor`
 - `donation_provider.dart`, in-app purchase / supporter state via `in_app_purchase`
 - `theme_provider.dart` and `language_provider.dart`, light/dark and en/de, both persisted via `shared_preferences`
