@@ -255,6 +255,46 @@ void main() {
   group('the number steppers', () {
     useInMemoryDatabase();
 
+    testWidgets('take a typed number from a tap on it', (tester) async {
+      usePhoneSurface(tester);
+      await tester.pumpWidget(testApp(ChangeNotifierProvider(
+        create: (_) => CheckoutLadderProvider(),
+        child: const CheckoutLadderSetupScreen(),
+      )));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('81'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      await tester.enterText(find.byType(TextField), '120');
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(find.text('120'), findsOneWidget);
+    });
+
+    testWidgets('refuse a typed number out of range', (tester) async {
+      usePhoneSurface(tester);
+      await tester.pumpWidget(testApp(ChangeNotifierProvider(
+        create: (_) => CheckoutLadderProvider(),
+        child: const CheckoutLadderSetupScreen(),
+      )));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('81'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField), '175');
+      await tester.pumpAndSettle();
+
+      final ok = tester.widget<FilledButton>(
+          find.widgetWithText(FilledButton, 'OK'));
+      expect(ok.onPressed, isNull);
+      expect(find.text('From 2 to 169'), findsOneWidget);
+    });
+
     testWidgets('keep adding ten every second and a half while held',
         (tester) async {
       usePhoneSurface(tester);

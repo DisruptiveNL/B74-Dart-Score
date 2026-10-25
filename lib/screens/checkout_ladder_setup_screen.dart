@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../models/checkout_ladder_game.dart';
@@ -538,7 +539,8 @@ class _DartsChoice extends StatelessWidget {
 }
 
 /// A labelled number between [min] and [max] with a minus and a plus beside
-/// it. A tap moves it by one; holding a button moves it by ten at once and by
+/// it, and a tap on the number to type it in. A tap on a button moves it by
+/// one; holding a button moves it by ten at once and by
 /// ten again every [_StepButton.repeatEvery] for as long as it is held, so 81
 /// to 170 is one press rather than ninety taps.
 class _NumberStepper extends StatelessWidget {
@@ -559,6 +561,16 @@ class _NumberStepper extends StatelessWidget {
   /// Moves the value by [delta], held inside [min] and [max].
   void _move(int delta) => onChanged((value + delta).clamp(min, max));
 
+  /// Asks for the number in a dialog and takes it when it is confirmed.
+  Future<void> _enter(BuildContext context) async {
+    final entered = await showDialog<int>(
+      context: context,
+      builder: (_) => _NumberDialog(
+          title: label, value: value, min: min, max: max),
+    );
+    if (entered != null) onChanged(entered);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -571,14 +583,23 @@ class _NumberStepper extends StatelessWidget {
           onTap: () => _move(-1),
           onHold: () => _move(-10),
         ),
-        SizedBox(
-          width: 56,
-          child: Text(
-            '$value',
-            textAlign: TextAlign.center,
-            style: theme.textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              fontFeatures: const [FontFeature.tabularFigures()],
+        // A tap on the number types it in, for a jump the buttons would take
+        // a while to make.
+        InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () => _enter(context),
+          child: SizedBox(
+            width: 56,
+            height: 40,
+            child: Center(
+              child: Text(
+                '$value',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
+              ),
             ),
           ),
         ),
@@ -589,6 +610,93 @@ class _NumberStepper extends StatelessWidget {
           onHold: () => _move(10),
         ),
       ],
+    );
+  }
+}
+
+/// The dialog behind a tap on a [_NumberStepper]'s number: one number field,
+/// already holding the value and selected, so typing replaces it. OK is only
+/// offered for a number between [min] and [max]; anything else says why.
+class _NumberDialog extends StatefulWidget {
+  final String title;
+  final int value;
+  final int min;
+  final int max;
+
+  const _NumberDialog({
+    required this.title,
+    required this.value,
+    required this.min,
+    required this.max,
+  });
+
+  @override
+  State<_NumberDialog> createState() => _NumberDialogState();
+}
+
+class _NumberDialogState extends State<_NumberDialog> {
+  late final TextEditingController _ctrl = TextEditingController(
+      text: '${widget.value}')
+    ..selection = TextSelection(
+        baseOffset: 0, extentOffset: '${widget.value}'.length);
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  /// The number typed in, or null while it is empty or out of range.
+  int? get _valid {
+    final n = int.tryParse(_ctrl.text);
+    return n != null && n >= widget.min && n <= widget.max ? n : null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final valid = _valid;
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
+        child: AlertDialog(
+          title: Text(widget.title),
+          content: TextField(
+            controller: _ctrl,
+            autofocus: true,
+            keyboardType: TextInputType.number,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(3),
+            ],
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.headlineSmall,
+            decoration: InputDecoration(
+              helperText: valid != null
+                  ? l.ladderNumberRange(widget.min, widget.max)
+                  : null,
+              errorText: valid == null
+                  ? l.ladderNumberRange(widget.min, widget.max)
+                  : null,
+            ),
+            onChanged: (_) => setState(() {}),
+            onSubmitted: (_) {
+              if (valid != null) Navigator.pop(context, valid);
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(l.cancel),
+            ),
+            FilledButton(
+              onPressed:
+                  valid == null ? null : () => Navigator.pop(context, valid),
+              child: Text(l.ok),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

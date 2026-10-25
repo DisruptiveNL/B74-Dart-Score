@@ -1132,6 +1132,8 @@ class AppLocalizations {
   String get ladderDartsPerAttempt => _t('Darts per attempt', 'Darts pro Versuch');
   String get ladderStep            => _t('More darts from a number on', 'Mehr Darts ab einer Zahl');
   String get ladderStepFrom        => _t('From', 'Ab');
+  String ladderNumberRange(int min, int max) =>
+      _t('From $min to $max', 'Von $min bis $max');
   String ladderStepDesc(int from, int darts) =>
       _t('From $from on an attempt holds $darts darts.', 'Ab $from hat ein Versuch $darts Darts.');
   String get ladderMinPlayers      =>
