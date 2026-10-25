@@ -156,6 +156,8 @@ class AppLocalizations {
   String get bust              => _t('Bust', 'Bust');
   String get checkoutHint      => _t('Check-Out:', 'Check-Out:');
   String get noCheckoutPossible => _t('No Check-Out possible', 'Kein Check-Out möglich');
+  String get routeDoubleBull   => 'D-Bull';
+  String get routeSingleBull   => 'S-Bull';
   String dart(int n)           => _t('Dart $n', 'Dart $n');
   String bullLabel(bool d)     => d ? _t('Bull (50)', 'Bull (50)') : _t('Bull (25)', 'Bull (25)');
   String get average           => _t('Average', 'Average');
