@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/checkout_ladder_provider.dart';
 import '../utils/player_label.dart';
+import 'ladder_icon.dart';
 import 'stat_row.dart';
 
 /// The result of a Checkout Ladder game, one card per slot, shared by the
@@ -160,13 +161,9 @@ Widget? checkoutLadderBanner(
             color: cs.primaryContainer,
             shape: BoxShape.circle,
           ),
-          child: Icon(
-            winnerIndex != null
-                ? Icons.emoji_events_rounded
-                : Icons.stacked_line_chart_rounded,
-            size: 52,
-            color: cs.primary,
-          ),
+          child: winnerIndex != null
+              ? Icon(Icons.emoji_events_rounded, size: 52, color: cs.primary)
+              : LadderIcon(size: 52, color: cs.primary),
         ),
         const SizedBox(height: 12),
         Text(

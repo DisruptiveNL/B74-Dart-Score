@@ -28,6 +28,7 @@ import 'checkout_ladder_history_summary_screen.dart';
 import 'checkout_ladder_screen.dart';
 import '../utils/layout.dart';
 import '../utils/player_label.dart';
+import '../widgets/ladder_icon.dart';
 
 enum _ModeFilter { all, x01, cricket, shanghai, aroundTheClock, checkoutLadder }
 
@@ -867,23 +868,30 @@ class _GameTile extends StatelessWidget {
                     color: finished ? cs.primaryContainer : cs.tertiaryContainer,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
-                    entry.isCricket
-                        ? Icons.sports_cricket_rounded
-                        : entry.isShanghai
-                            ? Icons.layers_rounded
-                            : entry.isAroundTheClock
-                                ? Icons.watch_later_outlined
-                                : entry.isCheckoutLadder
-                                    ? Icons.stairs_rounded
+                  child: entry.isCheckoutLadder
+                      ? Center(
+                          child: LadderIcon(
+                            size: 18,
+                            color: finished
+                                ? cs.onPrimaryContainer
+                                : cs.onTertiaryContainer,
+                          ),
+                        )
+                      : Icon(
+                        entry.isCricket
+                            ? Icons.sports_cricket_rounded
+                            : entry.isShanghai
+                                ? Icons.layers_rounded
+                                : entry.isAroundTheClock
+                                    ? Icons.watch_later_outlined
                                     : (finished
-                                    ? Icons.check
-                                    : Icons.play_arrow_rounded),
-                    size: 18,
-                    color: finished
-                        ? cs.onPrimaryContainer
-                        : cs.onTertiaryContainer,
-                  ),
+                                        ? Icons.check
+                                        : Icons.play_arrow_rounded),
+                        size: 18,
+                        color: finished
+                            ? cs.onPrimaryContainer
+                            : cs.onTertiaryContainer,
+                      ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(

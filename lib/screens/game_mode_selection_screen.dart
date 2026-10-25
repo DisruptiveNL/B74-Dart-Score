@@ -130,22 +130,6 @@ class _ModeCard extends StatelessWidget {
     this.onTap,
   });
 
-  /// Icon representing this game mode.
-  IconData get _icon {
-    switch (mode) {
-      case GameModeOption.x01:
-        return Icons.filter_none_rounded;
-      case GameModeOption.cricket:
-        return Icons.sports_cricket_rounded;
-      case GameModeOption.shanghai:
-        return Icons.layers_rounded;
-      case GameModeOption.aroundTheClock:
-        return Icons.watch_later_outlined;
-      case GameModeOption.checkoutLadder:
-        return Icons.stairs_rounded;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -173,7 +157,7 @@ class _ModeCard extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
           child: Row(
             children: [
-              Icon(_icon, size: 36, color: iconColor),
+              gameModeIcon(mode, size: 36, color: iconColor),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(

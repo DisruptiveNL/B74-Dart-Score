@@ -1,9 +1,29 @@
 import 'package:flutter/material.dart';
 import '../l10n/app_localizations.dart';
 import '../utils/layout.dart';
+import '../widgets/ladder_icon.dart';
 
 /// The selectable game modes, used by the mode selection and info screens.
 enum GameModeOption { x01, cricket, shanghai, aroundTheClock, checkoutLadder }
+
+/// The symbol of [mode] at [size] in [color]. A Material icon for every mode
+/// but the Checkout Ladder, whose ladder Material does not have.
+Widget gameModeIcon(GameModeOption mode, {required double size, Color? color}) {
+  final IconData data;
+  switch (mode) {
+    case GameModeOption.x01:
+      data = Icons.filter_none_rounded;
+    case GameModeOption.cricket:
+      data = Icons.sports_cricket_rounded;
+    case GameModeOption.shanghai:
+      data = Icons.layers_rounded;
+    case GameModeOption.aroundTheClock:
+      data = Icons.watch_later_outlined;
+    case GameModeOption.checkoutLadder:
+      return LadderIcon(size: size, color: color);
+  }
+  return Icon(data, size: size, color: color);
+}
 
 /// Explains the rules of a single game [mode] (title, description, variants).
 class GameModeInfoScreen extends StatelessWidget {
@@ -17,7 +37,7 @@ class GameModeInfoScreen extends StatelessWidget {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
 
-    final (name, tagline, description, icon) = _content(l);
+    final (name, tagline, description) = _content(l);
 
     return Scaffold(
       appBar: AppBar(title: Text(l.modeInfoTitle)),
@@ -37,7 +57,7 @@ class GameModeInfoScreen extends StatelessWidget {
                         color: cs.primaryContainer,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(icon, size: 52, color: cs.primary),
+                      child: gameModeIcon(mode, size: 52, color: cs.primary),
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -89,23 +109,22 @@ class GameModeInfoScreen extends StatelessWidget {
     );
   }
 
-  (String, String, String, IconData) _content(AppLocalizations l) {
+  (String, String, String) _content(AppLocalizations l) {
     switch (mode) {
       case GameModeOption.x01:
-        return (l.modeX01Name, l.modeX01Tagline, l.modeX01Description,
-            Icons.filter_none_rounded);
+        return (l.modeX01Name, l.modeX01Tagline, l.modeX01Description);
       case GameModeOption.cricket:
         return (l.modeCricketName, l.modeCricketTagline,
-            l.modeCricketDescription, Icons.sports_cricket_rounded);
+            l.modeCricketDescription);
       case GameModeOption.shanghai:
         return (l.modeShanghaiName, l.modeShanghaiTagline,
-            l.modeShanghaiDescription, Icons.layers_rounded);
+            l.modeShanghaiDescription);
       case GameModeOption.aroundTheClock:
         return (l.modeAroundClockName, l.modeAroundClockTagline,
-            l.modeAroundClockDescription, Icons.watch_later_outlined);
+            l.modeAroundClockDescription);
       case GameModeOption.checkoutLadder:
         return (l.modeCheckoutLadderName, l.modeCheckoutLadderTagline,
-            l.modeCheckoutLadderDescription, Icons.stairs_rounded);
+            l.modeCheckoutLadderDescription);
     }
   }
 }
