@@ -375,6 +375,17 @@ void main() {
       expect(engine.currentSlot, 0);
     });
 
+    test('a target on the start number goes to the first check', () {
+      final engine = CheckoutLadderEngine(
+          _game(variant: CheckoutLadderVariant.race, start: 170, target: 170),
+          const [1, 1]);
+      _play(engine, 'T20 T20 B');            // A: 170
+      _play(engine, _misses(6));             // B: one attempt, as many as A
+
+      expect(engine.gameOver, isTrue);
+      expect(engine.winner, 0);
+    });
+
     test('a slot that checked the target throws no more', () {
       final engine = CheckoutLadderEngine(
           _game(variant: CheckoutLadderVariant.race, target: 82),

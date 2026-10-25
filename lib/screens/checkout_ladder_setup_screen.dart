@@ -71,13 +71,14 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
 
   bool get _isRace => _variant == CheckoutLadderVariant.race;
 
-  /// Moves the start number to [value] and keeps the target and the step
-  /// above it, so no setting can name a number the ladder never reaches.
+  /// Moves the start number to [value] and keeps the target and the step at
+  /// or above it, so no setting can name a number the ladder never reaches.
+  /// A race whose target is its start is won by the first check.
   void _setStart(int value) {
     setState(() {
-      _start = value.clamp(2, kCheckoutLadderTop - 1);
-      if (_target <= _start) _target = _start + 1;
-      if (_stepFrom <= _start) _stepFrom = _start + 1;
+      _start = value.clamp(2, kCheckoutLadderTop);
+      if (_target < _start) _target = _start;
+      if (_stepFrom < _start) _stepFrom = _start;
     });
   }
 
@@ -213,7 +214,7 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                   label: l.ladderStartNumber,
                   value: _start,
                   min: 2,
-                  max: kCheckoutLadderTop - 1,
+                  max: kCheckoutLadderTop,
                   onChanged: _setStart,
                 ),
                 if (_isRace) ...[
@@ -221,7 +222,7 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                   _NumberStepper(
                     label: l.ladderTargetNumber,
                     value: _target,
-                    min: _start + 1,
+                    min: _start,
                     max: kCheckoutLadderTop,
                     onChanged: (v) => setState(() => _target = v),
                   ),
@@ -254,7 +255,7 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                   _NumberStepper(
                     label: l.ladderStepFrom,
                     value: _stepFrom,
-                    min: _start + 1,
+                    min: _start,
                     max: kCheckoutLadderTop,
                     onChanged: (v) => setState(() => _stepFrom = v),
                   ),

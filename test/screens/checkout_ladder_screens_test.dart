@@ -230,7 +230,7 @@ void main() {
       expect(find.text('100'), findsOneWidget);
     });
 
-    testWidgets('keeps the target above the start', (tester) async {
+    testWidgets('keeps the target at or above the start', (tester) async {
       usePhoneSurface(tester);
       await tester.pumpWidget(testApp(ChangeNotifierProvider(
         create: (_) => CheckoutLadderProvider(),
@@ -240,15 +240,15 @@ void main() {
       await tester.tap(find.text('Race'));
       await tester.pumpAndSettle();
 
-      // Ten long presses on the start's plus carry it to its top, 169.
+      // Ten long presses on the start's plus carry it to the top, 170, and
+      // take the target along.
       final plus = find.byIcon(Icons.add_rounded).first;
       for (var i = 0; i < 10; i++) {
         await tester.longPress(plus);
         await tester.pumpAndSettle();
       }
 
-      expect(find.text('169'), findsOneWidget);
-      expect(find.text('170'), findsOneWidget);
+      expect(find.text('170'), findsNWidgets(2));
     });
   });
 
@@ -292,7 +292,7 @@ void main() {
       final ok = tester.widget<FilledButton>(
           find.widgetWithText(FilledButton, 'OK'));
       expect(ok.onPressed, isNull);
-      expect(find.text('From 2 to 169'), findsOneWidget);
+      expect(find.text('From 2 to 170'), findsOneWidget);
     });
 
     testWidgets('keep adding ten every 0.8 seconds while held',
