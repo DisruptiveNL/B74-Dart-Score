@@ -306,7 +306,7 @@ class _PhoneBody extends StatelessWidget {
                 child: scoreboardBlock,
               ),
             ),
-            const Expanded(child: DartboardInput()),
+            const Expanded(child: DartboardInput<GameProvider>()),
           ],
         ),
       ),
@@ -365,7 +365,7 @@ class _TabletBody extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             scoreboardBlock,
-            const Expanded(child: DartboardInput(fillHeight: true)),
+            const Expanded(child: DartboardInput<GameProvider>(fillHeight: true)),
           ],
         ),
         secondary: stats,
@@ -410,10 +410,10 @@ class _TabletBody extends StatelessWidget {
                         children: [
                           checkoutHint,
                           const Expanded(
-                              child: DartboardInput(fillHeight: true)),
+                              child: DartboardInput<GameProvider>(fillHeight: true)),
                         ],
                       )
-                    : const DartboardInput(fillHeight: true),
+                    : const DartboardInput<GameProvider>(fillHeight: true),
                 secondary: stats,
               ),
             ),

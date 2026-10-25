@@ -19,11 +19,11 @@ typedef ModeLiveInfo = ({
   int visitSlots,
 });
 
-/// Live info for one slot of Cricket, Shanghai or Around the Clock: the last
-/// three visits as dart chips, then the handful of numbers that describe the
-/// slot in that mode. The X01 screen has its own, richer page; this one is
-/// shared by the three target modes, which differ only in what [data] puts
-/// on it.
+/// Live info for one slot of Cricket, Shanghai, Around the Clock or the
+/// Checkout Ladder: the last three visits as dart chips, then the handful of
+/// numbers that describe the slot in that mode. The X01 screen has its own,
+/// richer page; this one is shared by the other modes, which differ only in
+/// what [data] puts on it.
 ///
 /// Rebuilds from [listenable], the mode's provider, so a bot's visit or the
 /// turn moving on shows while the page is open.

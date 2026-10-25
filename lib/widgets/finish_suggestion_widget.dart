@@ -209,11 +209,20 @@ class _DartChip extends StatelessWidget {
     this.scale = 1.0,
   });
 
+  /// How [label] reads in a route. The tables write the bull's eye as `Bull`
+  /// and the outer bull as `25`, which reads as one and the same bull to a
+  /// player, so both are spelled out with their ring the way `D16` is.
+  String _shown(AppLocalizations l10n) => switch (label) {
+        'Bull' => l10n.routeDoubleBull,
+        '25'   => l10n.routeSingleBull,
+        _      => label,
+      };
+
   @override
   Widget build(BuildContext context) {
     // Checkout dart (last) gets a subtle underline to distinguish it
     return Text(
-      label,
+      _shown(AppLocalizations.of(context)),
       style: theme.textTheme.bodySmall?.copyWith(
         fontSize: (theme.textTheme.bodySmall?.fontSize ?? 12) * scale,
         color: color,

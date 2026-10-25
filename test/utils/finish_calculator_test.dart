@@ -15,7 +15,7 @@ void main() {
         'the favorite double', () {
       final routes = FinishCalculator.getRoutes(125, 'D20');
 
-      expect(routes.primary, ['Bull', 'T15', 'D20']);
+      expect(routes.primary, ['25', 'T20', 'D20']);
       expect(routes.alternative, ['T20', 'T15', 'D10']);
     });
 
@@ -101,6 +101,52 @@ void main() {
         expect(can(0, mode),  isFalse);
         expect(can(-3, mode), isFalse);
       }
+    });
+  });
+
+  group('every suggested route', () {
+    /// Points and finishing rule of one dart in route notation: `Bull` is the
+    /// bull's eye (50, a double), `25` the outer bull, `S`, `D` and `T` the
+    /// rings of 1 to 20. Null for anything else, which no route may hold.
+    ({int score, int field, int multiplier})? dart(String label) {
+      if (label == 'Bull') return (score: 50, field: 25, multiplier: 2);
+      if (label == '25') return (score: 25, field: 25, multiplier: 1);
+      final m = RegExp(r'^([SDT])(\d+)$').firstMatch(label);
+      if (m == null) return null;
+      final field = int.parse(m.group(2)!);
+      if (field < 1 || field > 20) return null;
+      final multiplier = {'S': 1, 'D': 2, 'T': 3}[m.group(1)]!;
+      return (score: field * multiplier, field: field, multiplier: multiplier);
+    }
+
+    test('adds up to the rest and finishes under the check-out rule', () {
+      final wrong = <String>[];
+      for (final mode in CheckoutMode.values) {
+        for (var rest = 2; rest <= 170; rest++) {
+          for (final favourite in const [null, 'D16', 'D20', 'D1', 'Bull']) {
+            final routes =
+                FinishCalculator.getRoutes(rest, favourite, checkoutMode: mode);
+            for (final route in [routes.primary, routes.alternative]) {
+              if (route == null) continue;
+              final darts = route.map(dart).toList();
+              if (darts.contains(null)) {
+                wrong.add('${mode.name} $rest $route: not a dart');
+                continue;
+              }
+              final sum = darts.fold(0, (a, d) => a + d!.score);
+              final last = darts.last!;
+              if (sum != rest) {
+                wrong.add('${mode.name} $rest $route: adds up to $sum');
+              } else if (!FinishCalculator.finishesOn(
+                  last.field, last.multiplier, mode)) {
+                wrong.add('${mode.name} $rest $route: no legal finish');
+              }
+            }
+          }
+        }
+      }
+
+      expect(wrong.toSet(), isEmpty);
     });
   });
 }

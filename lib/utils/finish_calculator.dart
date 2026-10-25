@@ -44,10 +44,10 @@ class FinishCalculator {
     128: [['T20', 'T20', 'D4']],
     127: [['T20', 'T17', 'D8']],
     126: [['T19', 'T19', 'D6']],
-    125: [['T20', 'T15', 'D10'], ['Bull', 'T15', 'D20']],
+    125: [['T20', 'T15', 'D10'], ['25', 'T20', 'D20']],
     124: [['T20', 'T16', 'D8']],
     123: [['T19', 'T16', 'D9']],
-    122: [['T18', 'T18', 'D7'], ['T20', 'T14', 'D8']],
+    122: [['T18', 'T18', 'D7'], ['T18', 'T20', 'D4']],
     121: [['T20', 'T11', 'D14']],
     120: [['T20', 'S20', 'D20']],
     119: [['T19', 'T12', 'D13']],
@@ -68,13 +68,13 @@ class FinishCalculator {
     104: [['T20', 'S4', 'D20']],
     103: [['T20', 'S3', 'D20']],
     102: [['T20', 'S2', 'D20']],
-    101: [['T20', 'S1', 'D20'], ['T17', 'D25']],
+    101: [['T20', 'S1', 'D20'], ['T17', 'Bull']],
     100: [['T20', 'D20']],
     99:  [['T19', 'S10', 'D16']],
     98:  [['T20', 'D19']],
     97:  [['T19', 'D20']],
     96:  [['T20', 'D18']],
-    95:  [['T19', 'D19'], ['Bull', 'D23']],
+    95:  [['T19', 'D19'], ['Bull', 'S5', 'D20']],
     94:  [['T18', 'D20']],
     93:  [['T19', 'D18']],
     92:  [['T20', 'D16']],
@@ -104,7 +104,7 @@ class FinishCalculator {
     68:  [['T20', 'D4']],
     67:  [['T17', 'D8'], ['T9', 'D20']],
     66:  [['T10', 'D18'], ['T14', 'D12']],
-    65:  [['T19', 'D4'], ['T11', 'D16'], ['Bull', 'D8']],
+    65:  [['T19', 'D4'], ['T11', 'D16'], ['25', 'D20']],
     64:  [['T16', 'D8'], ['T14', 'D11']],
     63:  [['T13', 'D12'], ['T17', 'D6']],
     62:  [['T10', 'D16'], ['T12', 'D13']],
@@ -193,7 +193,7 @@ class FinishCalculator {
     17: [['S17']],
     18: [['S18'], ['T6']],
     19: [['S19']],
-    20: [['S20'], ['T7']],   // S20 is 1 dart (simpler than D10 for some)
+    20: [['S20'], ['D10']],  // S20 is 1 dart (simpler than D10 for some)
     21: [['T7']],
     24: [['T8']],
     27: [['T9']],
@@ -291,6 +291,32 @@ class FinishCalculator {
   }
 
   // ── Public API ─────────────────────────────────────────────────────────────
+
+  /// Whether a dart on [field] (25 = bull) with [multiplier] may be the one
+  /// that takes the rest to zero under [checkoutMode]. A dart that reaches zero
+  /// any other way is a bust.
+  ///
+  /// Master out accepts the single bull as well as the double, the same reading
+  /// [canFinishWithOneDart] takes, and no triple of the bull exists to accept.
+  static bool finishesOn(
+      int field, int multiplier, CheckoutMode checkoutMode) {
+    switch (checkoutMode) {
+      case CheckoutMode.straightOut:
+        return true;
+      case CheckoutMode.doubleOut:
+        return multiplier == 2;
+      case CheckoutMode.masterOut:
+        return field == 25
+            ? multiplier != 3
+            : (multiplier == 2 || multiplier == 3);
+    }
+  }
+
+  /// Whether a rest of [remaining] above zero can still be finished under
+  /// [checkoutMode]. A rest of one cannot, except straight out, so a dart that
+  /// leaves it is a bust.
+  static bool canStillFinish(int remaining, CheckoutMode checkoutMode) =>
+      remaining > 1 || (remaining == 1 && checkoutMode == CheckoutMode.straightOut);
 
   /// Whether [remaining] can be taken to exactly zero by a single dart that is
   /// also a valid finish under [checkoutMode].

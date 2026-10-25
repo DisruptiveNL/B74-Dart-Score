@@ -1,5 +1,6 @@
 import '../l10n/app_localizations.dart';
 import '../models/around_the_clock_game.dart';
+import '../models/checkout_ladder_game.dart' show CheckoutLadderGame, CheckoutLadderVariant;
 import '../models/cricket_game.dart';
 import '../models/game.dart';
 import '../models/shanghai_game.dart';
@@ -120,3 +121,34 @@ String aroundTheClockVariantLabel(
       return l.aroundClockSkipRules;
   }
 }
+
+/// Localized display name for a Checkout Ladder [variant].
+String checkoutLadderVariantLabel(
+    AppLocalizations l, CheckoutLadderVariant variant) {
+  switch (variant) {
+    case CheckoutLadderVariant.training:
+      return l.ladderTraining;
+    case CheckoutLadderVariant.race:
+      return l.ladderRace;
+  }
+}
+
+/// The darts an attempt of [game] holds, with the step when there is one:
+/// `6`, or `6, from 110: 9`.
+String checkoutLadderDartsLabel(AppLocalizations l, CheckoutLadderGame game) =>
+    game.stepFrom != null && game.stepDarts != null
+        ? '${game.dartsPerAttempt}, ${l.ladderStepFrom} ${game.stepFrom}: ${game.stepDarts}'
+        : '${game.dartsPerAttempt}';
+
+/// The settings of a Checkout Ladder [game] as label and value pairs, in the
+/// order the summary, the history detail and the rematch dialog list them.
+List<(String, String)> checkoutLadderSettingRows(
+        AppLocalizations l, CheckoutLadderGame game) =>
+    [
+      (l.ladderVariant, checkoutLadderVariantLabel(l, game.variant)),
+      (l.ladderStartNumber, '${game.startNumber}'),
+      if (game.isRace && game.targetNumber != null)
+        (l.ladderTargetNumber, '${game.targetNumber}'),
+      (l.ladderDartsPerAttempt, checkoutLadderDartsLabel(l, game)),
+      (l.checkOut, checkOutLabel(l, game.checkOut)),
+    ];

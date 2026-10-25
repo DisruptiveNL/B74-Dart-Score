@@ -156,6 +156,8 @@ class AppLocalizations {
   String get bust              => _t('Bust', 'Bust');
   String get checkoutHint      => _t('Check-Out:', 'Check-Out:');
   String get noCheckoutPossible => _t('No Check-Out possible', 'Kein Check-Out möglich');
+  String get routeDoubleBull   => 'D-Bull';
+  String get routeSingleBull   => 'S-Bull';
   String dart(int n)           => _t('Dart $n', 'Dart $n');
   String bullLabel(bool d)     => d ? _t('Bull (50)', 'Bull (50)') : _t('Bull (25)', 'Bull (25)');
   String get average           => _t('Average', 'Average');
@@ -307,6 +309,7 @@ class AppLocalizations {
   String get gameModeCricket   => 'Cricket';
   String get gameModeShanghai  => 'Shanghai';
   String get gameModeAroundTheClock => _t('Around the Clock', 'Around the Clock');
+  String get gameModeCheckoutLadder => _t('Checkout Ladder', 'Checkout-Leiter');
   String get openAdj           => _t('open', 'offenen');
   String get finishedAdj       => _t('finished', 'abgeschlossenen');
   String deleteVisibleBody(String adj, String mode) => mode.isEmpty
@@ -935,6 +938,44 @@ class AppLocalizations {
     '  Du triffst Bull\'s Eye -> überspringe aktuelle Zahl, rücke um eins vor',
   );
 
+  // Checkout Ladder
+  String get modeCheckoutLadderName        => _t('Checkout Ladder', 'Checkout-Leiter');
+  String get modeCheckoutLadderTagline     => _t('Check out, number by number', 'Checkouts Zahl für Zahl');
+  String get modeCheckoutLadderDescription => _t(
+    'A training game for checkout routes. Everybody starts on 81 and checks their way up, one number at a time.\n\n'
+    'AN ATTEMPT\n'
+    'An attempt is 6 darts, two visits, in which the number has to be checked exactly, under the chosen check-out rule. 9 or 12 darts can be set up, and an attempt can get more darts from a number on, for example 9 darts from 110.\n\n'
+    'UP AND DOWN\n'
+    '  Checked: on to the next number, with two attempts\n'
+    '  Climbing and missed twice: down one number\n'
+    '  Falling: only one attempt per number\n'
+    '  Never below the start number, where you simply try again\n\n'
+    'SAFEHOUSE\n'
+    'Check a number with the first visit of the attempt (darts 1 to 3) and you can never fall below the number above it again. That rewards the safe route, for example 15, 20, Bull for 85.\n\n'
+    'BUST\n'
+    'Too many points, a rest of 1, or a finish outside the check-out rule: the rest goes back to where the visit began, and the attempt goes on with its next visit.\n\n'
+    'TRAINING\n'
+    'Alone, or as a team sharing one ladder. The members take the visits in turn, so one sets up the rest and the other checks it, and the starter changes with every attempt. No winner: you end it whenever you like, at the latest by checking 170.\n\n'
+    'RACE\n'
+    'Every player or team climbs their own ladder from the start to the target number. Whoever checks the target first wins, but the round is played out until everybody has had as many attempts. If several get there, the fewest darts win, and if that is level too, a sudden death attempt on the number above the target decides.',
+    'Ein Trainingsspiel für Checkout-Wege. Alle starten bei 81 und checken sich Zahl für Zahl nach oben.\n\n'
+    'EIN VERSUCH\n'
+    'Ein Versuch sind 6 Darts, also zwei Aufnahmen, in denen die Zahl genau gecheckt werden muss, nach der gewählten Check-out-Regel. Einstellbar sind auch 9 oder 12 Darts, und ab einer bestimmten Zahl kann ein Versuch mehr Darts bekommen, zum Beispiel 9 Darts ab 110.\n\n'
+    'HOCH UND RUNTER\n'
+    '  Gecheckt: weiter zur nächsten Zahl, mit zwei Versuchen\n'
+    '  Beim Steigen zweimal verfehlt: eine Zahl runter\n'
+    '  Beim Fallen: nur ein Versuch pro Zahl\n'
+    '  Nie unter die Startzahl, dort versuchst du es einfach weiter\n\n'
+    'SAFEHOUSE\n'
+    'Checkst du eine Zahl mit der ersten Aufnahme des Versuchs (Darts 1 bis 3), kannst du nie mehr unter die Zahl darüber fallen. Das belohnt den sicheren Weg, zum Beispiel 15, 20, Bull bei 85.\n\n'
+    'BUST\n'
+    'Zu viele Punkte, ein Rest von 1 oder ein Finish außerhalb der Check-out-Regel: Der Rest springt auf den Stand vor der Aufnahme zurück, und der Versuch geht mit seiner nächsten Aufnahme weiter.\n\n'
+    'TRAINING\n'
+    'Allein oder als Team mit einer gemeinsamen Leiter. Die Mitglieder werfen die Aufnahmen abwechselnd, einer stellt den Rest, der andere checkt, und der Starter wechselt mit jedem Versuch. Kein Sieger: Du beendest es, wann du willst, spätestens mit dem Check der 170.\n\n'
+    'RENNEN\n'
+    'Jeder Spieler oder jedes Team klettert eine eigene Leiter von der Start- zur Zielzahl. Wer das Ziel zuerst checkt, gewinnt, aber die Runde wird zu Ende gespielt, bis alle gleich viele Versuche hatten. Schaffen es mehrere, gewinnen die wenigsten Darts, und ist auch das gleich, entscheidet ein Sudden-Death-Versuch auf die Zahl über dem Ziel.',
+  );
+
   // ── Misc numbers/units ───────────────────────────────────────────────────
   String dartsN(int n) => _t('$n dart${n != 1 ? 's' : ''}', '$n Dart${n != 1 ? 's' : ''}');
   String legLabel(int l) => 'Leg $l';
@@ -1069,6 +1110,75 @@ class AppLocalizations {
   String aroundClockDartsUsed(int n) => dartsN(n);
   String get aroundClockWins         => _t('wins!', 'hat gewonnen!');
   String aroundClockWinner(String name) => '🎯 $name $aroundClockWins';
+
+  // ── Checkout Ladder History ──────────────────────────────────────────────────
+  String checkoutLadderTrainingInfo(int start) =>
+      _t('Checkout Ladder · Training from $start', 'Checkout-Leiter · Training ab $start');
+  String checkoutLadderRaceInfo(int start, int target) =>
+      _t('Checkout Ladder · Race $start to $target', 'Checkout-Leiter · Rennen $start bis $target');
+
+  // ── Checkout Ladder Setup ────────────────────────────────────────────────────
+  String get ladderSetup           => _t('Checkout Ladder Setup', 'Checkout-Leiter einrichten');
+  String get ladderVariant         => _t('Variant', 'Variante');
+  String get ladderTraining        => _t('Training', 'Training');
+  String get ladderRace            => _t('Race', 'Rennen');
+  String get ladderTrainingDesc    =>
+      _t('Alone or as a team on one ladder. No winner: you end it whenever you like.',
+         'Allein oder als Team auf einer Leiter. Kein Sieger: Du beendest es, wann du willst.');
+  String get ladderRaceDesc        =>
+      _t('Everybody climbs their own ladder. Whoever checks the target number first wins.',
+         'Jeder klettert seine eigene Leiter. Wer die Zielzahl zuerst checkt, gewinnt.');
+  String get ladderNumbers         => _t('Numbers', 'Zahlen');
+  String get ladderStartNumber     => _t('Start', 'Start');
+  String get ladderTargetNumber    => _t('Target', 'Ziel');
+  String get ladderDartsPerAttempt => _t('Darts per attempt', 'Darts pro Versuch');
+  String get ladderStep            => _t('More darts from a number on', 'Mehr Darts ab einer Zahl');
+  String get ladderStepFrom        => _t('From', 'Ab');
+  String ladderNumberRange(int min, int max) =>
+      _t('From $min to $max', 'Von $min bis $max');
+  String ladderStepDesc(int from, int darts) =>
+      _t('From $from on an attempt holds $darts darts.', 'Ab $from hat ein Versuch $darts Darts.');
+  String get ladderMinPlayers      =>
+      _t('Select at least 1 player.', 'Wähle mindestens 1 Spieler aus.');
+  String get ladderRaceMinSlots    =>
+      _t('A race needs at least 2 players or teams.', 'Ein Rennen braucht mindestens 2 Spieler oder Teams.');
+
+  // ── Checkout Ladder Game ─────────────────────────────────────────────────────
+  String ladderRaceTo(int n)       => _t('Race to $n', 'Rennen bis $n');
+  String ladderTrainingFrom(int n) => _t('Training from $n', 'Training ab $n');
+  String ladderSuddenDeath(int n)  => _t('Sudden death on $n', 'Sudden Death auf $n');
+  String get ladderClimbing        => _t('climbing', 'steigend');
+  String get ladderFalling         => _t('falling', 'fallend');
+  String ladderAttemptOf(int a, int of) => _t('Attempt $a of $of', 'Versuch $a von $of');
+  String get ladderLastAttempt     => _t('Last attempt', 'Letzter Versuch');
+  String ladderFloor(int n)        => _t('Floor $n', 'Boden $n');
+  String get ladderTargetChecked   => _t('Target checked', 'Ziel gecheckt');
+  String get ladderCompleted       => _t('Ladder completed', 'Leiter geschafft');
+  String get ladderOut             => _t('Out', 'Raus');
+  String get ladderRest            => _t('Rest', 'Rest');
+  String get ladderNumber          => _t('Number', 'Zahl');
+  String get ladderFloorLabel      => _t('Floor', 'Boden');
+  String ladderVisitChecked(int n) => _t('Checked $n', '$n gecheckt');
+  String ladderVisitRest(int n)    => _t('Rest $n', 'Rest $n');
+  String get ladderVisitBust       => _t('Bust', 'Bust');
+  String get ladderLeaveTitle      => _t('Leave Training', 'Training verlassen');
+  String get ladderLeaveBody       =>
+      _t('Continue it later from the history, or end it now and see the summary?',
+         'Später aus dem Verlauf weiterspielen oder jetzt beenden und die Übersicht sehen?');
+  String get ladderContinueLater   => _t('Continue later', 'Später weiter');
+  String get ladderEndTraining     => _t('End training', 'Training beenden');
+
+  // ── Checkout Ladder Summary ──────────────────────────────────────────────────
+  String get ladderSummaryTitle    => _t('Game Summary', 'Spielübersicht');
+  String ladderWinner(String name) => '🎯 $name $aroundClockWins';
+  String get ladderHighestChecked  => _t('Highest checked', 'Höchste gecheckte Zahl');
+  String get ladderEndedOn         => _t('Ended on', 'Endstand');
+  String get ladderChecksAttempts  => _t('Checks / attempts', 'Checks / Versuche');
+  String get ladderCheckRate       => _t('Check rate', 'Check-Quote');
+  String get ladderDartsPerCheck   => _t('Darts per check', 'Ø Darts pro Check');
+  String get ladderSafehouses      => _t('Safehouses', 'Safehouses');
+  String get ladderDrops           => _t('Drops', 'Rückfälle');
+  String get ladderBusts           => _t('Busts', 'Busts');
 }
 
 // ── Delegate ──────────────────────────────────────────────────────────────────

@@ -3,7 +3,6 @@ import 'dart:math' show min;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
-import '../providers/game_provider.dart';
 import '../utils/segment_color.dart';
 import 'visit_pause.dart';
 
@@ -25,10 +24,51 @@ class DartEntry {
   }
 }
 
-/// Dartboard-style score entry for X01: a number grid plus single/double/triple
-/// modifier, miss and bull. Reads the current player's in-progress visit and
-/// undo/redo state from [GameProvider], which also enforces check-in/check-out
-/// rules and detects busts. Only the active modifier is local UI state.
+/// What [DartboardInput] reads and drives: the visit on the board, the lock
+/// on the input, undo and redo, and the dart a tap enters.
+///
+/// The provider behind it owns every rule. It scores the dart, decides when the
+/// visit is over and whether it busted, and holds a finished visit on show;
+/// the input only reports the tap and draws what it is told.
+abstract interface class DartboardInputSource implements Listenable {
+  /// Whether no dart of the person's lands now: a bot on turn, or a finished
+  /// visit still on show.
+  bool get inputLocked;
+
+  /// Whether a finished visit is on show, waiting out its pause.
+  bool get visitPending;
+
+  /// The darts of the visit on the board, oldest first.
+  List<DartEntry> get currentVisitDarts;
+
+  /// Whether the visit on the board has busted.
+  bool get liveBust;
+
+  /// Whether a dart can be taken back.
+  bool get canUndoDart;
+
+  /// Whether a dart taken back can be put on the board again.
+  bool get canRedoDart;
+
+  /// Enters a dart on [field] (0 = miss, 25 = bull) with [modifier]
+  /// (1 single, 2 double, 3 triple).
+  Future<void> tapField(int field, int modifier);
+
+  /// Takes the last dart back.
+  Future<void> undoLastDart();
+
+  /// Puts the last dart taken back on the board again.
+  Future<void> redoLastDart();
+
+  /// Ends the pause of a finished visit at once.
+  Future<void> flushHeldVisit();
+}
+
+/// Dartboard-style score entry for the modes scored like X01: a number grid
+/// plus single/double/triple modifier, miss and bull. Reads the current
+/// player's in-progress visit and undo/redo state from the provider of type
+/// [T], which also enforces check-in/check-out rules and detects busts. Only
+/// the active modifier is local UI state.
 ///
 /// Two layouts, picked from the height the scoreboard leaves over. With room to
 /// spare the rows keep their preferred size and the column is centred. Below
@@ -40,7 +80,7 @@ class DartEntry {
 /// what a tablet pane wants: there the input is given far more height than it
 /// needs, and a column that keeps its phone size would float in the middle of
 /// it. The buttons then grow towards square rather than staying flat.
-class DartboardInput extends StatefulWidget {
+class DartboardInput<T extends DartboardInputSource> extends StatefulWidget {
   /// Whether the column should fill the height it is given rather than keep its
   /// preferred size.
   final bool fillHeight;
@@ -59,10 +99,11 @@ class DartboardInput extends StatefulWidget {
   static bool usesSideActions(double width) => width >= _sideActionsMinWidth;
 
   @override
-  State<DartboardInput> createState() => _DartboardInputState();
+  State<DartboardInput<T>> createState() => _DartboardInputState<T>();
 }
 
-class _DartboardInputState extends State<DartboardInput> {
+class _DartboardInputState<T extends DartboardInputSource>
+    extends State<DartboardInput<T>> {
   int _modifier = 1;
 
   /// Available height below which the compact, fitted layout is used.
@@ -110,8 +151,8 @@ class _DartboardInputState extends State<DartboardInput> {
 
   /// Registers a tap on [field] (0=miss, 25=bull) with the active modifier.
   void _tapField(int field) {
-    if (context.read<GameProvider>().inputLocked) return;
-    context.read<GameProvider>().tapField(field, _modifier);
+    if (context.read<T>().inputLocked) return;
+    context.read<T>().tapField(field, _modifier);
     setState(() => _modifier = 1);
   }
 
@@ -128,7 +169,7 @@ class _DartboardInputState extends State<DartboardInput> {
     required double gridSpacing,
   }) {
     final cs = Theme.of(context).colorScheme;
-    final provider = context.read<GameProvider>();
+    final provider = context.read<T>();
     // Full, a bot's, or still being shown: no dart of the person's lands now.
     final dartCount = provider.inputLocked ? 3 : provider.currentVisitDarts.length;
 
@@ -332,7 +373,7 @@ class _DartboardInputState extends State<DartboardInput> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final provider = context.watch<GameProvider>();
+    final provider = context.watch<T>();
     final darts = provider.currentVisitDarts;
     // A bot's visit fills the row as it flies, and a finished one stays on
     // show for its pause; neither takes a tap.
