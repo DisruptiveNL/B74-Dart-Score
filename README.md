@@ -40,7 +40,7 @@ DartScore is **released on the App Store** for iOS and on Google Play Store for 
 
 ### Game Modes
 
-A mode selection screen lets you pick from four fully playable game modes. Each mode has a built-in rules info page.
+A mode selection screen lets you pick from five fully playable game modes. Each mode has a built-in rules info page.
 
 #### X01
 
@@ -133,6 +133,31 @@ Hit every number 1–20 in order, then finish on Bull.
 
 ---
 
+#### Checkout Ladder
+
+A training game for checkout routes. Every ladder starts on 81 and is checked one number at a time.
+
+| Rule | What happens |
+|---|---|
+| **Attempt** | 6 darts (or 9 or 12) to check the number exactly, under the chosen check-out rule. An attempt can hold more darts from a number on, for example 9 from 110 |
+| **Checked** | On to the next number, climbing, with two attempts |
+| **Missed** | Climbing, a number has two attempts; falling, one. After that the ladder steps down a number |
+| **Floor** | Never below the start number, where an attempt costs nothing |
+| **Safehouse** | A check with the first visit of the attempt (darts 1 to 3) raises the floor to the number above, which is never played again |
+| **Bust** | As in X01: the rest goes back to where the visit began, and the attempt goes on with its next visit |
+
+| Variant | Rules |
+|---|---|
+| **Training** | Alone, or a team sharing one ladder. Members take the visits in turn and the starter changes with every attempt, so one sets up the rest and the other checks it. No winner: ended by hand, or by checking 170 |
+| **Race** | Every player or team climbs their own ladder from the start to the target number, 81 to 100 by default. The first to check the target wins, but the round is played out to the same number of attempts; then fewer attempts, then fewer darts, then a sudden death attempt on the number above the target |
+
+- Entry on the X01 board keypad, with the checkout route for the rest of the attempt
+- One card per ladder: the number, climbing or falling, the attempt, the floor and the darts of the attempt used
+- A **live info** per player with the last three visits and how each ended, the check rate, darts per check, safehouses, drops and busts
+- Teams, computer opponents and partners, a fixed or drawn starting order
+
+---
+
 ### Computer Opponent
 
 Every mode can be played against the computer, in every setting the mode offers: legs and sets, placement mode, handicaps, teams, a fixed or drawn starting order.
@@ -140,7 +165,7 @@ Every mode can be played against the computer, in every setting the mode offers:
 - **Five tiers**, rookie to legend, playing three-dart averages of about 35, 50, 65, 85 and 100 in X01. A calibration test pins the numbers
 - **A bot is a player**: it appears on the scoreboard, in the summary and in the history under its localised name, and never in the player list or the sync
 - **More than one at a time**, and more than one of the same strength
-- **One throw model for all modes**: the bot aims at a segment and its dart lands with a scatter that is the whole difference between the tiers, so the misses look like real ones. Where it aims follows the checkout table in X01, the open fields and the score in Cricket, and the target in Shanghai and Around the Clock
+- **One throw model for all modes**: the bot aims at a segment and its dart lands with a scatter that is the whole difference between the tiers, so the misses look like real ones. Where it aims follows the checkout table in X01 and on the Checkout Ladder, the open fields and the score in Cricket, and the target in Shanghai and Around the Clock
 - **Its darts show as they land**, and the input is locked while it throws
 - **Undo skips over a bot's visit** back to the last human dart, so the bot cannot throw the undone dart straight back
 
@@ -184,7 +209,7 @@ All stats are shown per player on a dedicated screen.
 ### Game History
 
 - **Open / Finished tabs**: separate views for resumable and completed games
-- **Game mode chip filter** works per tab: filter by All, X01, Cricket, Shanghai, or Around the Clock (only modes present in that tab are shown)
+- **Game mode chip filter** works per tab: filter by All, X01, Cricket, Shanghai, Around the Clock or Checkout Ladder (only modes present in that tab are shown)
 - **Bulk delete**: trash icon deletes only the currently visible entries; confirmation dialog states exactly what will be removed
 - **Swipe to delete**: individual games can be swiped away
 - Per-game summary screen with full throw history for all modes
@@ -255,7 +280,7 @@ From 600 dp on the shortest side, the screens that have two things to show put t
 
 - **Onboarding**: name entry on first launch, sets the primary player
 - **Manage Players**: add, edit, delete (soft-delete preserves history), set favourite double
-- **Player selection**: all four setup screens share one player list, sorted the way names actually sort
+- **Player selection**: all five setup screens share one player list, sorted the way names actually sort
 - **Settings**: theme, language and game pace as menu rows in a display section, with the text size slider beside them on a tablet; backup, donations, about and licences in an app section
 - **Dark / Light / System theme**
 - **German / English localisation**: auto-detected from device locale, switchable in settings
@@ -376,6 +401,7 @@ lib/
 │   ├── cricket_game.dart                  # CricketGame, CricketThrow, variant/scoring enums
 │   ├── shanghai_game.dart                 # ShanghaiGame, ShanghaiThrow, ShanghaiVariant enum
 │   ├── around_the_clock_game.dart         # AroundTheClockGame, AroundTheClockThrow, variant enum
+│   ├── checkout_ladder_game.dart          # CheckoutLadderGame, CheckoutLadderThrow, training or race
 │   ├── team_config.dart                   # Shared TeamConfig + JSON encode/decode for team_config_json
 │   └── starting_order.dart                # Shared StartingOrder enum (random or fixed throwing order)
 ├── providers/
@@ -384,6 +410,7 @@ lib/
 │   ├── cricket_provider.dart              # Cricket game state machine
 │   ├── shanghai_provider.dart             # Shanghai game state machine
 │   ├── around_the_clock_provider.dart     # Around the Clock game state machine
+│   ├── checkout_ladder_provider.dart      # Checkout Ladder: persists the darts, replays them through the engine
 │   ├── donation_provider.dart             # In-app purchase / supporter state
 │   ├── theme_provider.dart                # Light/dark theme toggle, persisted via shared_preferences
 │   ├── language_provider.dart             # Locale switching (en/de), persisted via shared_preferences
@@ -401,7 +428,7 @@ lib/
 │   ├── players_screen.dart                # Player management list
 │   ├── player_stats_screen.dart           # Per-player lifetime statistics + dartboard heatmap
 │   ├── history_screen.dart                # Game history with Open/Finished tabs and mode filter chips
-│   ├── game_mode_selection_screen.dart    # Pick game mode (X01 / Cricket / Shanghai / Around the Clock)
+│   ├── game_mode_selection_screen.dart    # Pick game mode (X01 / Cricket / Shanghai / Around the Clock / Checkout Ladder)
 │   ├── game_mode_info_screen.dart         # Per-mode rules info page
 │   ├── game_setup_screen.dart             # Configure X01: start score, in/out modes, legs/sets, players
 │   ├── game_screen.dart                   # Live X01: scoreboard, dartboard/numpad input, finish suggestions
@@ -419,7 +446,11 @@ lib/
 │   ├── around_the_clock_setup_screen.dart # Configure Around the Clock: variant, legs/sets, players
 │   ├── around_the_clock_screen.dart       # Live Around the Clock: progress, dartboard input
 │   ├── around_the_clock_summary_screen.dart
-│   └── around_the_clock_history_summary_screen.dart
+│   ├── around_the_clock_history_summary_screen.dart
+│   ├── checkout_ladder_setup_screen.dart  # Configure the Checkout Ladder: training or race, numbers, darts, players
+│   ├── checkout_ladder_screen.dart        # Live Checkout Ladder: one card per ladder, X01 input, checkout route
+│   ├── checkout_ladder_summary_screen.dart
+│   └── checkout_ladder_history_summary_screen.dart
 ├── services/
 │   ├── sync_codec.dart                    # Sync wire format: binary packet, base45, fountain coded frames
 │   ├── sync_service.dart                  # Sync payload types, the Wi-Fi server and its paired client
@@ -434,6 +465,7 @@ lib/
 ├── utils/
 │   ├── finish_calculator.dart             # X01 checkout table up to 170; respects favourite doubles; one-dart finish rule per check-out mode
 │   ├── game_labels.dart                   # Localised names for per-mode settings and handicap rules
+│   ├── checkout_ladder_rules.dart         # The Checkout Ladder engine: ladder, floor, turn, team rotation and race
 │   ├── match_format.dart                  # Match format presets (Best of N, PDC Sets, ...)
 │   ├── placement.dart                     # Placement-mode ranking and points helpers
 │   ├── throw_stats.dart                   # ThrowStats: the one aggregation over recorded throws
@@ -452,7 +484,7 @@ lib/
     ├── favorite_double_picker.dart         # Picks a player's favourite doubles
     ├── team_section.dart                   # Shared team assignment UI for setup screens
     ├── starting_order_section.dart         # Shared starting-order picker with drag-to-sort list
-    ├── player_select_section.dart          # Shared player list for all four setup screens
+    ├── player_select_section.dart          # Shared player list for all five setup screens
     ├── game_info_card.dart                 # Shared card listing a finished game's settings
     ├── summary_body.dart                   # Shared summary/history detail body and its tablet layout
     ├── summary_player_card.dart            # Shared X01 player/team result card
@@ -461,6 +493,7 @@ lib/
     ├── throw_row.dart                      # Shared row for one recorded visit, used by both throw lists
     ├── stat_row.dart                       # Shared label/value row for every stat list
     ├── rematch_button.dart                 # "Play Again" button and its confirmation dialog
+    ├── checkout_ladder_result.dart         # Checkout Ladder result cards, shared by its summary and history detail
     ├── wifi_pairing.dart                   # Scanner, pairing number dialog and QR card, shared by sync and backup
     └── player_dialog.dart                  # Create/edit player dialog
 ```
@@ -508,7 +541,7 @@ dart_throws  (id, game_id, player_id, score, darts_used, leg, set_,
 `handicap_json` holds per-player check-in/check-out overrides, keyed by player ID; null when the game uses the game-wide rules.  
 `origin_device` names the device the game was played on. Null means this one, so a game costs nothing to record locally; a restore stamps the source's ID onto what it hands over.  
 `placement_mode` is 1 when every leg is played to the end for a final ranking.  
-`starting_order` is 0 when the throwing order was drawn at random and 1 when it was fixed by hand. Present on all four game tables; games created before the setting existed read as 0, which is how they were actually played.
+`starting_order` is 0 when the throwing order was drawn at random and 1 when it was fixed by hand. Present on all five game tables; games created before the setting existed read as 0, which is how they were actually played.
 
 `checkout_darts` counts how many darts of the visit were thrown while a single dart could still have finished the leg, 0 to 3. It is decided once, when the visit is recorded, because working it out needs both the individual darts and the check-out rule that applied to that player in that game, and neither reaches the places the statistics are counted. Two numbers rest on it: the check-out rate counts a visit once however many darts it put on a double, the double rate counts every one of them. A visit that arrived over sync or predates `hits_json` can only ever be credited with a single dart.
 
@@ -555,6 +588,21 @@ around_the_clock_throws  (id, game_id, player_id, field, multiplier,
 ```
 
 `field` is the number just hit (1–20, 25 for Bull).
+
+### Checkout Ladder
+
+```sql
+checkout_ladder_games   (id, variant, start_number, target_number,
+                         darts_per_attempt, step_from, step_darts,
+                         checkout_mode, created_at, finished_at,
+                         player_ids, team_config_json, starting_order)
+
+checkout_ladder_throws  (id, game_id, player_id, field, multiplier, thrown_at)
+```
+
+`variant` is 0 for training and 1 for a race; `target_number` is null in training.  
+`step_from` and `step_darts` are null unless an attempt holds more darts from a number on.  
+A throw stores only what was hit. The number, the rest, the attempt and the floor are replayed from the darts before it, so a visit is never assumed to hold three darts: a check or a bust ends it early.
 
 ### Sync and backup
 

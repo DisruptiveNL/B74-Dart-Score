@@ -85,6 +85,21 @@ void main() {
       expect(find.byType(DartboardInput<CheckoutLadderProvider>), findsOneWidget);
     });
 
+    testWidgets('opens the live info of a slot from its card', (tester) async {
+      usePhoneSurface(tester);
+      await tester.pumpWidget(wrap(provider, const CheckoutLadderScreen()));
+      await tester.pumpAndSettle();
+
+      // The card comes before the rest block, which names the slot as well.
+      await tester.tap(find.text('Ada').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Last 3 Visits'), findsOneWidget);
+      expect(find.text('Rest 20'), findsOneWidget,
+          reason: 'the visit being thrown is listed with what it has left');
+      expect(find.text('Number'), findsOneWidget);
+    });
+
     testWidgets('offers to continue later or to end the training',
         (tester) async {
       usePhoneSurface(tester);

@@ -83,6 +83,10 @@ class LadderStep {
   final LadderPosition position;
   /// The number the dart was thrown at.
   final int number;
+  /// What is left of [number] once the dart has landed: zero after a check,
+  /// the rest the visit began with after a bust. Read before the attempt moves
+  /// on, so a missed attempt still says where it stopped.
+  final int restAfter;
   /// Whether the dart took the rest to zero under the check-out rule.
   final bool checked;
   /// Whether the dart busted the visit.
@@ -100,6 +104,7 @@ class LadderStep {
   const LadderStep({
     required this.position,
     required this.number,
+    required this.restAfter,
     this.checked = false,
     this.bust = false,
     this.safehouse = false,
@@ -158,6 +163,7 @@ LadderStep applyLadderDart({
           completed:        true,
         ),
         number:      p.number,
+        restAfter:   0,
         checked:     true,
         safehouse:   safehouse,
         visitOver:   true,
@@ -168,6 +174,7 @@ LadderStep applyLadderDart({
       position: LadderPosition.freshAttempt(
           number: p.number + 1, floor: floor, climbing: true),
       number:      p.number,
+      restAfter:   0,
       checked:     true,
       safehouse:   safehouse,
       visitOver:   true,
@@ -196,6 +203,7 @@ LadderStep applyLadderDart({
         dartsInVisit:     visitOver ? 0 : dartsInVisit,
       ),
       number:    p.number,
+      restAfter: rest,
       bust:      bust,
       visitOver: visitOver,
     );
@@ -217,6 +225,7 @@ LadderStep applyLadderDart({
   return LadderStep(
     position:    next,
     number:      p.number,
+    restAfter:   rest,
     bust:        bust,
     visitOver:   true,
     attemptOver: true,
@@ -228,6 +237,17 @@ LadderStep applyLadderDart({
 
 /// One dart as the engine keeps it for the visit on show.
 typedef LadderDart = ({int field, int multiplier});
+
+/// One finished visit of a slot: its darts, the number they were thrown at,
+/// and how the visit ended.
+typedef LadderVisit = ({
+  List<LadderDart> darts,
+  int number,
+  bool checked,
+  bool bust,
+  bool safehouse,
+  int restAfter,
+});
 
 /// Everything the engine knows about one slot: where it stands, and the
 /// numbers the summary and the race are decided by.
@@ -261,6 +281,9 @@ class LadderSlot {
   int? reachedTargetAt;
   /// Race only: darts in the whole game when the target was checked.
   int? reachedTargetDarts;
+  /// Every finished visit of this slot, oldest first. A visit can end after
+  /// one dart, on a check or a bust, so the darts are never grouped in threes.
+  final List<LadderVisit> visits = [];
   /// Sudden death only: whether this slot is still in it.
   bool inSuddenDeath = false;
   /// Sudden death only: whether this slot has played its attempt of the round.
@@ -386,7 +409,17 @@ class CheckoutLadderEngine {
     slot.position = step.position;
 
     if (step.attemptOver) _endAttempt(slot, step);
-    if (step.visitOver) _visitOver = true;
+    if (step.visitOver) {
+      _visitOver = true;
+      slot.visits.add((
+        darts:     List.of(_visit),
+        number:    step.number,
+        checked:   step.checked,
+        bust:      step.bust,
+        safehouse: step.safehouse,
+        restAfter: step.restAfter,
+      ));
+    }
     return step;
   }
 

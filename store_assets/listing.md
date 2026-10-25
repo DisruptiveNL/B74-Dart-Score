@@ -18,34 +18,34 @@ Console. They are not the same field and neither store shows both.
 ## Short description (80)
 
 The line Google Play shows under the app name in search results and at the top
-of the listing. It is the first sentence most people read, so it names the four
+of the listing. It is the first sentence most people read, so it names the five
 modes' payoff rather than the modes themselves, which the promotional text
 below already lists.
 
-- German (78): Jeder Wurf zählt. Vier Modi, Finish-Wege, Teams, Statistik. Offline und gratis
-- English (76): Track every dart. Four modes, live checkouts, teams, stats. Offline and free
+- German (78): Jeder Wurf zählt. Fünf Modi, Finish-Wege, Teams, Statistik. Offline und gratis
+- English (76): Track every dart. Five modes, live checkouts, teams, stats. Offline and free
 
 ## Promotional text (170)
 
-German (149):
+German (170):
 
-> Vier Spielmodi, eine App: X01, Cricket, Shanghai und Around the Clock. Finish-Wege live, Heatmap für jeden Dart, Sync ohne Internet per QR oder WLAN.
+> Fünf Spielmodi, eine App: X01, Cricket, Shanghai, Around the Clock und die Checkout-Leiter. Finish-Wege live, Heatmap für jeden Dart, Sync ohne Internet per QR oder WLAN.
 
-English (146):
+English (167):
 
-> Four game modes, one app: X01, Cricket, Shanghai and Around the Clock. Live checkout routes, a heatmap of every dart, offline sync by QR or Wi-Fi.
+> Five game modes, one app: X01, Cricket, Shanghai, Around the Clock and the Checkout Ladder. Live checkout routes, a heatmap of every dart, offline sync by QR or Wi-Fi.
 
 ## Description (4000)
 
 The German text is the original and the English one follows it section by
 section, so a change to one belongs in the other.
 
-### German (3379)
+### German (3521)
 
 ```
 DartScore begleitet dein Spiel während des Wurfs. Du kannst allein, gegen Freunde oder im Team spielen, auf dem Handy wie auf dem Tablet. Jeder Wurf wird erfasst, jede Zahl wird als Statistik zurückgegeben, und nichts verlässt dein Gerät. Es gibt kein Konto, kein Internet und keine Werbung.
 
-VIER SPIELMODI
+FÜNF SPIELMODI
 
 X01 (201, 301, 501, 701, 1001 und mehr)
 • Solo, mehrere Spieler oder Teams
@@ -69,6 +69,10 @@ Shanghai
 Around the Clock
 • Basis, alle Segmente oder mit Sprungregeln
 • Von 1 bis 20 und zum Bull, in Board-Reihenfolge
+
+Checkout-Leiter
+• Von 81 aufwärts jede Zahl mit 6, 9 oder 12 Darts checken
+• Steigen, fallen, Safehouses bauen, als Training oder als Rennen
 
 Jeder Modus speichert ein unterbrochenes Spiel und setzt dort fort, wo du aufgehört hast. Die Wurfreihenfolge ist zufällig oder fest, der Platzierungsmodus wird bei mehr als zwei Spielern aktiviert.
 
@@ -107,7 +111,7 @@ COMPUTERGEGNER
 • Spieltempo wählbar: wie schnell der Bot wirft und wie lange eine Aufnahme stehen bleibt
 
 VERLAUF
-• Jedes abgeschlossene und offene Spiel in allen vier Modi
+• Jedes abgeschlossene und offene Spiel in allen fünf Modi
 • Jede Aufnahme jedes Spielers, Wurf für Wurf
 • Einzelne Spiele oder alle auf einmal löschen
 
@@ -121,12 +125,12 @@ DartScore läuft vollständig auf deinem Gerät. Es gibt keine Werbung, kein Tra
 Wer die Arbeit unterstützen möchte, kann dies freiwillig in Form einer kleinen Spende innerhalb der App tun.
 ```
 
-### English (3160)
+### English (3291)
 
 ```
 DartScore follows your game throw by throw. Play solo, against friends or in teams, on a phone as well as on a tablet. Every dart is recorded, every number comes back as a statistic, and nothing leaves your device. There is no account, no internet and no advertising.
 
-FOUR GAME MODES
+FIVE GAME MODES
 
 X01 (201, 301, 501, 701, 1001 and more)
 • Solo, several players or teams
@@ -150,6 +154,10 @@ Shanghai
 Around the Clock
 • Basic, all segments or with skip rules
 • From 1 to 20 and on to the bull, in board order
+
+Checkout Ladder
+• Up from 81, check every number in 6, 9 or 12 darts
+• Climb, fall and build safehouses, in training or as a race
 
 Every mode stores a game you interrupt and carries on where you left off. The throwing order is random or fixed, and placement scoring comes in once more than two are playing.
 
@@ -188,7 +196,7 @@ COMPUTER OPPONENT
 • Game pace of your choice: how quickly the bot throws and how long a visit stays on the board
 
 HISTORY
-• Every finished and every open game, in all four modes
+• Every finished and every open game, in all five modes
 • Every visit of every player, throw by throw
 • Delete single games or all of them at once
 
@@ -216,6 +224,24 @@ belongs in the commit, not in the store.
 TestFlight reads its own notes from `ios/TestFlight/WhatToTest.<locale>.txt`,
 which Xcode Cloud picks up on its own. Those carry the same words plus a line
 naming what a tester should actually try, so keep the two in step.
+
+### Next release (version and build not set yet)
+
+German:
+
+```
+Neuer Modus: die Checkout-Leiter
+
+Ein Trainingsspiel für Checkout-Wege. Du startest bei 81 und checkst dich Zahl für Zahl nach oben, mit 6 Darts pro Zahl. Verfehlst du, fällst du zurück, und wer schon mit den ersten drei Darts checkt, baut sich ein Safehouse. Allein, als Team oder als Rennen gegeneinander, auch gegen den Bot.
+```
+
+English:
+
+```
+New mode: the Checkout Ladder
+
+A training game for checkout routes. You start on 81 and check your way up, one number at a time, with 6 darts for each. Miss and you fall back, and a check with the first three darts builds you a safehouse. Alone, as a team or as a race against each other, against the bot as well.
+```
 
 ### 1.1.0 (build 202600020)
 

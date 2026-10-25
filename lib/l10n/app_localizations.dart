@@ -1152,6 +1152,11 @@ class AppLocalizations {
   String get ladderCompleted       => _t('Ladder completed', 'Leiter geschafft');
   String get ladderOut             => _t('Out', 'Raus');
   String get ladderRest            => _t('Rest', 'Rest');
+  String get ladderNumber          => _t('Number', 'Zahl');
+  String get ladderFloorLabel      => _t('Floor', 'Boden');
+  String ladderVisitChecked(int n) => _t('Checked $n', '$n gecheckt');
+  String ladderVisitRest(int n)    => _t('Rest $n', 'Rest $n');
+  String get ladderVisitBust       => _t('Bust', 'Bust');
   String get ladderLeaveTitle      => _t('Leave Training', 'Training verlassen');
   String get ladderLeaveBody       =>
       _t('Continue it later from the history, or end it now and see the summary?',

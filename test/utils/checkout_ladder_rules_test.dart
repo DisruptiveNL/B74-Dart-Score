@@ -233,6 +233,33 @@ void main() {
     });
   });
 
+  group('visits', () {
+    test('end on a check, a bust or the third dart, each with its result', () {
+      final engine = CheckoutLadderEngine(_game(), const [1]);
+      _play(engine, 'S20 S20 T20');          // bust on the third dart
+      _play(engine, 'T15 D18');              // 81 checked with two darts
+      _play(engine, 'S20 M M');              // 82, nothing checked
+
+      final visits = engine.slots.single.visits;
+      expect(visits.map((v) => v.darts.length), [3, 2, 3]);
+      expect(visits[0].bust, isTrue);
+      expect(visits[0].restAfter, 81);
+      expect(visits[1].checked, isTrue);
+      expect(visits[1].number, 81);
+      expect(visits[2].restAfter, 62);
+    });
+
+    test('keep the rest an attempt stopped on, not the next attempt\'s', () {
+      final engine = CheckoutLadderEngine(_game(), const [1]);
+      _play(engine, 'T15 D18');              // 81, up to 82
+      _play(engine, 'S20 M M');
+      _play(engine, 'S1 M M');               // attempt over on 61
+
+      expect(engine.slots.single.visits.last.restAfter, 61);
+      expect(engine.slots.single.position.rest, 82);
+    });
+  });
+
   group('turns', () {
     test('move on after every visit', () {
       final engine = CheckoutLadderEngine(_game(), const [1, 1]);

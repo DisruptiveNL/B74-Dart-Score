@@ -22,7 +22,7 @@ Every mode has the same four screens, and a fifth for the history detail:
 
 The Checkout Ladder is scored like X01, so its live screen is the X01 input (`DartboardInput<CheckoutLadderProvider>`) under one card per ladder, and on a tablet the input beside the ladders. A training is left two ways: to be resumed from the history, or ended, which stores it as finished and shows the summary. A race can only be left
 
-X01 has a screen of its own for the player/team info opened from the scoreboard during a game, `live_player_stats_screen.dart`. The other three share `mode_live_info_screen.dart`: a tap on a slot's name opens it with the last three visits as dart chips and the numbers that mode is played by, and each live screen builds that data in its own `open<Mode>SlotInfo` from the stats in `utils/`. It rebuilds from the provider, so a bot's visit shows while it is open.
+X01 has a screen of its own for the player/team info opened from the scoreboard during a game, `live_player_stats_screen.dart`. The other modes share `mode_live_info_screen.dart`: a tap on a slot's name opens it with the last three visits as dart chips and the numbers that mode is played by, and each live screen builds that data in its own `open<Mode>SlotInfo` from the stats in `utils/`. It rebuilds from the provider, so a bot's visit shows while it is open.
 
 ### The rest
 

@@ -6,9 +6,11 @@ import '../providers/checkout_ladder_provider.dart';
 import '../providers/tablet_layout_provider.dart';
 import '../utils/layout.dart';
 import '../utils/player_label.dart';
+import '../utils/visit_darts.dart';
 import '../widgets/dartboard_input.dart';
 import '../widgets/finish_suggestion_widget.dart';
 import 'checkout_ladder_summary_screen.dart';
+import 'mode_live_info_screen.dart';
 
 /// Live Checkout Ladder screen. Watches the provider and routes to the summary
 /// when the game ends, otherwise shows the play view.
@@ -309,6 +311,7 @@ class _Scoreboard extends StatelessWidget {
               game:   provider.game!,
               active: i == provider.currentSlotIndex,
               suddenDeath: provider.suddenDeathNumber != null,
+              onTap: () => openCheckoutLadderSlotInfo(context, i),
             ),
           ),
       ],
@@ -323,12 +326,15 @@ class _SlotCard extends StatelessWidget {
   final bool active;
   /// Whether the race is in sudden death, where only the level slots play.
   final bool suddenDeath;
+  /// Opens the live info of this slot.
+  final VoidCallback onTap;
 
   const _SlotCard({
     required this.slot,
     required this.game,
     required this.active,
     required this.suddenDeath,
+    required this.onTap,
   });
 
   @override
@@ -379,6 +385,7 @@ class _SlotCard extends StatelessWidget {
 
     return Card(
       margin: EdgeInsets.zero,
+      clipBehavior: Clip.antiAlias,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
         side: BorderSide(
@@ -386,54 +393,57 @@ class _SlotCard extends StatelessWidget {
           width: 2,
         ),
       ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
-        child: Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    slot.label(l),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: active ? cs.primary : cs.onSurface,
-                    ),
-                  ),
-                  if (slot.isTeamSlot)
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
                     Text(
-                      slot.player.label(l),
+                      slot.label(l),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: cs.onSurfaceVariant),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: active ? cs.primary : cs.onSurface,
+                      ),
                     ),
-                  const SizedBox(height: 6),
-                  Wrap(spacing: 6, runSpacing: 4, children: tags),
-                  if (done == null) ...[
-                    const SizedBox(height: 8),
-                    _AttemptPips(
-                      used:  position.dartsInAttempt,
-                      total: game.dartsFor(position.number),
-                    ),
+                    if (slot.isTeamSlot)
+                      Text(
+                        slot.player.label(l),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.labelSmall
+                            ?.copyWith(color: cs.onSurfaceVariant),
+                      ),
+                    const SizedBox(height: 6),
+                    Wrap(spacing: 6, runSpacing: 4, children: tags),
+                    if (done == null) ...[
+                      const SizedBox(height: 8),
+                      _AttemptPips(
+                        used:  position.dartsInAttempt,
+                        total: game.dartsFor(position.number),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Text(
-              '${position.number}',
-              style: theme.textTheme.displaySmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: done != null ? cs.onSurfaceVariant : cs.onSurface,
-                fontFeatures: const [FontFeature.tabularFigures()],
+              const SizedBox(width: 12),
+              Text(
+                '${position.number}',
+                style: theme.textTheme.displaySmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: done != null ? cs.onSurfaceVariant : cs.onSurface,
+                  fontFeatures: const [FontFeature.tabularFigures()],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -500,4 +510,78 @@ class _AttemptPips extends StatelessWidget {
       ],
     );
   }
+}
+
+// ── Live info ─────────────────────────────────────────────────────────────────
+
+/// Opens the live info of the Checkout Ladder slot at [slotIndex]: its last
+/// three visits with how each ended, and the numbers its ladder stands on.
+///
+/// The visits come from the engine, which closes a visit on a check or a bust
+/// as well as after three darts, so nothing here counts darts in threes. The
+/// visit still being thrown is listed first while it is open.
+void openCheckoutLadderSlotInfo(BuildContext context, int slotIndex) {
+  final provider = context.read<CheckoutLadderProvider>();
+  Navigator.of(context).push(MaterialPageRoute<void>(
+    builder: (_) => ModeLiveInfoScreen(
+      listenable: provider,
+      data: (context) {
+        final l      = context.l10n;
+        final s      = provider.slots[slotIndex];
+        final ladder = s.ladder;
+        final rate   = ladder.checkRate;
+        final perCheck = ladder.dartsPerCheck;
+
+        final open = slotIndex == provider.currentSlotIndex &&
+                s.position.dartsInVisit > 0
+            ? provider.currentVisitDarts
+            : const <DartEntry>[];
+        final done = ladder.visits;
+        final from = done.length <= 3 ? 0 : done.length - 3;
+        final recent = <VisitSummary>[
+          if (open.isNotEmpty)
+            (
+              darts: [for (final d in open) visitDartFrom(d.field, d.field == 0 ? 0 : d.modifier, l)],
+              yield: l.ladderVisitRest(s.position.rest),
+            ),
+          for (var i = done.length - 1; i >= from; i--)
+            (
+              darts: [
+                for (final d in done[i].darts)
+                  visitDartFrom(d.field, d.multiplier, l),
+              ],
+              yield: done[i].checked
+                  ? l.ladderVisitChecked(done[i].number)
+                  : done[i].bust
+                      ? l.ladderVisitBust
+                      : l.ladderVisitRest(done[i].restAfter),
+            ),
+        ];
+
+        return (
+          title:    s.label(l),
+          subtitle: s.isTeamSlot ? s.player.label(l) : null,
+          visitSlots: 3,
+          recentVisits: recent.take(3).toList(),
+          stats: [
+            (l.ladderNumber, s.position.completed
+                ? l.ladderCompleted
+                : '${s.position.number}'),
+            (l.ladderFloorLabel, '${s.position.floor}'),
+            (l.ladderHighestChecked, ladder.highestChecked?.toString() ?? '—'),
+            (l.ladderChecksAttempts,
+                '${ladder.checks} / ${ladder.attemptsCompleted}'),
+            (l.ladderCheckRate,
+                rate == null ? '—' : '${(rate * 100).round()} %'),
+            (l.ladderDartsPerCheck,
+                perCheck == null ? '—' : perCheck.toStringAsFixed(1)),
+            (l.ladderSafehouses, '${ladder.safehouses}'),
+            (l.ladderDrops, '${ladder.drops}'),
+            (l.ladderBusts, '${ladder.busts}'),
+            (l.dartsThrown, '${ladder.darts}'),
+          ],
+        );
+      },
+    ),
+  ));
 }
