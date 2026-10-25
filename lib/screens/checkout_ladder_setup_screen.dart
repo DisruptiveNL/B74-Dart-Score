@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -30,6 +31,10 @@ class CheckoutLadderSetupScreen extends StatefulWidget {
 class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
   /// The darts an attempt may hold: two, three or four visits.
   static const _dartChoices = [6, 9, 12];
+
+  /// Space between two number rows, so the buttons of one never touch the
+  /// buttons of the next.
+  static const double _stepperGap = 14;
 
   CheckoutLadderVariant _variant = CheckoutLadderVariant.training;
   int _start  = 81;
@@ -210,7 +215,8 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                   max: kCheckoutLadderTop - 1,
                   onChanged: _setStart,
                 ),
-                if (_isRace)
+                if (_isRace) ...[
+                  const SizedBox(height: _stepperGap),
                   _NumberStepper(
                     label: l.ladderTargetNumber,
                     value: _target,
@@ -218,6 +224,7 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                     max: kCheckoutLadderTop,
                     onChanged: (v) => setState(() => _target = v),
                   ),
+                ],
               ],
             ),
           ),
@@ -242,6 +249,7 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                   onChanged: (v) => setState(() => _stepEnabled = v),
                 ),
                 if (_stepEnabled) ...[
+                  const SizedBox(height: _stepperGap / 2),
                   _NumberStepper(
                     label: l.ladderStepFrom,
                     value: _stepFrom,
@@ -249,7 +257,7 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                     max: kCheckoutLadderTop,
                     onChanged: (v) => setState(() => _stepFrom = v),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: _stepperGap),
                   _DartsChoice(
                     value: _stepDarts,
                     choices: _dartChoices,
@@ -530,8 +538,9 @@ class _DartsChoice extends StatelessWidget {
 }
 
 /// A labelled number between [min] and [max] with a minus and a plus beside
-/// it. A tap moves it by one and a long press by ten, so 81 to 170 is a few
-/// presses rather than ninety.
+/// it. A tap moves it by one; holding a button moves it by ten at once and by
+/// ten again every [_StepButton.repeatEvery] for as long as it is held, so 81
+/// to 170 is one press rather than ninety taps.
 class _NumberStepper extends StatelessWidget {
   final String label;
   final int value;
@@ -560,7 +569,7 @@ class _NumberStepper extends StatelessWidget {
           icon: Icons.remove_rounded,
           enabled: value > min,
           onTap: () => _move(-1),
-          onLongPress: () => _move(-10),
+          onHold: () => _move(-10),
         ),
         SizedBox(
           width: 56,
@@ -577,44 +586,86 @@ class _NumberStepper extends StatelessWidget {
           icon: Icons.add_rounded,
           enabled: value < max,
           onTap: () => _move(1),
-          onLongPress: () => _move(10),
+          onHold: () => _move(10),
         ),
       ],
     );
   }
 }
 
-/// A round minus or plus button of [_NumberStepper].
-class _StepButton extends StatelessWidget {
+/// A round minus or plus button of [_NumberStepper]. A tap calls [onTap];
+/// holding it calls [onHold] at once and again every [repeatEvery] until it is
+/// let go or the number reaches its bound.
+class _StepButton extends StatefulWidget {
+  /// How often a held button moves the number again.
+  static const repeatEvery = Duration(milliseconds: 1500);
+
   final IconData icon;
   final bool enabled;
   final VoidCallback onTap;
-  final VoidCallback onLongPress;
+  final VoidCallback onHold;
 
   const _StepButton({
     required this.icon,
     required this.enabled,
     required this.onTap,
-    required this.onLongPress,
+    required this.onHold,
   });
+
+  @override
+  State<_StepButton> createState() => _StepButtonState();
+}
+
+class _StepButtonState extends State<_StepButton> {
+  Timer? _repeat;
+
+  /// Moves the number once and keeps moving it while the button is held.
+  void _startHold() {
+    if (!widget.enabled) return;
+    widget.onHold();
+    _repeat?.cancel();
+    _repeat = Timer.periodic(_StepButton.repeatEvery, (_) {
+      // Read through [widget] on every tick: each move rebuilds the stepper
+      // with the new value, and only the newest callback adds to that one.
+      if (!mounted || !widget.enabled) return _stopHold();
+      widget.onHold();
+    });
+  }
+
+  /// Stops the repeat once the button is let go.
+  void _stopHold() {
+    _repeat?.cancel();
+    _repeat = null;
+  }
+
+  @override
+  void dispose() {
+    _stopHold();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    return Material(
-      color: enabled ? cs.secondaryContainer : cs.surfaceContainerHighest,
-      shape: const CircleBorder(),
-      child: InkWell(
-        customBorder: const CircleBorder(),
-        onTap: enabled ? onTap : null,
-        onLongPress: enabled ? onLongPress : null,
-        child: Padding(
-          padding: const EdgeInsets.all(8),
-          child: Icon(icon,
-              size: 22,
-              color: enabled
-                  ? cs.onSecondaryContainer
-                  : cs.onSurface.withValues(alpha: 0.38)),
+    final enabled = widget.enabled;
+    return GestureDetector(
+      onLongPressStart: (_) => _startHold(),
+      onLongPressEnd: (_) => _stopHold(),
+      onLongPressCancel: _stopHold,
+      child: Material(
+        color: enabled ? cs.secondaryContainer : cs.surfaceContainerHighest,
+        shape: const CircleBorder(),
+        child: InkWell(
+          customBorder: const CircleBorder(),
+          onTap: enabled ? widget.onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Icon(widget.icon,
+                size: 22,
+                color: enabled
+                    ? cs.onSecondaryContainer
+                    : cs.onSurface.withValues(alpha: 0.38)),
+          ),
         ),
       ),
     );

@@ -8,6 +8,7 @@ import 'package:dartscore_app/screens/checkout_ladder_setup_screen.dart';
 import 'package:dartscore_app/screens/checkout_ladder_summary_screen.dart';
 import 'package:dartscore_app/screens/game_mode_selection_screen.dart';
 import 'package:dartscore_app/widgets/dartboard_input.dart';
+import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:provider/provider.dart';
@@ -248,6 +249,34 @@ void main() {
 
       expect(find.text('169'), findsOneWidget);
       expect(find.text('170'), findsOneWidget);
+    });
+  });
+
+  group('the number steppers', () {
+    useInMemoryDatabase();
+
+    testWidgets('keep adding ten every second and a half while held',
+        (tester) async {
+      usePhoneSurface(tester);
+      await tester.pumpWidget(testApp(ChangeNotifierProvider(
+        create: (_) => CheckoutLadderProvider(),
+        child: const CheckoutLadderSetupScreen(),
+      )));
+      await tester.pumpAndSettle();
+
+      final plus = find.byIcon(Icons.add_rounded).first;
+      final gesture = await tester.startGesture(tester.getCenter(plus));
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
+      expect(find.text('91'), findsOneWidget, reason: 'ten at once');
+
+      await tester.pump(const Duration(milliseconds: 1500));
+      expect(find.text('101'), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 1500));
+      expect(find.text('111'), findsOneWidget);
+
+      await gesture.up();
+      await tester.pump(const Duration(seconds: 3));
+      expect(find.text('111'), findsOneWidget, reason: 'stops when let go');
     });
   });
 
