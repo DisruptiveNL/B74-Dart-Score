@@ -18,6 +18,9 @@ Every mode has the same four screens, and a fifth for the history detail:
 | Cricket | `cricket_setup_screen.dart` | `cricket_screen.dart` | `cricket_summary_screen.dart` | `cricket_history_summary_screen.dart` |
 | Shanghai | `shanghai_setup_screen.dart` | `shanghai_screen.dart` | `shanghai_summary_screen.dart` | `shanghai_history_summary_screen.dart` |
 | Around the Clock | `around_the_clock_setup_screen.dart` | `around_the_clock_screen.dart` | `around_the_clock_summary_screen.dart` | `around_the_clock_history_summary_screen.dart` |
+| Checkout Ladder | `checkout_ladder_setup_screen.dart` | `checkout_ladder_screen.dart` | `checkout_ladder_summary_screen.dart` | `checkout_ladder_history_summary_screen.dart` |
+
+The Checkout Ladder is scored like X01, so its live screen is the X01 input (`DartboardInput<CheckoutLadderProvider>`) under one card per ladder, and on a tablet the input beside the ladders. A training is left two ways: to be resumed from the history, or ended, which stores it as finished and shows the summary. A race can only be left
 
 X01 has a screen of its own for the player/team info opened from the scoreboard during a game, `live_player_stats_screen.dart`. The other three share `mode_live_info_screen.dart`: a tap on a slot's name opens it with the last three visits as dart chips and the numbers that mode is played by, and each live screen builds that data in its own `open<Mode>SlotInfo` from the stats in `utils/`. It rebuilds from the provider, so a bot's visit shows while it is open.
 

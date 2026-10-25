@@ -32,6 +32,7 @@ The building blocks the screens are assembled from. Owns rendering and local UI 
 - `throw_row.dart`, one recorded visit as a list entry, shared by the throw log and the lifetime recent-throws list
 - `throw_log_card.dart`, the "All Throws" log for the X01 summary and history screens
 - `rematch_button.dart`, "Play Again" plus its confirmation dialog
+- `checkout_ladder_result.dart`, the Checkout Ladder's result cards and banner, shared by its summary and its history detail the way the X01 pair shares its cards
 
 ### Transfers and players
 

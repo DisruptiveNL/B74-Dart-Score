@@ -250,6 +250,8 @@ class LadderSlot {
   /// first dart has landed.
   int visitsThisAttempt = 0;
   int checks = 0;
+  /// Darts actually thrown in the attempts that ended in a check.
+  int dartsInChecks = 0;
   int safehouses = 0;
   int busts = 0;
   int drops = 0;
@@ -268,6 +270,14 @@ class LadderSlot {
   int suddenDeathDarts = 0;
 
   LadderSlot({required this.memberCount, required this.position});
+
+  /// Share of the finished attempts that ended in a check, null before the
+  /// first attempt is over.
+  double? get checkRate =>
+      attemptsCompleted == 0 ? null : checks / attemptsCompleted;
+
+  /// Darts a check took on average, null before the first check.
+  double? get dartsPerCheck => checks == 0 ? null : dartsInChecks / checks;
 
   /// The member on turn, counted from zero in team order.
   ///
@@ -368,6 +378,7 @@ class CheckoutLadderEngine {
     if (step.bust) slot.busts++;
     if (step.checked) {
       slot.checks++;
+      slot.dartsInChecks += slot.dartsThisAttempt;
       slot.highestChecked = max(slot.highestChecked ?? 0, step.number);
       if (step.safehouse) slot.safehouses++;
     }

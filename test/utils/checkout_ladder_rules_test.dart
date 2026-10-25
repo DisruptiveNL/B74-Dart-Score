@@ -179,6 +179,8 @@ void main() {
       expect(slot.drops, 2);
       expect(slot.highestChecked, 82);
       expect(slot.attemptsCompleted, 9);
+      expect(slot.dartsPerCheck, closeTo((5 + 3 + 6) / 3, 1e-9));
+      expect(slot.checkRate, closeTo(3 / 9, 1e-9));
     });
 
     test('a falling slot has a single attempt', () {

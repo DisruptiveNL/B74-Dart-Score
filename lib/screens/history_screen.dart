@@ -8,11 +8,13 @@ import '../models/game.dart';
 import '../models/player.dart';
 import '../models/shanghai_game.dart';
 import '../models/around_the_clock_game.dart';
+import '../models/checkout_ladder_game.dart' show CheckoutLadderGame;
 import '../providers/cricket_provider.dart';
 import '../providers/game_provider.dart';
 import '../providers/tablet_layout_provider.dart';
 import '../providers/shanghai_provider.dart';
 import '../providers/around_the_clock_provider.dart';
+import '../providers/checkout_ladder_provider.dart';
 import '../utils/game_labels.dart';
 import 'cricket_history_summary_screen.dart';
 import 'cricket_screen.dart';
@@ -22,10 +24,12 @@ import 'shanghai_history_summary_screen.dart';
 import 'shanghai_screen.dart';
 import 'around_the_clock_history_summary_screen.dart';
 import 'around_the_clock_screen.dart';
+import 'checkout_ladder_history_summary_screen.dart';
+import 'checkout_ladder_screen.dart';
 import '../utils/layout.dart';
 import '../utils/player_label.dart';
 
-enum _ModeFilter { all, x01, cricket, shanghai, aroundTheClock }
+enum _ModeFilter { all, x01, cricket, shanghai, aroundTheClock, checkoutLadder }
 
 /// Lists all past games across every mode, split into Open and Finished tabs
 /// with per-mode filters. Supports resuming, opening details, and deleting.
@@ -63,10 +67,11 @@ class _HistoryScreenState extends State<HistoryScreen>
   static bool _matchesFilter(_HistoryEntry e, _ModeFilter f) {
     switch (f) {
       case _ModeFilter.all:           return true;
-      case _ModeFilter.x01:           return !e.isCricket && !e.isShanghai && !e.isAroundTheClock;
+      case _ModeFilter.x01:           return e.isX01;
       case _ModeFilter.cricket:       return e.isCricket;
       case _ModeFilter.shanghai:      return e.isShanghai;
       case _ModeFilter.aroundTheClock: return e.isAroundTheClock;
+      case _ModeFilter.checkoutLadder: return e.isCheckoutLadder;
     }
   }
 
@@ -116,6 +121,9 @@ class _HistoryScreenState extends State<HistoryScreen>
     for (final g in await db.getAroundTheClockGames()) {
       entries.add(_HistoryEntry.aroundTheClock(g, resolve(g.playerIds)));
     }
+    for (final g in await db.getCheckoutLadderGames()) {
+      entries.add(_HistoryEntry.checkoutLadder(g, resolve(g.playerIds)));
+    }
 
     entries.sort((a, b) => b.createdAt.compareTo(a.createdAt));
     return entries;
@@ -140,6 +148,8 @@ class _HistoryScreenState extends State<HistoryScreen>
       await db.deleteShanghaiGame(entry.shanghaiGame!.id!);
     } else if (entry.isAroundTheClock) {
       await db.deleteAroundTheClockGame(entry.aroundTheClockGame!.id!);
+    } else if (entry.isCheckoutLadder) {
+      await db.deleteCheckoutLadderGame(entry.checkoutLadderGame!.id!);
     } else {
       await db.snapshotGameStats(entry.x01Game!.id!);
       await db.deleteGame(entry.x01Game!.id!);
@@ -163,7 +173,9 @@ class _HistoryScreenState extends State<HistoryScreen>
                 ? l.gameModeCricket
                 : _currentFilter == _ModeFilter.shanghai
                     ? l.gameModeShanghai
-                    : l.gameModeAroundTheClock;
+                    : _currentFilter == _ModeFilter.aroundTheClock
+                        ? l.gameModeAroundTheClock
+                        : l.gameModeCheckoutLadder;
 
     final confirmed = await showDialog<bool>(
       context: context,
@@ -198,7 +210,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       // Every X01 game, finished or not: the statistics screen counts throws
       // from open games too, so skipping them here would drop those from the
       // lifetime totals. Deleting a single game does the same.
-      if (!e.isCricket && !e.isShanghai && !e.isAroundTheClock) {
+      if (e.isX01) {
         await db.snapshotGameStats(e.x01Game!.id!);
       }
     }
@@ -209,6 +221,8 @@ class _HistoryScreenState extends State<HistoryScreen>
         await db.deleteShanghaiGame(e.shanghaiGame!.id!);
       } else if (e.isAroundTheClock) {
         await db.deleteAroundTheClockGame(e.aroundTheClockGame!.id!);
+      } else if (e.isCheckoutLadder) {
+        await db.deleteCheckoutLadderGame(e.checkoutLadderGame!.id!);
       } else {
         await db.deleteGame(e.x01Game!.id!);
       }
@@ -273,6 +287,19 @@ class _HistoryScreenState extends State<HistoryScreen>
     }
   }
 
+  /// Resumes a Checkout Ladder game and opens its play screen, reloading on return.
+  Future<void> _resumeCheckoutLadder(
+      BuildContext context, _HistoryEntry entry) async {
+    if (entry.players.isEmpty) return;
+    final provider = context.read<CheckoutLadderProvider>();
+    await provider.resumeGame(entry.checkoutLadderGame!, entry.players);
+    if (context.mounted) {
+      Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const CheckoutLadderScreen()))
+          .then((_) => _reload());
+    }
+  }
+
   /// The detail view of [e], for the route on a phone and the pane on a tablet.
   Widget _detailFor(_HistoryEntry e, {required bool embedded}) {
     if (e.isCricket) {
@@ -286,6 +313,10 @@ class _HistoryScreenState extends State<HistoryScreen>
     if (e.isAroundTheClock) {
       return AroundTheClockHistorySummaryScreen(
           game: e.aroundTheClockGame!, players: e.players, embedded: embedded);
+    }
+    if (e.isCheckoutLadder) {
+      return CheckoutLadderHistorySummaryScreen(
+          game: e.checkoutLadderGame!, players: e.players, embedded: embedded);
     }
     return HistoryGameSummaryScreen(
         game: e.x01Game!, players: e.players, embedded: embedded);
@@ -394,7 +425,9 @@ class _HistoryScreenState extends State<HistoryScreen>
                         ? _resumeShanghai(context, e)
                         : e.isAroundTheClock
                             ? _resumeAroundTheClock(context, e)
-                            : _resumeX01(context, e),
+                            : e.isCheckoutLadder
+                                ? _resumeCheckoutLadder(context, e)
+                                : _resumeX01(context, e),
                 onShowSummary: (_) {},
               ),
               // The pane belongs to this tab rather than to the screen. Around
@@ -546,6 +579,8 @@ class _TabContentState extends State<_TabContent>
         modes.add(_ModeFilter.shanghai);
       } else if (e.isAroundTheClock) {
         modes.add(_ModeFilter.aroundTheClock);
+      } else if (e.isCheckoutLadder) {
+        modes.add(_ModeFilter.checkoutLadder);
       } else {
         modes.add(_ModeFilter.x01);
       }
@@ -561,6 +596,7 @@ class _TabContentState extends State<_TabContent>
       case _ModeFilter.cricket:        return l.gameModeCricket;
       case _ModeFilter.shanghai:       return l.gameModeShanghai;
       case _ModeFilter.aroundTheClock: return l.gameModeAroundTheClock;
+      case _ModeFilter.checkoutLadder: return l.gameModeCheckoutLadder;
     }
   }
 
@@ -588,6 +624,7 @@ class _TabContentState extends State<_TabContent>
     final chips = [
       _ModeFilter.all, _ModeFilter.x01, _ModeFilter.cricket,
       _ModeFilter.shanghai, _ModeFilter.aroundTheClock,
+      _ModeFilter.checkoutLadder,
     ].where((f) => f == _ModeFilter.all || present.contains(f)).toList();
 
     return Center(
@@ -678,6 +715,7 @@ class _HistoryEntry {
   final CricketGame?         cricketGame;
   final ShanghaiGame?        shanghaiGame;
   final AroundTheClockGame?  aroundTheClockGame;
+  final CheckoutLadderGame?  checkoutLadderGame;
   final List<Player>         players;
 
   const _HistoryEntry._({
@@ -685,6 +723,7 @@ class _HistoryEntry {
     this.cricketGame,
     this.shanghaiGame,
     this.aroundTheClockGame,
+    this.checkoutLadderGame,
     required this.players,
   });
 
@@ -700,15 +739,21 @@ class _HistoryEntry {
   factory _HistoryEntry.aroundTheClock(AroundTheClockGame g, List<Player> players) =>
       _HistoryEntry._(aroundTheClockGame: g, players: players);
 
+  factory _HistoryEntry.checkoutLadder(CheckoutLadderGame g, List<Player> players) =>
+      _HistoryEntry._(checkoutLadderGame: g, players: players);
+
   bool get isCricket        => cricketGame != null;
   bool get isShanghai       => shanghaiGame != null;
   bool get isAroundTheClock => aroundTheClockGame != null;
+  bool get isCheckoutLadder => checkoutLadderGame != null;
+  bool get isX01            => x01Game != null;
 
   /// The wrapped game's creation time, regardless of mode.
   DateTime get createdAt {
     if (isCricket) return cricketGame!.createdAt;
     if (isShanghai) return shanghaiGame!.createdAt;
     if (isAroundTheClock) return aroundTheClockGame!.createdAt;
+    if (isCheckoutLadder) return checkoutLadderGame!.createdAt;
     return x01Game!.createdAt;
   }
 
@@ -717,6 +762,7 @@ class _HistoryEntry {
     if (isCricket) return cricketGame!.finishedAt;
     if (isShanghai) return shanghaiGame!.finishedAt;
     if (isAroundTheClock) return aroundTheClockGame!.finishedAt;
+    if (isCheckoutLadder) return checkoutLadderGame!.finishedAt;
     return x01Game!.finishedAt;
   }
 }
@@ -760,7 +806,14 @@ class _GameTile extends StatelessWidget {
             : entry.isAroundTheClock
                 ? l.aroundClockGameInfo(
                     aroundTheClockVariantLabel(l, entry.aroundTheClockGame!.variant))
-                : l.gameSummaryInfo(
+                : entry.isCheckoutLadder
+                    ? (entry.checkoutLadderGame!.isRace
+                        ? l.checkoutLadderRaceInfo(
+                            entry.checkoutLadderGame!.startNumber,
+                            entry.checkoutLadderGame!.targetNumber!)
+                        : l.checkoutLadderTrainingInfo(
+                            entry.checkoutLadderGame!.startNumber))
+                    : l.gameSummaryInfo(
                     entry.x01Game!.startScore,
                     entry.x01Game!.legs,
                     entry.x01Game!.sets,
@@ -770,10 +823,17 @@ class _GameTile extends StatelessWidget {
     final entryId = entry.x01Game?.id ??
         entry.cricketGame?.id ??
         entry.shanghaiGame?.id ??
-        entry.aroundTheClockGame?.id;
+        entry.aroundTheClockGame?.id ??
+        entry.checkoutLadderGame?.id;
     final entryPrefix = entry.isCricket
         ? 'c'
-        : (entry.isShanghai ? 's' : (entry.isAroundTheClock ? 'a' : 'x'));
+        : entry.isShanghai
+            ? 's'
+            : entry.isAroundTheClock
+                ? 'a'
+                : entry.isCheckoutLadder
+                    ? 'l'
+                    : 'x';
 
     return Dismissible(
       key: ValueKey('$entryPrefix$entryId'),
@@ -814,7 +874,9 @@ class _GameTile extends StatelessWidget {
                             ? Icons.layers_rounded
                             : entry.isAroundTheClock
                                 ? Icons.watch_later_outlined
-                                : (finished
+                                : entry.isCheckoutLadder
+                                    ? Icons.stairs_rounded
+                                    : (finished
                                     ? Icons.check
                                     : Icons.play_arrow_rounded),
                     size: 18,

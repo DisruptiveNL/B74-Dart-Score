@@ -57,7 +57,7 @@ dart run tool/compose_store_screenshots.dart
 
 ## Architecture
 
-The app supports four game modes: **X01** (the original "Game"), **Cricket**, **Shanghai**, and **Around the Clock**. Each non-X01 mode has its own model, provider, and set of setup/play/summary/history screens, mirroring the X01 structure.
+The app supports five game modes: **X01** (the original "Game"), **Cricket**, **Shanghai**, **Around the Clock** and the **Checkout Ladder**. Each non-X01 mode has its own model, provider, and set of setup/play/summary/history screens, mirroring the X01 structure.
 
 ```
 lib/
