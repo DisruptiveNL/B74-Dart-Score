@@ -706,7 +706,7 @@ class _NumberDialogState extends State<_NumberDialog> {
 /// let go or the number reaches its bound.
 class _StepButton extends StatefulWidget {
   /// How often a held button moves the number again.
-  static const repeatEvery = Duration(milliseconds: 1500);
+  static const repeatEvery = Duration(milliseconds: 800);
 
   final IconData icon;
   final bool enabled;

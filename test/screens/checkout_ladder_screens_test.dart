@@ -295,7 +295,7 @@ void main() {
       expect(find.text('From 2 to 169'), findsOneWidget);
     });
 
-    testWidgets('keep adding ten every second and a half while held',
+    testWidgets('keep adding ten every 0.8 seconds while held',
         (tester) async {
       usePhoneSurface(tester);
       await tester.pumpWidget(testApp(ChangeNotifierProvider(
@@ -309,9 +309,9 @@ void main() {
       await tester.pump(kLongPressTimeout + const Duration(milliseconds: 50));
       expect(find.text('91'), findsOneWidget, reason: 'ten at once');
 
-      await tester.pump(const Duration(milliseconds: 1500));
+      await tester.pump(const Duration(milliseconds: 800));
       expect(find.text('101'), findsOneWidget);
-      await tester.pump(const Duration(milliseconds: 1500));
+      await tester.pump(const Duration(milliseconds: 800));
       expect(find.text('111'), findsOneWidget);
 
       await gesture.up();
