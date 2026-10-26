@@ -118,6 +118,11 @@ void main() {
       server.approve();
 
       expect(await fetch, payload);
+
+      await _until(
+        () => server.state.value == SyncServerState.served,
+      );
+
       expect(server.state.value, SyncServerState.served);
     });
 
@@ -262,12 +267,18 @@ void main() {
         // asks the receiver to keep reading for as long as it keeps sending.
         socket.write('Connection: close\r\n\r\n');
 
-        const slice = 64 * 1024;
-        for (var written = 0; written < sends; written += slice) {
-          socket.add(Uint8List(min(slice, sends - written)));
-          await socket.flush();
+        try {
+          const slice = 64 * 1024;
+          for (var written = 0; written < sends; written += slice) {
+            socket.add(Uint8List(min(slice, sends - written)));
+            await socket.flush();
+          }
+        } on SocketException {
+          // The receiver may intentionally close the connection
+          // after detecting that the payload exceeds its size limit.
+        } finally {
+          socket.destroy();
         }
-        await socket.close();
       });
       return (
         listener,

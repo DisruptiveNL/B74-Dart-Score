@@ -18,7 +18,7 @@
         android:usesPermissionFlags="neverForLocation" />
 
     <application
-        android:label="DartScore"
+        android:label="B74 Dart Score"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

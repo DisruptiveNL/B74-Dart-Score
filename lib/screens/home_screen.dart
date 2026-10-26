@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/donation_provider.dart';
-import '../widgets/dartboard_icon.dart';
+
+/// import '../widgets/dartboard_icon.dart';
 import 'players_screen.dart';
 import 'game_mode_selection_screen.dart';
 import 'history_screen.dart';
@@ -62,14 +63,13 @@ class HomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const DartboardIcon(size: 110),
-                  const SizedBox(height: 16),
-                  Text(
-                    l.appName,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.displaySmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: cs.primary,
+                  Center(
+                    child: Image.asset(
+                      'assets/icon/app_icon.png',
+                      width: tablet ? 260 : 190,
+                      height: tablet ? 260 : 190,
+                      fit: BoxFit.contain,
+                      semanticLabel: 'B74 Dart Score',
                     ),
                   ),
                   if (isSupporter) ...[
@@ -83,7 +83,8 @@ class HomeScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const GameModeSelectionScreen()),
+                        builder: (_) => const GameModeSelectionScreen(),
+                      ),
                     ),
                     primary: true,
                   ),
@@ -95,7 +96,8 @@ class HomeScreen extends StatelessWidget {
                     Row(
                       children: [
                         for (final entry in secondary) ...[
-                          if (entry != secondary.first) const SizedBox(width: 14),
+                          if (entry != secondary.first)
+                            const SizedBox(width: 14),
                           Expanded(child: entry),
                         ],
                       ],

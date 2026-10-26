@@ -63,6 +63,8 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/icon/app_icon.png
   # assets/icon/app_icon.png is deliberately not bundled: flutter_launcher_icons
   # reads it from the source tree when generating the launcher icons, and
   # nothing loads it at runtime. Declaring it would ship 270 KB unused.

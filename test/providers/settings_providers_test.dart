@@ -65,12 +65,12 @@ void main() {
   });
 
   group('ThemeProvider', () {
-    test('follows the system until the user picks something', () async {
+    test('defaults to B74 dark when no theme was selected', () async {
       SharedPreferences.setMockInitialValues({});
 
       final provider = await _loaded(ThemeProvider());
 
-      expect(provider.mode, ThemeMode.system);
+      expect(provider.mode, ThemeMode.dark);
     });
 
     test('comes back on the mode the user left it on', () async {
@@ -92,12 +92,12 @@ void main() {
           ThemeMode.light);
     });
 
-    test('falls back to system when the stored value means nothing', () async {
+    test('falls back to B74 dark for an unknown stored theme', () async {
       SharedPreferences.setMockInitialValues({'theme_mode': 'sepia'});
 
       final provider = await _loaded(ThemeProvider());
 
-      expect(provider.mode, ThemeMode.system);
+      expect(provider.mode, ThemeMode.dark);
     });
 
     test('notifies before it has finished writing', () async {

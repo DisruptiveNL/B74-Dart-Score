@@ -202,84 +202,73 @@ class _OrientationLockState extends State<_OrientationLock> {
 class DartScoreApp extends StatelessWidget {
   const DartScoreApp({super.key});
 
-  // ── Accessible dartboard palette ─────────────────────────────────────────
-  // WCAG AA: ≥4.5:1 for text, ≥3:1 for large/UI elements.
-  // Dartboard: cream/black segments, red bull, green double-ring, gold wire.
-
-  static final _lightScheme = ColorScheme(
+  // B74 Blue Edition v0.1 — application chrome only.
+  // Dartboard segment and team identity colors remain unchanged.
+  static final _lightScheme = const ColorScheme(
     brightness: Brightness.light,
-    // Red bull: #B71C1C on white = 7.2:1 ✓✓
-    primary: const Color(0xFFB71C1C),
+    primary: Color(0xFF087CE8),
     onPrimary: Colors.white,
-    primaryContainer: const Color(0xFFFFCDD2),
-    onPrimaryContainer: const Color(0xFF7F0000),
-    // Green double ring: #66BB6A on white = 3.0:1 ✓ (large UI element)
-    secondary: const Color(0xFF66BB6A),
-    onSecondary: const Color(0xFF003909),
-    secondaryContainer: const Color(0xFFA5D6A7),    // more saturated, visible
-    onSecondaryContainer: const Color(0xFF002106),
-    // Triple ring red: #8B0000 on white = 8.1:1 ✓✓
-    tertiary: const Color(0xFF8B0000),
+    primaryContainer: Color(0xFFD7EBFF),
+    onPrimaryContainer: Color(0xFF092D56),
+    secondary: Color(0xFF006A91),
+    onSecondary: Colors.white,
+    secondaryContainer: Color(0xFFC7EEFF),
+    onSecondaryContainer: Color(0xFF00344A),
+    tertiary: Color(0xFF155D9C),
     onTertiary: Colors.white,
-    tertiaryContainer: const Color(0xFFFFCDD2),
-    onTertiaryContainer: const Color(0xFF5F0000),
-    error: const Color(0xFF9B0000),
+    tertiaryContainer: Color(0xFFD7E9FF),
+    onTertiaryContainer: Color(0xFF0A315A),
+    error: Color(0xFFB3261E),
     onError: Colors.white,
-    errorContainer: const Color(0xFFFFDAD6),
-    onErrorContainer: const Color(0xFF410002),
-    // Clean white surface: no warm cream tint → stronger contrast
-    surface: const Color(0xFFFFFFFF),
-    onSurface: const Color(0xFF0D0D0D),             // near-black, 18:1 ✓✓
-    surfaceContainerHighest: const Color(0xFFDDDDDD),
-    surfaceContainerHigh: const Color(0xFFEAEAEA),
-    surfaceContainerLow: const Color(0xFFF5F5F5),
-    surfaceContainer: const Color(0xFFE5E5E5),
-    outline: const Color(0xFF4A4A4A),               // 9.7:1, sharp borders ✓✓
-    outlineVariant: const Color(0xFF9E9E9E),        // 3.9:1, visible dividers ✓
-    onSurfaceVariant: const Color(0xFF2E2E2E),      // 12.6:1, secondary text ✓✓
-    inverseSurface: const Color(0xFF1C1C1C),
-    onInverseSurface: const Color(0xFFF5F5F5),
-    inversePrimary: const Color(0xFFFF8A80),
+    errorContainer: Color(0xFFFFDAD6),
+    onErrorContainer: Color(0xFF410002),
+    surface: Color(0xFFF5F9FF),
+    onSurface: Color(0xFF10243D),
+    surfaceContainerHighest: Color(0xFFD8E6F5),
+    surfaceContainerHigh: Color(0xFFE4EFFB),
+    surfaceContainerLow: Color(0xFFF0F6FF),
+    surfaceContainer: Color(0xFFEAF2FC),
+    outline: Color(0xFF48617E),
+    outlineVariant: Color(0xFFA5BDD6),
+    onSurfaceVariant: Color(0xFF3D5570),
+    inverseSurface: Color(0xFF10243D),
+    onInverseSurface: Color(0xFFF5F9FF),
+    inversePrimary: Color(0xFF7BC6FF),
     shadow: Colors.black,
     scrim: Colors.black,
     surfaceTint: Colors.transparent,
   );
 
-  // iOS-style dark gray: neutral, no warm tint
-  static final _darkScheme = ColorScheme(
+  static final _darkScheme = const ColorScheme(
     brightness: Brightness.dark,
-    // Muted red: not neon, comfortable on dark gray
-    primary: const Color(0xFFEF5350),           // red 400
-    onPrimary: Colors.white,
-    primaryContainer: const Color(0xFF7F0000),
-    onPrimaryContainer: const Color(0xFFFFCDD2),
-    // Muted green
-    secondary: const Color(0xFF1B5E20),         // green 800: deep, calm on dark
-    onSecondary: Colors.white,
-    secondaryContainer: const Color(0xFF1B5E20),
-    onSecondaryContainer: const Color(0xFFC8E6C9),
-    // Triple ring red: muted for dark mode
-    tertiary: const Color(0xFFEF9A9A),          // red 200
-    onTertiary: const Color(0xFF7F0000),
-    tertiaryContainer: const Color(0xFF7F0000),
-    onTertiaryContainer: const Color(0xFFFFCDD2),
-    error: const Color(0xFFFFB4AB),
-    onError: const Color(0xFF690005),
-    errorContainer: const Color(0xFF93000A),
-    onErrorContainer: const Color(0xFFFFDAD6),
-    // iOS dark gray system colors
-    surface: const Color(0xFF1C1C1E),           // iOS systemBackground dark
-    onSurface: const Color(0xFFEEEEEE),
-    surfaceContainerHighest: const Color(0xFF48484A),
-    surfaceContainerHigh: const Color(0xFF3A3A3C),
-    surfaceContainerLow: const Color(0xFF1C1C1E),
-    surfaceContainer: const Color(0xFF2C2C2E),  // iOS secondarySystemBackground
-    outline: const Color(0xFF636366),           // iOS separator
-    outlineVariant: const Color(0xFF3A3A3C),
-    onSurfaceVariant: const Color(0xFFAEAEB2),  // iOS secondaryLabel
-    inverseSurface: const Color(0xFFEEEEEE),
-    onInverseSurface: const Color(0xFF1C1C1E),
-    inversePrimary: const Color(0xFFC62828),
+    primary: Color(0xFF58B7FF),
+    onPrimary: Color(0xFF061B34),
+    primaryContainer: Color(0xFF087CE8),
+    onPrimaryContainer: Colors.white,
+    secondary: Color(0xFF00C8F8),
+    onSecondary: Color(0xFF002C3B),
+    secondaryContainer: Color(0xFF125273),
+    onSecondaryContainer: Color(0xFFDBF7FF),
+    tertiary: Color(0xFF8BC9FF),
+    onTertiary: Color(0xFF062D50),
+    tertiaryContainer: Color(0xFF174B7D),
+    onTertiaryContainer: Color(0xFFE0F1FF),
+    error: Color(0xFFFFB4AB),
+    onError: Color(0xFF690005),
+    errorContainer: Color(0xFF93000A),
+    onErrorContainer: Color(0xFFFFDAD6),
+    surface: Color(0xFF081A35),
+    onSurface: Color(0xFFF6FAFF),
+    surfaceContainerHighest: Color(0xFF244D7D),
+    surfaceContainerHigh: Color(0xFF1A426E),
+    surfaceContainerLow: Color(0xFF0C274B),
+    surfaceContainer: Color(0xFF123B70),
+    outline: Color(0xFF87A9CD),
+    outlineVariant: Color(0xFF40658C),
+    onSurfaceVariant: Color(0xFFBCD6F1),
+    inverseSurface: Color(0xFFF5F9FF),
+    onInverseSurface: Color(0xFF10243D),
+    inversePrimary: Color(0xFF0759A8),
     shadow: Colors.black,
     scrim: Colors.black,
     surfaceTint: Colors.transparent,
@@ -301,9 +290,7 @@ class DartScoreApp extends StatelessWidget {
         scaffoldBackgroundColor: cs.surface,
         cardTheme: CardThemeData(
           elevation: 0,
-          color: cs.brightness == Brightness.light
-              ? const Color(0xFFF5F5F5)   // light gray: visible on white surface
-              : const Color(0xFF2C2C2E),  // iOS secondarySystemBackground
+          color: cs.surfaceContainer,
           shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14)),
         ),
@@ -336,7 +323,7 @@ class DartScoreApp extends StatelessWidget {
       ],
       child: Consumer2<ThemeProvider, LanguageProvider>(
         builder: (context, tp, lp, child) => MaterialApp(
-          title: 'DartScore',
+          title: 'B74 Dart Score',
           debugShowCheckedModeBanner: false,
           themeMode: tp.mode,
           theme: _lightTheme,
