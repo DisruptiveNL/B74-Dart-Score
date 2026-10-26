@@ -58,3 +58,6 @@ app.*.map.json
 # tool/store_screenshots.sh regenerates. Only the framed set under
 # store_assets/screenshots/store/ is kept.
 /store_assets/screenshots/raw/
+
+/B74-Dart-Score-source.zip
+/assets/icon/app_icon_old.png
