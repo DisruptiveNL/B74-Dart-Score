@@ -9,6 +9,7 @@ import '../models/player.dart';
 import '../providers/game_provider.dart';
 import '../utils/game_labels.dart';
 import '../utils/b74_checkout_opportunities.dart';
+import '../utils/b74_checkout_visibility.dart';
 import '../utils/layout.dart';
 import '../utils/throw_stats.dart';
 import '../widgets/finish_suggestion_widget.dart';
@@ -332,6 +333,7 @@ class _SlotStatsPage extends StatelessWidget {
 
     final match = ThrowStats.fromThrows(state.throws);
     final theoretical = B74CheckoutStats.fromThrows(state.throws);
+    final detailedCheckout = hasCompleteDartCheckoutData(state.throws);
     final leg = ThrowStats.fromThrows(
       throwsInLeg(state.throws, currentLeg, currentSet),
     );
@@ -383,11 +385,13 @@ class _SlotStatsPage extends StatelessWidget {
             (l.visits, '${match.totalVisits}'),
             (l.highestVisit, '${match.highestVisit}'),
             (l.highestCheckout, '${match.highestCheckout}'),
-            (
-              l.checkoutsHit,
-              '${match.checkoutSuccesses} / ${match.checkoutAttempts}',
-            ),
-            (l.checkoutRate, '${match.checkoutRate.toStringAsFixed(1)} %'),
+            if (detailedCheckout) ...[
+              (
+                l.checkoutsHit,
+                '${match.checkoutSuccesses} / ${match.checkoutAttempts}',
+              ),
+              (l.checkoutRate, '${match.checkoutRate.toStringAsFixed(1)} %'),
+            ],
             (
               'B74 theoretische finishkansen',
               '${theoretical.finishes} / ${theoretical.opportunities}',
@@ -396,8 +400,10 @@ class _SlotStatsPage extends StatelessWidget {
               'B74 finishpercentage (theoretisch)',
               '${theoretical.rate.toStringAsFixed(1)} %',
             ),
-            (l.dartsAtFinish, '${match.checkoutDarts}'),
-            (l.doubleRate, '${match.doubleRate.toStringAsFixed(1)} %'),
+            if (detailedCheckout) ...[
+              (l.dartsAtFinish, '${match.checkoutDarts}'),
+              (l.doubleRate, '${match.doubleRate.toStringAsFixed(1)} %'),
+            ],
             (
               l.busts,
               '${match.busts} (${match.bustRate.toStringAsFixed(0)} %)',
@@ -938,6 +944,8 @@ class _MemberRow extends StatelessWidget {
     final cs = theme.colorScheme;
     final l = context.l10n;
     final stats = ThrowStats.fromThrows(throws);
+    final theoretical = B74CheckoutStats.fromThrows(throws);
+    final detailedCheckout = hasCompleteDartCheckoutData(throws);
     final hasThrown = stats.totalDarts > 0;
 
     final avatar = CircleAvatar(
@@ -1027,18 +1035,28 @@ class _MemberRow extends StatelessWidget {
           StatRow(label: l.visits, value: '${stats.totalVisits}'),
           StatRow(label: l.highestVisit, value: '${stats.highestVisit}'),
           StatRow(label: l.highestCheckout, value: '${stats.highestCheckout}'),
+          if (detailedCheckout) ...[
+            StatRow(
+              label: l.checkoutsHit,
+              value: '${stats.checkoutSuccesses} / ${stats.checkoutAttempts}',
+            ),
+            StatRow(
+              label: l.checkoutRate,
+              value: '${stats.checkoutRate.toStringAsFixed(1)} %',
+            ),
+            StatRow(label: l.dartsAtFinish, value: '${stats.checkoutDarts}'),
+            StatRow(
+              label: l.doubleRate,
+              value: '${stats.doubleRate.toStringAsFixed(1)} %',
+            ),
+          ],
           StatRow(
-            label: l.checkoutsHit,
-            value: '${stats.checkoutSuccesses} / ${stats.checkoutAttempts}',
+            label: 'B74 theoretische finishkansen',
+            value: '${theoretical.finishes} / ${theoretical.opportunities}',
           ),
           StatRow(
-            label: l.checkoutRate,
-            value: '${stats.checkoutRate.toStringAsFixed(1)} %',
-          ),
-          StatRow(label: l.dartsAtFinish, value: '${stats.checkoutDarts}'),
-          StatRow(
-            label: l.doubleRate,
-            value: '${stats.doubleRate.toStringAsFixed(1)} %',
+            label: 'B74 finishpercentage (theoretisch)',
+            value: '${theoretical.rate.toStringAsFixed(1)} %',
           ),
           StatRow(
             label: l.busts,
