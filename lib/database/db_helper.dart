@@ -1208,6 +1208,45 @@ class DbHelper {
     await d.delete('dart_throws', where: 'id = ?', whereArgs: [id]);
   }
 
+  /// Atomically updates a numeric visit and its later remaining-before values.
+  /// No partial correction is ever visible to the game replay.
+  Future<void> correctNumericVisit(
+      int gameId, int throwId, int score, int dartsUsed,
+      Map<int, int> laterRemainingBefore) async {
+    final database = await db;
+    await database.transaction((txn) async {
+      final changed = await txn.update('dart_throws',
+          {'score': score, 'darts_used': dartsUsed},
+          where: 'id = ? AND game_id = ?', whereArgs: [throwId, gameId]);
+      if (changed != 1) throw StateError('Beurt niet gevonden');
+      for (final entry in laterRemainingBefore.entries) {
+        await txn.update('dart_throws',
+            {'remaining_before': entry.value},
+            where: 'id = ? AND game_id = ?',
+            whereArgs: [entry.key, gameId]);
+      }
+    });
+  }
+
+  /// Atomically corrects visit kind as well as score and dart count.
+  Future<void> correctVisit(int gameId, int throwId, int score,
+      int dartsUsed, bool bust, Map<int, int> laterRemainingBefore) async {
+    final database = await db;
+    await database.transaction((txn) async {
+      final changed = await txn.update('dart_throws',
+          {'score': score, 'darts_used': dartsUsed, 'bust': bust ? 1 : 0,
+           'checkout_darts': 0},
+          where: 'id = ? AND game_id = ?', whereArgs: [throwId, gameId]);
+      if (changed != 1) throw StateError('Beurt niet gevonden');
+      for (final entry in laterRemainingBefore.entries) {
+        await txn.update('dart_throws',
+            {'remaining_before': entry.value},
+            where: 'id = ? AND game_id = ?',
+            whereArgs: [entry.key, gameId]);
+      }
+    });
+  }
+
   /// All throws for an X01 game in chronological order.
   Future<List<DartThrow>> getThrowsForGame(int gameId) async {
     final d = await db;

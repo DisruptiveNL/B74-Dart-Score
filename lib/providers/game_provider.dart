@@ -1129,8 +1129,9 @@ class GameProvider extends ChangeNotifier
         'Wissel niet tussen dart- en beurtinvoer binnen een beurt',
       );
     }
-    if (score < 0 || score > 180)
+    if (score < 0 || score > 180) {
       throw ArgumentError('Score moet tussen 0 en 180 liggen');
+    }
     if (bust && score != 0) throw ArgumentError('BUST heeft altijd score 0');
     if (bust && (bustDarts == null || bustDarts < 1 || bustDarts > 3)) {
       throw ArgumentError('Selecteer bij BUST dart 1, 2 of 3');
@@ -1154,8 +1155,9 @@ class GameProvider extends ChangeNotifier
     if (checkout && (finishDart == null || finishDart < 1 || finishDart > 3)) {
       throw ArgumentError('Selecteer finishdart 1, 2 of 3');
     }
-    if (!checkout && finishDart != null)
+    if (!checkout && finishDart != null) {
       throw ArgumentError('Geen finishdart zonder checkout');
+    }
     if (checkout &&
         !b74CanFinishInDarts(remaining, finishDart!, currentCheckoutMode)) {
       throw ArgumentError(
@@ -1175,6 +1177,99 @@ class GameProvider extends ChangeNotifier
         bust ? bustDarts! : (checkout ? finishDart! : 3),
         bust: bust,
       );
+    } finally {
+      _numericVisitSubmitting = false;
+    }
+  }
+
+  /// The three most recent visits by this player in the active leg.
+  /// Completed legs are intentionally not editable.
+  List<DartThrow> correctableVisits(int slotIndex) {
+    if (_game == null || _gameOver || slotIndex < 0 || slotIndex >= _playerStates.length) {
+      return const [];
+    }
+    final visits = _playerStates[slotIndex].throws
+        .where((t) => t.leg == _currentLeg && t.set == _currentSet &&
+            t.hitsJson == null &&
+            t.remainingAfter > 0)
+        .toList();
+    return visits.reversed.take(3).toList();
+  }
+
+  /// Correct a numeric visit without adding a turn or changing who throws.
+  /// Recalculates subsequent visits for that player and rejects a correction
+  /// if it would invalidate any later score, bust or checkout.
+  Future<void> correctNumericVisit(
+      int slotIndex, int throwId, int newScore, int dartsUsed) =>
+      correctVisit(slotIndex, throwId, newScore, dartsUsed,
+          bust: correctableVisits(slotIndex).firstWhere((t) => t.id == throwId).bust);
+
+  /// Correct the score, BUST flag and dart count as one atomic visit update.
+  Future<void> correctVisit(int slotIndex, int throwId, int newScore,
+      int dartsUsed, {required bool bust}) async {
+    if (_game == null || _gameOver || _numericVisitSubmitting ||
+        _currentVisitDarts.isNotEmpty || isBotTurn || inputLocked) {
+      throw StateError('Correctie is momenteel niet beschikbaar');
+    }
+    if (newScore < 0 || newScore > 180 || dartsUsed < 1 ||
+        dartsUsed > 3 || newScore > dartsUsed * 60) {
+      throw ArgumentError('Ongeldige score of aantal darts');
+    }
+    final candidates = correctableVisits(slotIndex);
+    if (!candidates.any((t) => t.id == throwId)) {
+      throw StateError('Deze beurt kan niet worden gecorrigeerd');
+    }
+    if (bust && newScore != 0) {
+      throw ArgumentError('BUST heeft altijd 0 punten');
+    }
+    final state = _playerStates[slotIndex];
+    final visits = state.throws.where((t) =>
+        t.leg == _currentLeg && t.set == _currentSet).toList();
+    // A recorded first remainingBefore also supports games with a custom
+    // starting score; never assume the configured default is the first visit.
+    var remaining = visits.isEmpty ? _game!.startScore : visits.first.remainingBefore;
+    final changes = <int, int>{};
+    for (final t in visits) {
+      final score = t.id == throwId ? newScore : t.score;
+      final isBust = t.id == throwId ? bust : t.bust;
+      if (t.id != throwId) changes[t.id!] = remaining;
+      if (t.bust && t.id != throwId && remaining != t.remainingBefore) {
+        throw StateError('Correctie verandert de uitgangspositie van een latere BUST');
+      }
+      if (isBust && score != 0) {
+        throw StateError('BUST moet 0 punten behouden');
+      }
+      if (!isBust) {
+        if (score > remaining || (score == remaining &&
+            _game!.checkoutMode != CheckoutMode.straightOut)) {
+          throw StateError('Correctie maakt een latere beurt ongeldig');
+        }
+        remaining -= score;
+        if (remaining <= 0 ||
+            (remaining == 1 && _game!.checkoutMode != CheckoutMode.straightOut)) {
+          throw StateError('Correctie maakt een latere beurt ongeldig');
+        }
+      }
+    }
+    _numericVisitSubmitting = true;
+    try {
+      await _db.correctVisit(_game!.id!, throwId, newScore,
+          dartsUsed, bust, changes);
+      final players = _playerStates.expand((s) => s.players).toList();
+      final activeSlotIndex = _currentPlayerIndex;
+      final activePlayerId = currentPlayerState.player.id;
+      await _rebuildFromDb(_game!, players);
+      // Replay should preserve the active turn; never silently switch players.
+      if (_game!.isTeamGame) {
+        // Team member rotation is derived from persisted visit order.
+        // Keep the active team slot, not an individual teammate's index.
+        _currentPlayerIndex = activeSlotIndex;
+      } else if (currentPlayerState.player.id != activePlayerId) {
+        final index = _playerStates.indexWhere((s) =>
+            s.player.id == activePlayerId);
+        if (index >= 0) _currentPlayerIndex = index;
+      }
+      notifyListeners();
     } finally {
       _numericVisitSubmitting = false;
     }

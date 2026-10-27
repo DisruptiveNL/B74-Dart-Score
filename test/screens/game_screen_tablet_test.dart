@@ -155,10 +155,10 @@ void main() {
       await pumpGame(tester, surface: _tabletLandscape);
       final pane = tester.getRect(find.byType(B74NumericInput));
       final accept = tester.getRect(find.text('ACCEPT'));
-      final miss = tester.getRect(find.text('MISS'));
+      final bust = tester.getRect(find.text('BUST'));
       expect(accept.bottom, lessThanOrEqualTo(pane.bottom));
       expect(pane.bottom - accept.bottom, lessThan(30));
-      expect(miss.top, lessThan(accept.top));
+      expect(bust.top, lessThan(accept.top));
     });
 
     testWidgets('names the slot its stats belong to', (tester) async {
@@ -175,9 +175,9 @@ void main() {
         (tester) async {
       await pumpGame(tester, surface: _tabletPortrait);
       final accept = tester.getRect(find.text('ACCEPT'));
-      final miss = tester.getRect(find.text('MISS'));
+      final bust = tester.getRect(find.text('BUST'));
       final pane = tester.getRect(find.byType(B74NumericInput));
-      expect(miss.top, lessThan(accept.top));
+      expect(bust.top, lessThan(accept.top));
       expect(accept.bottom, lessThanOrEqualTo(pane.bottom));
     });
 

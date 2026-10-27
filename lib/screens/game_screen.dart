@@ -5,6 +5,7 @@ import '../providers/game_provider.dart';
 import '../providers/tablet_layout_provider.dart';
 import '../widgets/dartboard_input.dart';
 import '../widgets/b74_numeric_input.dart';
+import '../widgets/b74_score_correction.dart';
 import '../widgets/finish_suggestion_widget.dart';
 import '../models/game.dart';
 import 'game_summary_screen.dart';
@@ -114,19 +115,26 @@ class _GameScreenState extends State<GameScreen> {
         // Fixed-height area for the checkout hint so buttons never shift
         final checkoutHint = SizedBox(
           height: 62 * hintScale,
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 200),
-            child: FinishSuggestionWidget(
-              key: ValueKey(
-                '${liveBust ? current.remaining : displayRemaining}_$liveDartsInVisit',
+          child: Row(children: [
+            if (!isSolo) Expanded(child: B74ScoreCorrection(slotIndex: 0)),
+            Expanded(
+              flex: 3,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 200),
+                child: FinishSuggestionWidget(
+                  key: ValueKey(
+                    '${liveBust ? current.remaining : displayRemaining}_$liveDartsInVisit',
+                  ),
+                  remaining: liveBust ? current.remaining : displayRemaining,
+                  favoriteDouble: current.player.favoriteDouble,
+                  dartsThrown: liveDartsInVisit,
+                  checkoutMode: currentHasCheckedIn ? currentCheckOut : CheckoutMode.doubleOut,
+                  scale: hintScale,
+                ),
               ),
-              remaining: liveBust ? current.remaining : displayRemaining,
-              favoriteDouble: current.player.favoriteDouble,
-              dartsThrown: liveDartsInVisit,
-              checkoutMode: currentHasCheckedIn ? currentCheckOut : CheckoutMode.doubleOut,
-              scale: hintScale,
             ),
-          ),
+            if (!isSolo) Expanded(child: B74ScoreCorrection(slotIndex: 1)),
+          ]),
         );
 
         // The hint belongs to the score, and travels with it unless a layout

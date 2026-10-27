@@ -75,7 +75,7 @@ void main() {
     }) {
       final limit = surface.height - insets.bottom;
 
-      for (final label in ['MISS', 'ACCEPT']) {
+      for (final label in ['BUST', 'ACCEPT']) {
         final finder = find.text(label);
 
         expect(
@@ -131,12 +131,14 @@ void main() {
       expectActionRowVisible(tester, _seSurface);
     });
 
-    testWidgets('MISS and BUST have equally sized touch targets', (tester) async {
+    testWidgets('BUST and ACCEPT have usable touch targets', (tester) async {
       await pumpGame(tester, ['Ada', 'Zoe']);
-      final miss = tester.getRect(find.text('MISS'));
-      final bust = tester.getRect(find.text('BUST').last);
-      expect(miss.width, moreOrLessEquals(bust.width, epsilon: 1));
-      expect(miss.height, moreOrLessEquals(bust.height, epsilon: 1));
+      final bust = tester.getSize(find.widgetWithText(OutlinedButton, 'BUST'));
+      final accept = tester.getSize(find.widgetWithText(FilledButton, 'ACCEPT'));
+      for (final size in [bust, accept]) {
+        expect(size.width, greaterThanOrEqualTo(44));
+        expect(size.height, greaterThanOrEqualTo(44));
+      }
     });
 
     testWidgets('numeric input offers quick scores and confirmation', (tester) async {
@@ -144,6 +146,7 @@ void main() {
       for (final score in ['26', '30', '57', '41', '45', '60', '95', '100', '140', '180']) {
         expect(find.text(score), findsWidgets);
       }
+      expect(find.text('BUST'), findsOneWidget);
       expect(find.text('ACCEPT'), findsOneWidget);
       expect(find.text('CLEAR'), findsOneWidget);
     });
@@ -186,8 +189,8 @@ void main() {
 
     testWidgets('action buttons stay large enough to hit', (tester) async {
       await pumpGame(tester, ['Ada', 'Zoe', 'Ben', 'Cleo']);
-      final button = tester.getSize(find.widgetWithText(OutlinedButton, 'MISS'));
-      expect(button.height, greaterThanOrEqualTo(30));
+      final button = tester.getSize(find.widgetWithText(OutlinedButton, 'BUST'));
+      expect(button.height, greaterThanOrEqualTo(44));
       expect(button.width, greaterThanOrEqualTo(44));
     });
   });

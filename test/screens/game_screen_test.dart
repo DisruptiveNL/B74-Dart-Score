@@ -1,7 +1,6 @@
 import 'package:dartscore_app/database/db_helper.dart';
 import 'package:dartscore_app/models/game.dart';
 import 'package:dartscore_app/models/player.dart';
-import 'package:dartscore_app/providers/bot_runner.dart';
 import 'package:dartscore_app/widgets/b74_numeric_input.dart';
 import 'package:dartscore_app/providers/game_provider.dart';
 import 'package:dartscore_app/screens/game_screen.dart';
