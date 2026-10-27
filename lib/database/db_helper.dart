@@ -782,6 +782,15 @@ class DbHelper {
     });
   }
 
+  /// True only for games linked to an official competition single.
+  Future<bool> isCompetitionGame(int gameId) async {
+    final d = await db;
+    final rows = await d.query('competition_game_links',
+        columns: ['game_id'], where: 'game_id = ?',
+        whereArgs: [gameId], limit: 1);
+    return rows.isNotEmpty;
+  }
+
   Future<int?> competitionGameId(String matchId, int slot) async {
     final d = await db;
     final rows = await d.query('competition_game_links',

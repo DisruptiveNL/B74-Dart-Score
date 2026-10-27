@@ -344,6 +344,8 @@ class GameProvider extends ChangeNotifier
   final DbHelper _db = DbHelper.instance;
 
   Game? _game;
+  // Competition singles alternate leg starters independently of the checkout winner.
+  bool _competitionSingle = false;
   List<PlayerState> _playerStates = [];
   int _currentPlayerIndex = 0;
   int _currentLeg = 1;
@@ -544,6 +546,7 @@ class GameProvider extends ChangeNotifier
     _redoStack.clear();
     dropHeldVisit();
 
+    _competitionSingle = await _db.isCompetitionGame(game.id!);
     final allThrowsRaw = await _db.getThrowsForGame(game.id!);
 
     final throwsByPlayer = <int, List<DartThrow>>{};
@@ -836,10 +839,32 @@ class GameProvider extends ChangeNotifier
       );
     }).toList();
 
-    _resumePickTurn();
+    if (_competitionSingle && _playerStates.length == 2) {
+      _resumeCompetitionTurn(maxLeg, maxSet);
+    } else {
+      _resumePickTurn();
+    }
 
     _currentLeg = maxLeg;
     _currentSet = maxSet;
+  }
+
+  /// Competition resume: on a fresh leg start with the alternating slot,
+  /// otherwise resume after the last visit in this leg (not the last checkout
+  /// of the previous leg). The slot order is fixed at game creation.
+  void _resumeCompetitionTurn(int leg, int set) {
+    DartThrow? last;
+    var lastSlot = -1;
+    for (var i = 0; i < _playerStates.length; i++) {
+      for (final t in _playerStates[i].throws) {
+        if (t.leg != leg || t.set != set) continue;
+        if (last == null || _byThrowOrder(t, last) > 0) {
+          last = t;
+          lastSlot = i;
+        }
+      }
+    }
+    _currentPlayerIndex = lastSlot < 0 ? (leg - 1) % 2 : (lastSlot + 1) % 2;
   }
 
   /// The index of the slot the final ranking puts first, through the one order
@@ -1023,6 +1048,7 @@ class GameProvider extends ChangeNotifier
     String? starterExternalId,
   }) async {
     _handicaps = game.handicaps ?? {};
+    _competitionSingle = competitionMatchId != null;
 
     final ids = players.map((p) => p.id!).toList();
     final gameId = await _db.insertGame(game, ids,
@@ -1425,7 +1451,11 @@ class GameProvider extends ChangeNotifier
     );
 
     _resetScores();
-    _advancePlayer();
+    if (_competitionSingle && _playerStates.length == 2) {
+      _currentPlayerIndex = (_currentLeg - 1) % 2;
+    } else {
+      _advancePlayer();
+    }
   }
 
   /// Resolves a checkout in a placement-mode game: records this slot's
