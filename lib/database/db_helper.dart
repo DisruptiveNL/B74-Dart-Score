@@ -11,6 +11,7 @@ import '../models/cricket_game.dart';
 import '../models/shanghai_game.dart';
 import '../models/around_the_clock_game.dart';
 import '../models/checkout_ladder_game.dart' show CheckoutLadderGame, CheckoutLadderThrow;
+import '../services/competition_single_result_lifecycle.dart';
 import '../services/sync_service.dart' show SyncOrigin, kLegacyOrigin;
 import '../utils/finish_calculator.dart';
 import '../utils/game_winner.dart';
@@ -28,7 +29,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 27;
+  static const int schemaVersion = 28;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -277,6 +278,9 @@ class DbHelper {
     if (oldVersion < 27) {
       await _createCompetitionGameLinks(db);
     }
+    if (oldVersion < 28) {
+      await _createCompetitionSingleResults(db);
+    }
   }
 
   /// Recomputes `dart_throws.checkout_darts` for every visit already on the
@@ -499,6 +503,97 @@ class DbHelper {
         'FOREIGN KEY(game_id) REFERENCES games(id))');
   }
 
+  /// Durable per-single outbox. An acknowledgement, not a send attempt,
+  /// is what makes the result immutable.
+  Future<void> _createCompetitionSingleResults(Database db) async {
+    await db.execute('CREATE TABLE IF NOT EXISTS competition_single_results ('
+        'match_id TEXT NOT NULL, slot INTEGER NOT NULL, '
+        "status TEXT NOT NULL DEFAULT 'completed', "
+        'payload TEXT NOT NULL, acknowledged_at INTEGER, '
+        'PRIMARY KEY(match_id, slot), '
+        'FOREIGN KEY(match_id, slot) '
+        'REFERENCES competition_game_links(match_id, slot))');
+  }
+
+  /// Persists a completed result, without allowing an already submitted
+  /// or archived result to be silently replaced.
+  Future<void> saveCompletedCompetitionSingleResult(
+      String matchId, int slot, String payload) async {
+    CompetitionSingleResultLifecycle.resultKey(matchId, slot);
+    if (payload.trim().isEmpty) throw ArgumentError('Leeg resultaat');
+    final d = await db;
+    await d.transaction((txn) async {
+      final rows = await txn.query('competition_single_results',
+          columns: ['status'], where: 'match_id = ? AND slot = ?',
+          whereArgs: [matchId, slot]);
+      if (rows.isNotEmpty &&
+          rows.single['status'] != 'completed') {
+        throw StateError('Resultaat wordt verzonden of is gearchiveerd');
+      }
+      await txn.insert('competition_single_results', {
+        'match_id': matchId,
+        'slot': slot,
+        'status': 'completed',
+        'payload': payload,
+        'acknowledged_at': null,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+  }
+
+  Future<Map<String, Object?>?> competitionSingleResult(
+      String matchId, int slot) async {
+    final d = await db;
+    final rows = await d.query('competition_single_results',
+        where: 'match_id = ? AND slot = ?',
+        whereArgs: [matchId, slot]);
+    return rows.isEmpty ? null : rows.single;
+  }
+
+  /// Atomically claim a completed result for transport.
+  Future<bool> beginCompetitionSingleResultSend(
+      String matchId, int slot) async {
+    final d = await db;
+    final count = await d.update(
+        'competition_single_results', {'status': 'sending'},
+        where: "match_id = ? AND slot = ? AND status = 'completed'",
+        whereArgs: [matchId, slot]);
+    return count == 1;
+  }
+
+  /// Reverts a failed or interrupted send, leaving the payload untouched.
+  Future<bool> failCompetitionSingleResultSend(
+      String matchId, int slot) async {
+    final d = await db;
+    final count = await d.update(
+        'competition_single_results', {'status': 'completed'},
+        where: "match_id = ? AND slot = ? AND status = 'sending'",
+        whereArgs: [matchId, slot]);
+    return count == 1;
+  }
+
+  /// Called only after the Dashboard acknowledges the submitted payload.
+  /// Duplicate acknowledgements are harmless; archived payloads stay frozen.
+  Future<bool> acknowledgeCompetitionSingleResult(
+      String matchId, int slot, String acknowledgedPayload) async {
+    final d = await db;
+    return d.transaction((txn) async {
+      final rows = await txn.query('competition_single_results',
+          where: 'match_id = ? AND slot = ?',
+          whereArgs: [matchId, slot]);
+      if (rows.isEmpty || rows.single['payload'] != acknowledgedPayload) {
+        return false;
+      }
+      if (rows.single['status'] == 'archived') return true;
+      if (rows.single['status'] != 'sending') return false;
+      final count = await txn.update('competition_single_results', {
+        'status': 'archived',
+        'acknowledged_at': DateTime.now().millisecondsSinceEpoch,
+      }, where: "match_id = ? AND slot = ? AND status = 'sending'",
+          whereArgs: [matchId, slot]);
+      return count == 1;
+    });
+  }
+
   /// Generates a random RFC 4122 version-4 UUID for migrating rows that predate
   /// the uuid column.
   static String _generateUuid() {
@@ -532,6 +627,7 @@ class DbHelper {
     ''');
     await _createCompetitionInbox(db);
     await _createCompetitionGameLinks(db);
+    await _createCompetitionSingleResults(db);
     await db.execute('''
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
