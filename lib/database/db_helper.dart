@@ -28,7 +28,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 25;
+  static const int schemaVersion = 26;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -271,6 +271,9 @@ class DbHelper {
     if (oldVersion < 25) {
       await _createCheckoutLadder(db);
     }
+    if (oldVersion < 26) {
+      await _createCompetitionInbox(db);
+    }
   }
 
   /// Recomputes `dart_throws.checkout_darts` for every visit already on the
@@ -471,6 +474,17 @@ class DbHelper {
         'ON checkout_ladder_throws(game_id)');
   }
 
+  /// Competition imports are isolated from legacy player/statistics sync.
+  Future<void> _createCompetitionInbox(Database db) async {
+    await db.execute('CREATE TABLE IF NOT EXISTS competition_inbox ('
+        'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, '
+        'received_at INTEGER NOT NULL)');
+    await db.execute('CREATE TABLE IF NOT EXISTS competition_player_links ('
+        'external_player_id TEXT PRIMARY KEY, player_id INTEGER NOT NULL, '
+        'bond_number TEXT UNIQUE, source TEXT NOT NULL, '
+        'FOREIGN KEY(player_id) REFERENCES players(id))');
+  }
+
   /// Generates a random RFC 4122 version-4 UUID for migrating rows that predate
   /// the uuid column.
   static String _generateUuid() {
@@ -502,6 +516,7 @@ class DbHelper {
         bot_ordinal INTEGER
       )
     ''');
+    await _createCompetitionInbox(db);
     await db.execute('''
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
