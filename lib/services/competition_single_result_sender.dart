@@ -8,8 +8,8 @@ import 'competition_single_result_contract.dart';
 /// The database is archived only after an exact result-ID acknowledgement.
 class CompetitionSingleResultSender {
   CompetitionSingleResultSender({DbHelper? database, HttpClient? client})
-    : _database = database ?? DbHelper.instance,
-      _client = client ?? HttpClient();
+      : _database = database ?? DbHelper.instance,
+        _client = client ?? HttpClient();
 
   final DbHelper _database;
   final HttpClient _client;
@@ -23,9 +23,7 @@ class CompetitionSingleResultSender {
     required int port,
     required String token,
   }) async {
-    if (host.trim().isEmpty ||
-        port < 1 ||
-        port > 65535 ||
+    if (host.trim().isEmpty || port < 1 || port > 65535 ||
         !RegExp(r'^[a-fA-F0-9]{32}$').hasMatch(token)) {
       throw const FormatException('Ongeldige Dashboard-verbindingsgegevens');
     }
@@ -51,37 +49,30 @@ class CompetitionSingleResultSender {
         port: port,
         pathSegments: ['competition', 'results', token],
       );
-      final request = await _client
-          .postUrl(uri)
-          .timeout(const Duration(seconds: 8));
+      final request = await _client.postUrl(uri).timeout(
+        const Duration(seconds: 8),
+      );
       request.headers.contentType = ContentType.json;
       request.add(utf8.encode(payload));
       final response = await request.close().timeout(
         const Duration(seconds: 15),
       );
-      final body = await utf8.decoder
-          .bind(response)
-          .join()
-          .timeout(const Duration(seconds: 15));
+      final body = await utf8.decoder.bind(response).join().timeout(
+        const Duration(seconds: 15),
+      );
       if (response.statusCode != HttpStatus.ok) {
-        throw HttpException(
-          'Dashboard weigert resultaat (HTTP ${response.statusCode})',
-          uri: uri,
-        );
+        throw HttpException('Dashboard weigert resultaat (HTTP ${response.statusCode})', uri: uri);
       }
       final ack = jsonDecode(body);
       if (ack is! Map<String, dynamic> ||
           ack['resultId'] != result['resultId'] ||
+          ack['payload'] != payload ||
           ack['status'] is! String ||
           (ack['status'] as String).isEmpty) {
-        throw const FormatException(
-          'Dashboard gaf geen geldige ontvangstbevestiging',
-        );
+        throw const FormatException('Dashboard gaf geen geldige ontvangstbevestiging');
       }
       final archived = await _database.acknowledgeCompetitionSingleResult(
-        matchId,
-        slot,
-        payload,
+        matchId, slot, payload,
       );
       if (!archived) {
         throw StateError('Ontvangst bevestigd maar lokaal archiveren mislukt');
