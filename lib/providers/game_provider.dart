@@ -1118,6 +1118,7 @@ class GameProvider extends ChangeNotifier
     int score, {
     int? finishDart,
     bool bust = false,
+    int? bustDarts,
   }) async {
     if (_numericVisitSubmitting) throw StateError('Beurt wordt al verwerkt');
     if (_game == null || _gameOver || isBotTurn || inputLocked) {
@@ -1131,6 +1132,12 @@ class GameProvider extends ChangeNotifier
     if (score < 0 || score > 180)
       throw ArgumentError('Score moet tussen 0 en 180 liggen');
     if (bust && score != 0) throw ArgumentError('BUST heeft altijd score 0');
+    if (bust && (bustDarts == null || bustDarts < 1 || bustDarts > 3)) {
+      throw ArgumentError('Selecteer bij BUST dart 1, 2 of 3');
+    }
+    if (!bust && bustDarts != null) {
+      throw ArgumentError('Geen BUST-darts zonder BUST');
+    }
     if (currentGameMode != GameMode.straightIn) {
       throw StateError(
         'Numerieke invoer ondersteunt nog geen double/master-in',
@@ -1163,7 +1170,11 @@ class GameProvider extends ChangeNotifier
     }
     _numericVisitSubmitting = true;
     try {
-      await _submitVisit(score, checkout ? finishDart! : 3, bust: bust);
+      await _submitVisit(
+        score,
+        bust ? bustDarts! : (checkout ? finishDart! : 3),
+        bust: bust,
+      );
     } finally {
       _numericVisitSubmitting = false;
     }
