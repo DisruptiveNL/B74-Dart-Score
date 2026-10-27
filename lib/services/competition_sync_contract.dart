@@ -53,8 +53,18 @@ class CompetitionSyncContract {
         throw const FormatException('Player on both sides');
       }
     }
-    if (packet['startingScore'] != 501) {
-      throw const FormatException('Singles must start at 501');
+    // Legacy v1 packets have only startingScore=501. New packets may
+    // include a complete, uniform ruleset for all four singles.
+    final rules = packet['x01Rules'];
+    if (rules == null) {
+      if (packet['startingScore'] != 501) {
+        throw const FormatException('Legacy singles must start at 501');
+      }
+    } else {
+      CompetitionX01Rules.validate(rules);
+      if (packet['startingScore'] != (rules as Map)['startingScore']) {
+        throw const FormatException('Starting score conflicts with X01 rules');
+      }
     }
   }
 
@@ -84,5 +94,72 @@ class CompetitionSyncContract {
       throw const FormatException('Invalid bond number');
     }
     return _required(value, 'id');
+  }
+}
+
+/// Immutable competition rules shared by all four singles.
+/// This is an additive v1 extension: old 501 packets remain readable.
+class CompetitionX01Rules {
+  static const String fixedAway = 'fixedAway';
+  static const String fixedHome = 'fixedHome';
+  static const String bull = 'bull';
+
+  static Map<String, dynamic> defaults() => {
+    'startingScore': 501,
+    'bestOf': 5,
+    'checkIn': 'straight',
+    'checkOut': 'double',
+    'startPolicy': fixedAway,
+    'bullDecidingLeg': true,
+  };
+
+  static void validate(dynamic value) {
+    if (value is! Map<String, dynamic>) {
+      throw const FormatException('Invalid X01 rules');
+    }
+    const scores = {101, 201, 301, 401, 501, 601, 701, 801, 901, 1001};
+    if (!scores.contains(value['startingScore'])) {
+      throw const FormatException('Invalid X01 starting score');
+    }
+    final bestOf = value['bestOf'];
+    if (bestOf is! int || bestOf < 1 || bestOf.isEven || bestOf > 21) {
+      throw const FormatException('Best of must be an odd number from 1 to 21');
+    }
+    const checks = {'straight', 'double', 'master'};
+    if (!checks.contains(value['checkIn']) ||
+        !checks.contains(value['checkOut'])) {
+      throw const FormatException('Invalid X01 check-in/out');
+    }
+    if (!{fixedAway, fixedHome, bull}.contains(value['startPolicy'])) {
+      throw const FormatException('Invalid start policy');
+    }
+    if (value['bullDecidingLeg'] is! bool) {
+      throw const FormatException('Missing deciding-leg bull policy');
+    }
+  }
+
+  /// Fixed team starts alternate across *parties*, not only within singles.
+  /// partyIndex is zero-based across singles, doubles, triples and beer game.
+  /// For bull mode the starter is determined at the oche, not in the export.
+  static String? startingTeam(String policy, int partyIndex) {
+    if (partyIndex < 0) throw ArgumentError.value(partyIndex);
+    if (policy == bull) return null;
+    if (policy != fixedAway && policy != fixedHome) {
+      throw ArgumentError.value(policy);
+    }
+    final awayFirst = policy == fixedAway;
+    return (partyIndex.isEven == awayFirst) ? 'away' : 'home';
+  }
+
+  /// At 2-2 in best-of-5, 3-3 in best-of-7, etc.
+  static bool needsDecidingLegBull({
+    required int homeLegs,
+    required int awayLegs,
+    required int bestOf,
+    required bool enabled,
+  }) {
+    if (!enabled || bestOf < 3 || bestOf.isEven) return false;
+    final threshold = bestOf ~/ 2;
+    return homeLegs == threshold && awayLegs == threshold;
   }
 }
