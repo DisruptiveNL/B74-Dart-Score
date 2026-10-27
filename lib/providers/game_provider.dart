@@ -8,6 +8,7 @@ import '../models/game.dart';
 import '../models/dart_throw.dart';
 import '../utils/bot_strategy_x01.dart';
 import '../utils/finish_calculator.dart';
+import '../utils/b74_finish_validation.dart';
 import 'bot_runner.dart';
 import '../utils/placement.dart';
 import '../utils/throw_stats.dart';
@@ -16,7 +17,13 @@ import '../widgets/dartboard_input.dart' show DartEntry, DartboardInputSource;
 
 /// Minimum darts to finish a game from a given start score (double-out).
 const Map<int, int> minimumDartsForScore = {
-  101: 2, 170: 3, 201: 4, 301: 6, 501: 9, 701: 12, 1001: 17,
+  101: 2,
+  170: 3,
+  201: 4,
+  301: 6,
+  501: 9,
+  701: 12,
+  1001: 17,
 };
 
 /// The set and leg that [throws] last reached: the highest set with throws,
@@ -49,9 +56,9 @@ List<({int set, int leg})> playedLegs(List<DartThrow> throws) {
   for (final t in throws) {
     seen.add((set: t.set, leg: t.leg));
   }
-  return seen.toList()
-    ..sort((a, b) =>
-        a.set != b.set ? a.set.compareTo(b.set) : a.leg.compareTo(b.leg));
+  return seen.toList()..sort(
+    (a, b) => a.set != b.set ? a.set.compareTo(b.set) : a.leg.compareTo(b.leg),
+  );
 }
 
 /// The leg and set the game stands in, given every throw it holds.
@@ -85,12 +92,12 @@ List<({int set, int leg})> playedLegs(List<DartThrow> throws) {
   // Replay the winner's legs and sets the way a live checkout counts them, so
   // that a leg won as the last of its set moves the game on to the next set.
   var legsInSet = 0;
-  var setsWon   = 0;
-  var set       = 0;
-  var tookSet   = false;
+  var setsWon = 0;
+  var set = 0;
+  var tookSet = false;
   for (final pos in playedLegs(throws)) {
     if (pos.set != set) {
-      set       = pos.set;
+      set = pos.set;
       legsInSet = 0;
     }
     if (!_sideWonLeg(throws, winner, pos.leg, pos.set)) continue;
@@ -98,13 +105,14 @@ List<({int set, int leg})> playedLegs(List<DartThrow> throws) {
     if (legsInSet >= game.legs) {
       setsWon++;
       legsInSet = 0;
-      tookSet   = pos.leg == position.leg && pos.set == position.set;
+      tookSet = pos.leg == position.leg && pos.set == position.set;
     }
   }
 
   if (setsWon >= game.sets) return position;
-  return tookSet ? (leg: 1, set: position.set + 1)
-                 : (leg: position.leg + 1, set: position.set);
+  return tookSet
+      ? (leg: 1, set: position.set + 1)
+      : (leg: position.leg + 1, set: position.set);
 }
 
 /// The player ids that share a slot with [playerId]: the whole team in a team
@@ -164,10 +172,12 @@ int _nextMemberIndex(List<Player> members, List<DartThrow> teamThrows) {
 /// where every member's darts belong to the same leg.
 int legDartsUsed(List<DartThrow> throws, int leg, int set, {int? playerId}) =>
     throws
-        .where((t) =>
-            t.leg == leg &&
-            t.set == set &&
-            (playerId == null || t.playerId == playerId))
+        .where(
+          (t) =>
+              t.leg == leg &&
+              t.set == set &&
+              (playerId == null || t.playerId == playerId),
+        )
         .fold(0, (sum, t) => sum + t.dartsUsed);
 
 /// Decodes a [DartThrow.hitsJson] string back into individual dart entries,
@@ -194,7 +204,9 @@ class _RedoEntry {
   final DartThrow? legacyVisit;
 
   const _RedoEntry.dart(DartEntry entry) : dart = entry, legacyVisit = null;
-  const _RedoEntry.legacyVisit(DartThrow visit) : dart = null, legacyVisit = visit;
+  const _RedoEntry.legacyVisit(DartThrow visit)
+    : dart = null,
+      legacyVisit = visit;
 }
 
 // ── PlayerState ───────────────────────────────────────────────────────────────
@@ -208,9 +220,11 @@ class PlayerState implements LabelledSlot {
   /// Human-readable name for the scoreboard: team name or player name.
   @override
   final String displayName;
+
   /// All players in this slot: 1 for individual, N for team.
   @override
   final List<Player> players;
+
   /// Which player in [players] throws NEXT (rotates after each team visit).
   final int currentPlayerIdx;
 
@@ -226,9 +240,11 @@ class PlayerState implements LabelledSlot {
   /// In placement-mode games: this slot's 1-based finishing position for the
   /// current leg, or null if it hasn't checked out yet this leg.
   final int? legPlacement;
+
   /// In placement-mode games: cumulative sum of [legPlacement] across all
   /// completed legs, used as a tie-breaker for the final ranking.
   final int placementSum;
+
   /// In placement-mode games: cumulative [placementPoints] across all completed
   /// legs, which is what the final ranking is decided on.
   final int placementPoints;
@@ -259,15 +275,15 @@ class PlayerState implements LabelledSlot {
   /// it is idle it is the member who steps up when the slot comes around again.
   /// One rotation covers both readings.
   List<Player> get throwingOrder => [
-        for (var k = 0; k < players.length; k++)
-          players[(currentPlayerIdx + k) % players.length],
-      ];
+    for (var k = 0; k < players.length; k++)
+      players[(currentPlayerIdx + k) % players.length],
+  ];
 
   /// Whether this slot represents a team rather than a single player.
-  bool get isTeam   => players.length > 1;
+  bool get isTeam => players.length > 1;
 
   /// Total number of darts thrown by this slot across the game.
-  int get totalDarts  => throws.fold(0, (s, t) => s + t.dartsUsed);
+  int get totalDarts => throws.fold(0, (s, t) => s + t.dartsUsed);
 
   /// Total number of visits (turns) taken by this slot.
   int get totalVisits => throws.length;
@@ -286,31 +302,32 @@ class PlayerState implements LabelledSlot {
   /// call doesn't accidentally clear it), in which case [legPlacement] itself
   /// supplies the new value (including null).
   PlayerState copyWith({
-    int?              currentPlayerIdx,
-    int?              legsWon,
-    int?              setsWon,
-    int?              remaining,
-    List<DartThrow>?  throws,
-    int?              perfectLegs,
-    int?              legPlacement,
-    bool              resetLegPlacement = false,
-    int?              placementSum,
-    int?              placementPoints,
-  }) =>
-      PlayerState(
-        displayName:      displayName,
-        players:          players,
-        currentPlayerIdx: currentPlayerIdx ?? this.currentPlayerIdx,
-        legsWon:          legsWon          ?? this.legsWon,
-        setsWon:          setsWon          ?? this.setsWon,
-        remaining:        remaining        ?? this.remaining,
-        throws:           throws           ?? this.throws,
-        perfectLegs:      perfectLegs      ?? this.perfectLegs,
-        isTeamSlot:       isTeamSlot,
-        legPlacement:     resetLegPlacement ? legPlacement : (legPlacement ?? this.legPlacement),
-        placementSum:     placementSum     ?? this.placementSum,
-        placementPoints:  placementPoints  ?? this.placementPoints,
-      );
+    int? currentPlayerIdx,
+    int? legsWon,
+    int? setsWon,
+    int? remaining,
+    List<DartThrow>? throws,
+    int? perfectLegs,
+    int? legPlacement,
+    bool resetLegPlacement = false,
+    int? placementSum,
+    int? placementPoints,
+  }) => PlayerState(
+    displayName: displayName,
+    players: players,
+    currentPlayerIdx: currentPlayerIdx ?? this.currentPlayerIdx,
+    legsWon: legsWon ?? this.legsWon,
+    setsWon: setsWon ?? this.setsWon,
+    remaining: remaining ?? this.remaining,
+    throws: throws ?? this.throws,
+    perfectLegs: perfectLegs ?? this.perfectLegs,
+    isTeamSlot: isTeamSlot,
+    legPlacement: resetLegPlacement
+        ? legPlacement
+        : (legPlacement ?? this.legPlacement),
+    placementSum: placementSum ?? this.placementSum,
+    placementPoints: placementPoints ?? this.placementPoints,
+  );
 }
 
 // ── GameProvider ──────────────────────────────────────────────────────────────
@@ -326,13 +343,13 @@ class GameProvider extends ChangeNotifier
     implements DartboardInputSource {
   final DbHelper _db = DbHelper.instance;
 
-  Game?              _game;
-  List<PlayerState>  _playerStates = [];
-  int                _currentPlayerIndex = 0;
-  int                _currentLeg = 1;
-  int                _currentSet = 1;
-  bool               _gameOver = false;
-  int?               _winnerId;
+  Game? _game;
+  List<PlayerState> _playerStates = [];
+  int _currentPlayerIndex = 0;
+  int _currentLeg = 1;
+  int _currentSet = 1;
+  bool _gameOver = false;
+  int? _winnerId;
   Map<int, PlayerHandicap> _handicaps = {};
 
   /// Darts entered so far for the current player's in-progress (not yet
@@ -347,25 +364,25 @@ class GameProvider extends ChangeNotifier
   /// removed by [undoLastDart], in undo order, restorable via [redoLastDart].
   final List<_RedoEntry> _redoStack = [];
 
-
-  Game?              get game               => _game;
-  List<PlayerState>  get playerStates       => _playerStates;
-  int                get currentPlayerIndex => _currentPlayerIndex;
-  PlayerState        get currentPlayerState => _playerStates[_currentPlayerIndex];
-  int                get currentLeg         => _currentLeg;
-  int                get currentSet         => _currentSet;
-  bool               get gameOver           => _gameOver;
-  int?               get winnerId           => _winnerId;
+  Game? get game => _game;
+  List<PlayerState> get playerStates => _playerStates;
+  int get currentPlayerIndex => _currentPlayerIndex;
+  PlayerState get currentPlayerState => _playerStates[_currentPlayerIndex];
+  int get currentLeg => _currentLeg;
+  int get currentSet => _currentSet;
+  bool get gameOver => _gameOver;
+  int? get winnerId => _winnerId;
 
   /// Darts entered so far for the current player's in-progress visit.
   @override
-  List<DartEntry>    get currentVisitDarts  => List.unmodifiable(_currentVisitDarts);
+  List<DartEntry> get currentVisitDarts =>
+      List.unmodifiable(_currentVisitDarts);
 
   /// Number of darts entered so far in the current in-progress visit.
-  int                get dartsInVisit       => _currentVisitDarts.length;
+  int get dartsInVisit => _currentVisitDarts.length;
 
   /// Whether a qualifying check-in dart was thrown this visit (live).
-  bool               get checkedInThisVisit => _checkedInThisVisit;
+  bool get checkedInThisVisit => _checkedInThisVisit;
 
   /// Whether there is any dart left to undo: either in the in-progress visit
   /// or in a previously recorded visit (possibly a previous player's turn).
@@ -373,14 +390,14 @@ class GameProvider extends ChangeNotifier
   /// Not while a bot is throwing, and not when every recorded visit is a
   /// bot's: those are never undone on their own, see [undoLastDart].
   @override
-  bool               get canUndoDart        =>
+  bool get canUndoDart =>
       !isBotTurn &&
       (_currentVisitDarts.isNotEmpty ||
           allThrows().any((t) => !_isBotId(t.playerId)));
 
   /// Whether a previously undone dart (or legacy visit) can be restored.
   @override
-  bool               get canRedoDart        => !isBotTurn && _redoStack.isNotEmpty;
+  bool get canRedoDart => !isBotTurn && _redoStack.isNotEmpty;
 
   /// The slot that throws after the current one.
   ///
@@ -426,14 +443,16 @@ class GameProvider extends ChangeNotifier
   int get _visitScoreSoFar => _currentVisitDarts.fold(0, (s, d) => s + d.score);
 
   /// Remaining score if the in-progress visit ended right now.
-  int get liveRunningRemaining => currentPlayerState.remaining - _visitScoreSoFar;
+  int get liveRunningRemaining =>
+      currentPlayerState.remaining - _visitScoreSoFar;
 
   /// Whether the in-progress visit would currently bust (negative remaining,
   /// or stuck on 1 with double/master-out while checked in).
   @override
   bool get liveBust {
     final running = liveRunningRemaining;
-    final stuck = running == 1 &&
+    final stuck =
+        running == 1 &&
         currentCheckoutMode != CheckoutMode.straightOut &&
         (currentHasCheckedIn || _checkedInThisVisit);
     return running < 0 || stuck;
@@ -474,8 +493,8 @@ class GameProvider extends ChangeNotifier
       remaining: liveRunningRemaining,
       dartsLeft: 3 - _currentVisitDarts.length,
       checkedIn: currentHasCheckedIn || _checkedInThisVisit,
-      checkOut:  currentCheckoutMode,
-      checkIn:   currentGameMode,
+      checkOut: currentCheckoutMode,
+      checkIn: currentGameMode,
     );
     final hit = botThrower.throwAt(target, currentPlayerState.player.botLevel!);
     _redoStack.clear();
@@ -485,11 +504,16 @@ class GameProvider extends ChangeNotifier
 
   /// Records [pending] as the current slot's visit and moves the turn on.
   Future<void> _settleVisit(
-      ({int score, int dartsUsed, bool bust, List<DartEntry> hits}) pending) async {
-    _currentVisitDarts  = [];
+    ({int score, int dartsUsed, bool bust, List<DartEntry> hits}) pending,
+  ) async {
+    _currentVisitDarts = [];
     _checkedInThisVisit = false;
-    await _submitVisit(pending.score, pending.dartsUsed,
-        bust: pending.bust, hits: pending.hits);
+    await _submitVisit(
+      pending.score,
+      pending.dartsUsed,
+      bust: pending.bust,
+      hits: pending.hits,
+    );
   }
 
   // ── Resume ────────────────────────────────────────────────────────────────
@@ -532,19 +556,31 @@ class GameProvider extends ChangeNotifier
     final maxSet = position.set;
     // Everything except the leg in play has been decided and counts toward
     // legs and sets won.
-    final finishedLegs = playedLegs(allThrowsRaw)
-        .where((p) => p.set != maxSet || p.leg != maxLeg)
-        .toList();
+    final finishedLegs = playedLegs(
+      allThrowsRaw,
+    ).where((p) => p.set != maxSet || p.leg != maxLeg).toList();
 
     if (game.isTeamGame) {
       await _resumeTeamGame(
-          game, players, throwsByPlayer, maxLeg, maxSet, finishedLegs);
+        game,
+        players,
+        throwsByPlayer,
+        maxLeg,
+        maxSet,
+        finishedLegs,
+      );
     } else {
       await _resumeIndividualGame(
-          game, players, throwsByPlayer, maxLeg, maxSet, finishedLegs);
+        game,
+        players,
+        throwsByPlayer,
+        maxLeg,
+        maxSet,
+        finishedLegs,
+      );
     }
 
-    _game     = game;
+    _game = game;
     _gameOver = false;
     _winnerId = null;
     notifyListeners();
@@ -566,18 +602,22 @@ class GameProvider extends ChangeNotifier
       return;
     }
 
-    final teams       = game.teams!;
-    final legsToWin   = game.legs;
+    final teams = game.teams!;
+    final legsToWin = game.legs;
 
     // Compute legs/sets won per team
     final teamLegsWon = List<int>.filled(teams.length, 0);
     final teamSetsWon = List<int>.filled(teams.length, 0);
-    final tempLegs    = List<int>.filled(teams.length, 0);
+    final tempLegs = List<int>.filled(teams.length, 0);
 
     for (final pos in finishedLegs) {
       for (var ti = 0; ti < teams.length; ti++) {
-        final winner =
-            _teamCheckedOutLeg(teams[ti], throwsByPlayer, pos.leg, pos.set);
+        final winner = _teamCheckedOutLeg(
+          teams[ti],
+          throwsByPlayer,
+          pos.leg,
+          pos.set,
+        );
         if (winner) {
           tempLegs[ti]++;
           if (tempLegs[ti] >= legsToWin) {
@@ -593,17 +633,18 @@ class GameProvider extends ChangeNotifier
 
     // Build team states
     _playerStates = teams.asMap().entries.map((entry) {
-      final ti   = entry.key;
+      final ti = entry.key;
       final team = entry.value;
       final teamPlayers = team.playerIds
           .map((id) => players.firstWhere((p) => p.id == id))
           .toList();
 
       // All throws by team members
-      final allTeamThrows = teamPlayers
-          .expand((p) => throwsByPlayer[p.id!] ?? <DartThrow>[])
-          .toList()
-        ..sort(_byThrowOrder);
+      final allTeamThrows =
+          teamPlayers
+              .expand((p) => throwsByPlayer[p.id!] ?? <DartThrow>[])
+              .toList()
+            ..sort(_byThrowOrder);
 
       final currentLegThrows = allTeamThrows
           .where((t) => t.leg == maxLeg && t.set == maxSet)
@@ -618,15 +659,15 @@ class GameProvider extends ChangeNotifier
       final currentIdx = _nextMemberIndex(teamPlayers, allTeamThrows);
 
       return PlayerState(
-        displayName:      team.name,
-        players:          teamPlayers,
+        displayName: team.name,
+        players: teamPlayers,
         currentPlayerIdx: currentIdx,
-        legsWon:          teamLegsWon[ti],
-        setsWon:          teamSetsWon[ti],
-        remaining:        remaining,
-        throws:           allTeamThrows,
-        perfectLegs:      _perfectLegsOf(game.startScore, allTeamThrows),
-        isTeamSlot:       true,
+        legsWon: teamLegsWon[ti],
+        setsWon: teamSetsWon[ti],
+        remaining: remaining,
+        throws: allTeamThrows,
+        perfectLegs: _perfectLegsOf(game.startScore, allTeamThrows),
+        isTeamSlot: true,
       );
     }).toList();
 
@@ -650,25 +691,26 @@ class GameProvider extends ChangeNotifier
 
     final throwsByTeam = <int, List<DartThrow>>{
       for (var ti = 0; ti < teams.length; ti++)
-        ti: teams[ti]
-            .playerIds
-            .expand((id) => throwsByPlayer[id] ?? <DartThrow>[])
-            .toList()
-          ..sort(_byThrowOrder),
+        ti:
+            teams[ti].playerIds
+                .expand((id) => throwsByPlayer[id] ?? <DartThrow>[])
+                .toList()
+              ..sort(_byThrowOrder),
     };
 
     final r = _placementResumeState(throwsByTeam, maxLeg);
 
     _playerStates = teams.asMap().entries.map((entry) {
-      final ti   = entry.key;
+      final ti = entry.key;
       final team = entry.value;
       final teamPlayers = team.playerIds
           .map((id) => players.firstWhere((p) => p.id == id))
           .toList();
 
-      final allTeamThrows  = throwsByTeam[ti]!;
-      final currentLegThrows =
-          allTeamThrows.where((t) => t.leg == maxLeg && t.set == 1).toList();
+      final allTeamThrows = throwsByTeam[ti]!;
+      final currentLegThrows = allTeamThrows
+          .where((t) => t.leg == maxLeg && t.set == 1)
+          .toList();
       final currentIdx = _nextMemberIndex(teamPlayers, allTeamThrows);
 
       final placement = r.legPlacement[ti];
@@ -684,18 +726,18 @@ class GameProvider extends ChangeNotifier
       }
 
       return PlayerState(
-        displayName:      team.name,
-        players:          teamPlayers,
+        displayName: team.name,
+        players: teamPlayers,
         currentPlayerIdx: currentIdx,
-        legsWon:          r.legsWon[ti] ?? 0,
-        setsWon:          0,
-        remaining:        remaining,
-        throws:           allTeamThrows,
-        perfectLegs:      _perfectLegsOf(game.startScore, allTeamThrows),
-        isTeamSlot:       true,
-        legPlacement:     placement,
-        placementSum:     r.placementSum[ti] ?? 0,
-        placementPoints:  r.placementPoints[ti] ?? 0,
+        legsWon: r.legsWon[ti] ?? 0,
+        setsWon: 0,
+        remaining: remaining,
+        throws: allTeamThrows,
+        perfectLegs: _perfectLegsOf(game.startScore, allTeamThrows),
+        isTeamSlot: true,
+        legPlacement: placement,
+        placementSum: r.placementSum[ti] ?? 0,
+        placementPoints: r.placementPoints[ti] ?? 0,
       );
     }).toList();
 
@@ -717,7 +759,8 @@ class GameProvider extends ChangeNotifier
     int set,
   ) {
     for (final id in team.playerIds) {
-      final legThrows = throwsByPlayer[id]
+      final legThrows =
+          throwsByPlayer[id]
               ?.where((t) => t.leg == leg && t.set == set)
               .toList() ??
           [];
@@ -746,13 +789,14 @@ class GameProvider extends ChangeNotifier
       return;
     }
 
-    final legsWon     = <int, int>{for (final p in players) p.id!: 0};
-    final setsWon     = <int, int>{for (final p in players) p.id!: 0};
+    final legsWon = <int, int>{for (final p in players) p.id!: 0};
+    final setsWon = <int, int>{for (final p in players) p.id!: 0};
     final legsToWinSet = game.legs;
 
     for (final pos in finishedLegs) {
       for (final p in players) {
-        final legThrows = throwsByPlayer[p.id!]
+        final legThrows =
+            throwsByPlayer[p.id!]
                 ?.where((t) => t.leg == pos.leg && t.set == pos.set)
                 .toList() ??
             [];
@@ -769,7 +813,8 @@ class GameProvider extends ChangeNotifier
     }
 
     _playerStates = players.map((p) {
-      final currentLegThrows = throwsByPlayer[p.id!]
+      final currentLegThrows =
+          throwsByPlayer[p.id!]
               ?.where((t) => t.leg == maxLeg && t.set == maxSet)
               .toList() ??
           [];
@@ -779,13 +824,15 @@ class GameProvider extends ChangeNotifier
       }
       return PlayerState(
         displayName: p.name,
-        players:     [p],
-        legsWon:     legsWon[p.id!] ?? 0,
-        setsWon:     setsWon[p.id!] ?? 0,
-        remaining:   remaining,
-        throws:      throwsByPlayer[p.id!] ?? [],
+        players: [p],
+        legsWon: legsWon[p.id!] ?? 0,
+        setsWon: setsWon[p.id!] ?? 0,
+        remaining: remaining,
+        throws: throwsByPlayer[p.id!] ?? [],
         perfectLegs: _perfectLegsOf(
-            game.startScore, throwsByPlayer[p.id!] ?? const []),
+          game.startScore,
+          throwsByPlayer[p.id!] ?? const [],
+        ),
       );
     }).toList();
 
@@ -799,20 +846,20 @@ class GameProvider extends ChangeNotifier
   /// [placementOrder] defines, so the winner this provider names and the winner
   /// the ranking card lists first are the same slot.
   int _placementLeader() => placementOrder(
-        [for (var i = 0; i < _playerStates.length; i++) i],
-        points:       {
-          for (var i = 0; i < _playerStates.length; i++)
-            i: _playerStates[i].placementPoints,
-        },
-        legsWon:      {
-          for (var i = 0; i < _playerStates.length; i++)
-            i: _playerStates[i].legsWon,
-        },
-        placementSum: {
-          for (var i = 0; i < _playerStates.length; i++)
-            i: _playerStates[i].placementSum,
-        },
-      ).first;
+    [for (var i = 0; i < _playerStates.length; i++) i],
+    points: {
+      for (var i = 0; i < _playerStates.length; i++)
+        i: _playerStates[i].placementPoints,
+    },
+    legsWon: {
+      for (var i = 0; i < _playerStates.length; i++)
+        i: _playerStates[i].legsWon,
+    },
+    placementSum: {
+      for (var i = 0; i < _playerStates.length; i++)
+        i: _playerStates[i].placementSum,
+    },
+  ).first;
 
   /// Computes the placement-mode ranking for a resume. [maxLeg] is treated as
   /// fully complete (and its results folded into
@@ -828,10 +875,8 @@ class GameProvider extends ChangeNotifier
     Map<int, int> placementPoints,
     Map<int, int?> legPlacement,
     bool legComplete,
-  }) _placementResumeState(
-    Map<int, List<DartThrow>> throwsById,
-    int maxLeg,
-  ) {
+  })
+  _placementResumeState(Map<int, List<DartThrow>> throwsById, int maxLeg) {
     final ids = throwsById.keys.toList();
     final currentPlacements = legPlacements(throwsById, maxLeg, 1);
     final completePlacements = completedLegPlacements(throwsById, maxLeg, 1);
@@ -840,11 +885,13 @@ class GameProvider extends ChangeNotifier
     final ranking = placementRanking(throwsById, maxLeg - 1, 1);
     final legsWon = Map<int, int>.of(ranking.legsWon);
     final placementSum = Map<int, int>.of(ranking.placementSum);
-    final points =
-        Map<int, int>.of(placementPointsTotal(throwsById, maxLeg - 1, 1));
+    final points = Map<int, int>.of(
+      placementPointsTotal(throwsById, maxLeg - 1, 1),
+    );
 
-    final placementsForMaxLeg =
-        legComplete ? completePlacements : currentPlacements;
+    final placementsForMaxLeg = legComplete
+        ? completePlacements
+        : currentPlacements;
     for (final entry in placementsForMaxLeg.entries) {
       placementSum[entry.key] = (placementSum[entry.key] ?? 0) + entry.value;
       points[entry.key] =
@@ -896,16 +943,18 @@ class GameProvider extends ChangeNotifier
       }
 
       return PlayerState(
-        displayName:  p.name,
-        players:      [p],
-        legsWon:      r.legsWon[p.id!] ?? 0,
-        setsWon:      0,
-        remaining:    remaining,
-        throws:       throwsByPlayer[p.id!] ?? [],
-        perfectLegs:  _perfectLegsOf(
-            game.startScore, throwsByPlayer[p.id!] ?? const []),
-        legPlacement:    placement,
-        placementSum:    r.placementSum[p.id!] ?? 0,
+        displayName: p.name,
+        players: [p],
+        legsWon: r.legsWon[p.id!] ?? 0,
+        setsWon: 0,
+        remaining: remaining,
+        throws: throwsByPlayer[p.id!] ?? [],
+        perfectLegs: _perfectLegsOf(
+          game.startScore,
+          throwsByPlayer[p.id!] ?? const [],
+        ),
+        legPlacement: placement,
+        placementSum: r.placementSum[p.id!] ?? 0,
         placementPoints: r.placementPoints[p.id!] ?? 0,
       );
     }).toList();
@@ -934,7 +983,7 @@ class GameProvider extends ChangeNotifier
     for (var i = 0; i < _playerStates.length; i++) {
       for (final t in _playerStates[i].throws) {
         if (last == null || _byThrowOrder(t, last) > 0) {
-          last     = t;
+          last = t;
           lastSlot = i;
         }
       }
@@ -946,9 +995,11 @@ class GameProvider extends ChangeNotifier
     }
 
     var idx = (lastSlot + 1) % _playerStates.length;
-    for (var k = 0;
-        k < _playerStates.length && _playerStates[idx].legPlacement != null;
-        k++) {
+    for (
+      var k = 0;
+      k < _playerStates.length && _playerStates[idx].legPlacement != null;
+      k++
+    ) {
       idx = (idx + 1) % _playerStates.length;
     }
     _currentPlayerIndex = idx;
@@ -969,18 +1020,18 @@ class GameProvider extends ChangeNotifier
   Future<void> startGame(Game game, List<Player> players) async {
     _handicaps = game.handicaps ?? {};
 
-    final ids    = players.map((p) => p.id!).toList();
+    final ids = players.map((p) => p.id!).toList();
     final gameId = await _db.insertGame(game, ids);
     _game = Game(
-      id:           gameId,
-      startScore:   game.startScore,
-      gameMode:     game.gameMode,
+      id: gameId,
+      startScore: game.startScore,
+      gameMode: game.gameMode,
       checkoutMode: game.checkoutMode,
-      legs:         game.legs,
-      sets:         game.sets,
-      createdAt:    game.createdAt,
-      teams:        game.teams,
-      handicaps:    game.handicaps,
+      legs: game.legs,
+      sets: game.sets,
+      createdAt: game.createdAt,
+      teams: game.teams,
+      handicaps: game.handicaps,
       placementMode: game.placementMode,
       startingOrder: game.startingOrder,
     );
@@ -992,33 +1043,35 @@ class GameProvider extends ChangeNotifier
             .toList();
         return PlayerState(
           displayName: team.name,
-          players:     teamPlayers,
-          legsWon:     0,
-          setsWon:     0,
-          remaining:   game.startScore,
-          throws:      [],
-          isTeamSlot:  true,
+          players: teamPlayers,
+          legsWon: 0,
+          setsWon: 0,
+          remaining: game.startScore,
+          throws: [],
+          isTeamSlot: true,
         );
       }).toList();
     } else {
       _playerStates = players
-          .map((p) => PlayerState(
-                displayName: p.name,
-                players:     [p],
-                legsWon:     0,
-                setsWon:     0,
-                remaining:   game.startScore,
-                throws:      [],
-              ))
+          .map(
+            (p) => PlayerState(
+              displayName: p.name,
+              players: [p],
+              legsWon: 0,
+              setsWon: 0,
+              remaining: game.startScore,
+              throws: [],
+            ),
+          )
           .toList();
     }
 
     _currentPlayerIndex = 0;
-    _currentLeg         = 1;
-    _currentSet         = 1;
-    _gameOver           = false;
-    _winnerId           = null;
-    _currentVisitDarts  = [];
+    _currentLeg = 1;
+    _currentSet = 1;
+    _gameOver = false;
+    _winnerId = null;
+    _currentVisitDarts = [];
     _checkedInThisVisit = false;
     _redoStack.clear();
     dropHeldVisit();
@@ -1035,20 +1088,21 @@ class GameProvider extends ChangeNotifier
   /// [StartingOrder.random], kept as it is for a fixed order.
   Future<void> startRematch(Game template, List<Player> players) async {
     final isRandom = template.startingOrder == StartingOrder.random;
-    final ordered  = isRandom ? (List.of(players)..shuffle(Random()))
-                              : List.of(players);
-    final teams    = isRandom && template.teams != null
+    final ordered = isRandom
+        ? (List.of(players)..shuffle(Random()))
+        : List.of(players);
+    final teams = isRandom && template.teams != null
         ? (List.of(template.teams!)..shuffle(Random()))
         : template.teams;
     final game = Game(
-      startScore:    template.startScore,
-      gameMode:      template.gameMode,
-      checkoutMode:  template.checkoutMode,
-      legs:          template.legs,
-      sets:          template.sets,
-      createdAt:     DateTime.now(),
-      teams:         teams,
-      handicaps:     template.handicaps,
+      startScore: template.startScore,
+      gameMode: template.gameMode,
+      checkoutMode: template.checkoutMode,
+      legs: template.legs,
+      sets: template.sets,
+      createdAt: DateTime.now(),
+      teams: teams,
+      handicaps: template.handicaps,
       placementMode: template.placementMode,
       startingOrder: template.startingOrder,
     );
@@ -1060,31 +1114,51 @@ class GameProvider extends ChangeNotifier
   /// This first increment supports straight-in, double-out competition games.
   bool _numericVisitSubmitting = false;
 
-  Future<void> submitNumericVisit(int score, {int? finishDart, bool bust = false}) async {
+  Future<void> submitNumericVisit(
+    int score, {
+    int? finishDart,
+    bool bust = false,
+  }) async {
     if (_numericVisitSubmitting) throw StateError('Beurt wordt al verwerkt');
     if (_game == null || _gameOver || isBotTurn || inputLocked) {
       throw StateError('Score-invoer is momenteel niet beschikbaar');
     }
     if (_currentVisitDarts.isNotEmpty) {
-      throw StateError('Wissel niet tussen dart- en beurtinvoer binnen een beurt');
+      throw StateError(
+        'Wissel niet tussen dart- en beurtinvoer binnen een beurt',
+      );
     }
-    if (score < 0 || score > 180) throw ArgumentError('Score moet tussen 0 en 180 liggen');
+    if (score < 0 || score > 180)
+      throw ArgumentError('Score moet tussen 0 en 180 liggen');
     if (bust && score != 0) throw ArgumentError('BUST heeft altijd score 0');
     if (currentGameMode != GameMode.straightIn) {
-      throw StateError('Numerieke invoer ondersteunt nog geen double/master-in');
+      throw StateError(
+        'Numerieke invoer ondersteunt nog geen double/master-in',
+      );
     }
     final remaining = currentPlayerState.remaining;
     final after = remaining - score;
-    if (!bust && (after < 0 || (currentCheckoutMode != CheckoutMode.straightOut && after == 1))) {
+    if (!bust &&
+        (after < 0 ||
+            (currentCheckoutMode != CheckoutMode.straightOut && after == 1))) {
       throw ArgumentError('Ongeldige score: gebruik BUST');
     }
     final checkout = !bust && after == 0;
     if (checkout && (finishDart == null || finishDart < 1 || finishDart > 3)) {
       throw ArgumentError('Selecteer finishdart 1, 2 of 3');
     }
-    if (!checkout && finishDart != null) throw ArgumentError('Geen finishdart zonder checkout');
-    if (checkout && currentCheckoutMode == CheckoutMode.doubleOut &&
-        (remaining > 170 || const {159,162,163,165,166,168,169}.contains(remaining))) {
+    if (!checkout && finishDart != null)
+      throw ArgumentError('Geen finishdart zonder checkout');
+    if (checkout &&
+        !b74CanFinishInDarts(remaining, finishDart!, currentCheckoutMode)) {
+      throw ArgumentError(
+        'Deze finish is niet mogelijk met $finishDart dart(s)',
+      );
+    }
+    if (checkout &&
+        currentCheckoutMode == CheckoutMode.doubleOut &&
+        (remaining > 170 ||
+            const {159, 162, 163, 165, 166, 168, 169}.contains(remaining))) {
       throw ArgumentError('Geen mogelijke double-out finish');
     }
     _numericVisitSubmitting = true;
@@ -1101,10 +1175,14 @@ class GameProvider extends ChangeNotifier
   /// per-dart [hits]), updates the remaining score, and either handles a
   /// checkout or advances to the next slot. Busts keep the remaining score
   /// unchanged.
-  Future<void> _submitVisit(int score, int dartsUsed,
-      {bool bust = false, List<DartEntry>? hits}) async {
+  Future<void> _submitVisit(
+    int score,
+    int dartsUsed, {
+    bool bust = false,
+    List<DartEntry>? hits,
+  }) async {
     if (_game == null || _gameOver) return;
-    final state     = _playerStates[_currentPlayerIndex];
+    final state = _playerStates[_currentPlayerIndex];
     final remaining = state.remaining;
     final newRemaining = remaining - score;
 
@@ -1126,25 +1204,33 @@ class GameProvider extends ChangeNotifier
     );
 
     final t = DartThrow(
-      gameId:          _game!.id!,
-      playerId:        state.player.id!, // individual player: even in team mode
-      score:           bust ? 0 : score,
-      dartsUsed:       dartsUsed,
-      leg:             _currentLeg,
-      set:             _currentSet,
+      gameId: _game!.id!,
+      playerId: state.player.id!, // individual player: even in team mode
+      score: bust ? 0 : score,
+      dartsUsed: dartsUsed,
+      leg: _currentLeg,
+      set: _currentSet,
       remainingBefore: remaining,
-      thrownAt:        DateTime.now(),
-      bust:            bust,
-      hitsJson:        hitsJson,
-      checkoutDarts:   checkoutDarts,
+      thrownAt: DateTime.now(),
+      bust: bust,
+      hitsJson: hitsJson,
+      checkoutDarts: checkoutDarts,
     );
 
     final id = await _db.insertThrow(t);
     final saved = DartThrow(
-      id: id, gameId: t.gameId, playerId: t.playerId, score: t.score,
-      dartsUsed: t.dartsUsed, leg: t.leg, set: t.set,
-      remainingBefore: t.remainingBefore, thrownAt: t.thrownAt, bust: t.bust,
-      hitsJson: t.hitsJson, checkoutDarts: t.checkoutDarts,
+      id: id,
+      gameId: t.gameId,
+      playerId: t.playerId,
+      score: t.score,
+      dartsUsed: t.dartsUsed,
+      leg: t.leg,
+      set: t.set,
+      remainingBefore: t.remainingBefore,
+      thrownAt: t.thrownAt,
+      bust: t.bust,
+      hitsJson: t.hitsJson,
+      checkoutDarts: t.checkoutDarts,
     );
 
     _playerStates[_currentPlayerIndex] = state.copyWith(
@@ -1181,7 +1267,7 @@ class GameProvider extends ChangeNotifier
       _currentSet,
       playerId: state.isTeam ? null : state.player.id,
     );
-    final isPerfect  = minDarts != null && legDarts <= minDarts;
+    final isPerfect = minDarts != null && legDarts <= minDarts;
     final perfectLegs = state.perfectLegs + (isPerfect ? 1 : 0);
 
     // Placement mode: award the leg, but keep playing until every slot has
@@ -1195,13 +1281,16 @@ class GameProvider extends ChangeNotifier
     if (legsWon >= legsToWinSet) {
       // Set won
       setsWon += 1;
-      legsWon  = 0;
+      legsWon = 0;
 
       final setsToWin = _game!.sets;
       if (setsWon >= setsToWin) {
         // Game over
         _playerStates[_currentPlayerIndex] = state.copyWith(
-            legsWon: legsWon, setsWon: setsWon, perfectLegs: perfectLegs);
+          legsWon: legsWon,
+          setsWon: setsWon,
+          perfectLegs: perfectLegs,
+        );
         _gameOver = true;
         _winnerId = state.isTeam ? state.players.first.id : state.player.id;
         await _db.updateGame(_game!.copyWith(finishedAt: DateTime.now()));
@@ -1209,17 +1298,18 @@ class GameProvider extends ChangeNotifier
       }
       // New set: reset legs for all players
       _currentSet += 1;
-      _currentLeg  = 1;
-      _playerStates = _playerStates
-          .map((s) => s.copyWith(legsWon: 0))
-          .toList();
+      _currentLeg = 1;
+      _playerStates = _playerStates.map((s) => s.copyWith(legsWon: 0)).toList();
     } else {
       // Same set, next leg
       _currentLeg += 1;
     }
 
-    _playerStates[_currentPlayerIndex] =
-        state.copyWith(legsWon: legsWon, setsWon: setsWon, perfectLegs: perfectLegs);
+    _playerStates[_currentPlayerIndex] = state.copyWith(
+      legsWon: legsWon,
+      setsWon: setsWon,
+      perfectLegs: perfectLegs,
+    );
 
     _resetScores();
     _advancePlayer();
@@ -1244,33 +1334,34 @@ class GameProvider extends ChangeNotifier
     final legsWon = placement == 1 ? state.legsWon + 1 : state.legsWon;
 
     _playerStates[_currentPlayerIndex] = state.copyWith(
-      legsWon:          legsWon,
-      perfectLegs:      perfectLegs,
-      legPlacement:     placement,
+      legsWon: legsWon,
+      perfectLegs: perfectLegs,
+      legPlacement: placement,
       resetLegPlacement: true,
-      placementSum:     state.placementSum + placement,
-      placementPoints:  state.placementPoints + placementPoints(placement, slots),
+      placementSum: state.placementSum + placement,
+      placementPoints:
+          state.placementPoints + placementPoints(placement, slots),
     );
 
     // If only one slot is left without a placement, it automatically takes
     // last place -- the leg ends without that slot finishing its throws.
-    final stillPlaying =
-        _playerStates.where((s) => s.legPlacement == null).toList();
+    final stillPlaying = _playerStates
+        .where((s) => s.legPlacement == null)
+        .toList();
     if (stillPlaying.length == 1) {
-      final lastIdx   = _playerStates.indexOf(stillPlaying.first);
+      final lastIdx = _playerStates.indexOf(stillPlaying.first);
       final lastState = _playerStates[lastIdx];
       final lastPlacement = placement + 1;
       _playerStates[lastIdx] = lastState.copyWith(
-        legPlacement:      lastPlacement,
+        legPlacement: lastPlacement,
         resetLegPlacement: true,
-        placementSum:      lastState.placementSum + lastPlacement,
+        placementSum: lastState.placementSum + lastPlacement,
         placementPoints:
             lastState.placementPoints + placementPoints(lastPlacement, slots),
       );
     }
 
-    final legComplete =
-        _playerStates.every((s) => s.legPlacement != null);
+    final legComplete = _playerStates.every((s) => s.legPlacement != null);
     if (!legComplete) {
       _advancePlayer();
       return;
@@ -1300,20 +1391,22 @@ class GameProvider extends ChangeNotifier
   /// everyone is active again.
   void _resetScores() {
     _playerStates = _playerStates
-        .map((s) => PlayerState(
-              displayName:      s.displayName,
-              players:          s.players,
-              currentPlayerIdx: s.currentPlayerIdx,
-              legsWon:          s.legsWon,
-              setsWon:          s.setsWon,
-              remaining:        _game!.startScore,
-              throws:           s.throws,
-              perfectLegs:      s.perfectLegs,
-              isTeamSlot:       s.isTeamSlot,
-              legPlacement:     null,
-              placementSum:     s.placementSum,
-              placementPoints:  s.placementPoints,
-            ))
+        .map(
+          (s) => PlayerState(
+            displayName: s.displayName,
+            players: s.players,
+            currentPlayerIdx: s.currentPlayerIdx,
+            legsWon: s.legsWon,
+            setsWon: s.setsWon,
+            remaining: _game!.startScore,
+            throws: s.throws,
+            perfectLegs: s.perfectLegs,
+            isTeamSlot: s.isTeamSlot,
+            legPlacement: null,
+            placementSum: s.placementSum,
+            placementPoints: s.placementPoints,
+          ),
+        )
         .toList();
   }
 
@@ -1323,9 +1416,11 @@ class GameProvider extends ChangeNotifier
   void _advancePlayer() {
     // Rotate player within current team BEFORE advancing to next slot
     if (_playerStates[_currentPlayerIndex].isTeam) {
-      final s       = _playerStates[_currentPlayerIndex];
+      final s = _playerStates[_currentPlayerIndex];
       final nextIdx = (s.currentPlayerIdx + 1) % s.players.length;
-      _playerStates[_currentPlayerIndex] = s.copyWith(currentPlayerIdx: nextIdx);
+      _playerStates[_currentPlayerIndex] = s.copyWith(
+        currentPlayerIdx: nextIdx,
+      );
     }
     _currentPlayerIndex = (_currentPlayerIndex + 1) % _playerStates.length;
 
@@ -1351,9 +1446,7 @@ class GameProvider extends ChangeNotifier
       if (d.field == 0) return false;
       final isDouble = d.modifier == 2;
       final isTriple = d.modifier == 3 && d.field != 25;
-      return gameMode == GameMode.doubleIn
-          ? isDouble
-          : (isDouble || isTriple);
+      return gameMode == GameMode.doubleIn ? isDouble : (isDouble || isTriple);
     });
   }
 
@@ -1371,7 +1464,7 @@ class GameProvider extends ChangeNotifier
       score = field * modifier;
     }
 
-    final gameMode     = currentGameMode;
+    final gameMode = currentGameMode;
     final checkoutMode = currentCheckoutMode;
     final requiresCheckIn =
         gameMode == GameMode.doubleIn || gameMode == GameMode.masterIn;
@@ -1393,27 +1486,30 @@ class GameProvider extends ChangeNotifier
     }
     final isCheckedIn = currentHasCheckedIn || _checkedInThisVisit;
 
-    final entry =
-        DartEntry(field: field, modifier: field == 0 ? 1 : modifier, score: score);
+    final entry = DartEntry(
+      field: field,
+      modifier: field == 0 ? 1 : modifier,
+      score: score,
+    );
     _currentVisitDarts.add(entry);
 
     final newVisitTotal = _visitScoreSoFar;
-    final newRemaining  = currentPlayerState.remaining - newVisitTotal;
+    final newRemaining = currentPlayerState.remaining - newVisitTotal;
 
-    bool bust     = false;
+    bool bust = false;
     bool endVisit = false;
 
     if (!dartScores) {
       if (_currentVisitDarts.length == 3) endVisit = true;
     } else if (newRemaining < 0) {
-      bust     = true;
+      bust = true;
       endVisit = true;
     } else if (newRemaining == 0) {
-      bust     = !FinishCalculator.finishesOn(field, modifier, checkoutMode);
+      bust = !FinishCalculator.finishesOn(field, modifier, checkoutMode);
       endVisit = true;
     } else if (!FinishCalculator.canStillFinish(newRemaining, checkoutMode) &&
         isCheckedIn) {
-      bust     = true;
+      bust = true;
       endVisit = true;
     } else if (_currentVisitDarts.length == 3) {
       endVisit = true;
@@ -1421,10 +1517,10 @@ class GameProvider extends ChangeNotifier
 
     if (endVisit) {
       final pending = (
-        score:     bust ? 0 : newVisitTotal,
+        score: bust ? 0 : newVisitTotal,
         dartsUsed: _currentVisitDarts.length,
-        bust:      bust,
-        hits:      List<DartEntry>.from(_currentVisitDarts),
+        bust: bust,
+        hits: List<DartEntry>.from(_currentVisitDarts),
       );
       await holdVisit(() => _settleVisit(pending));
     }
@@ -1537,12 +1633,21 @@ class GameProvider extends ChangeNotifier
     }
 
     final t = entry.legacyVisit!;
-    await _db.insertThrow(DartThrow(
-      gameId: t.gameId, playerId: t.playerId, score: t.score,
-      dartsUsed: t.dartsUsed, leg: t.leg, set: t.set,
-      remainingBefore: t.remainingBefore, thrownAt: t.thrownAt, bust: t.bust,
-      hitsJson: t.hitsJson, checkoutDarts: t.checkoutDarts,
-    ));
+    await _db.insertThrow(
+      DartThrow(
+        gameId: t.gameId,
+        playerId: t.playerId,
+        score: t.score,
+        dartsUsed: t.dartsUsed,
+        leg: t.leg,
+        set: t.set,
+        remainingBefore: t.remainingBefore,
+        thrownAt: t.thrownAt,
+        bust: t.bust,
+        hitsJson: t.hitsJson,
+        checkoutDarts: t.checkoutDarts,
+      ),
+    );
 
     final preservedRedo = List<_RedoEntry>.from(_redoStack);
     final players = _playerStates.expand((s) => s.players).toList();
