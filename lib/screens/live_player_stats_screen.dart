@@ -8,6 +8,7 @@ import '../models/game.dart';
 import '../models/player.dart';
 import '../providers/game_provider.dart';
 import '../utils/game_labels.dart';
+import '../utils/b74_checkout_opportunities.dart';
 import '../utils/layout.dart';
 import '../utils/throw_stats.dart';
 import '../widgets/finish_suggestion_widget.dart';
@@ -58,8 +59,9 @@ class LivePlayerStatsScreen extends StatefulWidget {
 }
 
 class _LivePlayerStatsScreenState extends State<LivePlayerStatsScreen> {
-  late final PageController _controller =
-      PageController(initialPage: widget.initialSlotIndex);
+  late final PageController _controller = PageController(
+    initialPage: widget.initialSlotIndex,
+  );
 
   /// The page in view. A page holds one slot, or two where the screen is wide
   /// enough for both, so this is not a slot index.
@@ -94,25 +96,28 @@ class _LivePlayerStatsScreenState extends State<LivePlayerStatsScreen> {
           return const Scaffold(body: SizedBox.shrink());
         }
 
-        final theme   = Theme.of(context);
-        final l       = context.l10n;
-        final states  = provider.playerStates;
+        final theme = Theme.of(context);
+        final l = context.l10n;
+        final states = provider.playerStates;
         final nextIdx = provider.nextSlotIndex;
 
-        final tablet    = isTabletLayout(context);
-        final landscape = MediaQuery.sizeOf(context).width >=
+        final tablet = isTabletLayout(context);
+        final landscape =
+            MediaQuery.sizeOf(context).width >=
             MediaQuery.sizeOf(context).height;
         // On its side a tablet has room for two of these beside each other, so
         // it shows two and pages in twos rather than leaving half the screen to
         // the margin of a single column.
-        final twoUp     = tablet && landscape && states.length > 1;
+        final twoUp = tablet && landscape && states.length > 1;
         final pageCount = twoUp ? (states.length + 1) ~/ 2 : states.length;
 
         if (_twoUp != null && _twoUp != twoUp) _repage(twoUp);
         _twoUp = twoUp;
 
-        final firstSlot = (twoUp ? _page * 2 : _page)
-            .clamp(0, states.length - 1);
+        final firstSlot = (twoUp ? _page * 2 : _page).clamp(
+          0,
+          states.length - 1,
+        );
         final lastSlot = twoUp
             ? (firstSlot + 1).clamp(0, states.length - 1)
             : firstSlot;
@@ -123,15 +128,15 @@ class _LivePlayerStatsScreenState extends State<LivePlayerStatsScreen> {
         Widget slotPage(int i) => tablet
             ? LivePlayerStatsPanel(slotIndex: i)
             : _SlotStatsPage(
-                state:         states[i],
-                game:          game,
-                isActiveSlot:  i == provider.currentPlayerIndex,
-                isNextSlot:    i != provider.currentPlayerIndex && i == nextIdx,
-                currentLeg:    provider.currentLeg,
-                currentSet:    provider.currentSet,
+                state: states[i],
+                game: game,
+                isActiveSlot: i == provider.currentPlayerIndex,
+                isNextSlot: i != provider.currentPlayerIndex && i == nextIdx,
+                currentLeg: provider.currentLeg,
+                currentSet: provider.currentSet,
                 liveRemaining: provider.liveDisplayRemaining,
-                liveBust:      provider.liveBust,
-                dartsInVisit:  provider.dartsInVisit,
+                liveBust: provider.liveBust,
+                dartsInVisit: provider.dartsInVisit,
               );
 
         return Scaffold(
@@ -151,7 +156,9 @@ class _LivePlayerStatsScreenState extends State<LivePlayerStatsScreen> {
                   ].join(' · '),
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: tablet ? 19 : 15),
+                    fontWeight: FontWeight.bold,
+                    fontSize: tablet ? 19 : 15,
+                  ),
                 ),
                 Text(
                   '${l.legLabel(provider.currentLeg)} · ${l.setLabel(provider.currentSet)}',
@@ -173,7 +180,7 @@ class _LivePlayerStatsScreenState extends State<LivePlayerStatsScreen> {
                     onPageChanged: (i) => setState(() => _page = i),
                     itemBuilder: (_, i) {
                       if (!twoUp) return slotPage(i);
-                      final left  = i * 2;
+                      final left = i * 2;
                       final right = left + 1;
                       // An odd player out keeps the middle of the page rather
                       // than half of it with nothing beside it.
@@ -243,28 +250,31 @@ class LivePlayerStatsPanel extends StatelessWidget {
         if (game == null || provider.gameOver) return const SizedBox.shrink();
 
         final states = provider.playerStates;
-        final index  = slotIndex.clamp(0, states.length - 1);
+        final index = slotIndex.clamp(0, states.length - 1);
 
         return LayoutBuilder(
           builder: (context, box) {
             // Measured against the pane, not the window: a wide pane keeps the
             // rows together in the middle instead of stretching them.
-            final side =
-                ((box.maxWidth - kStatsPaneMaxWidth) / 2).clamp(12.0, 200.0);
+            final side = ((box.maxWidth - kStatsPaneMaxWidth) / 2).clamp(
+              12.0,
+              200.0,
+            );
 
             return _SlotStatsPage(
-              padding:       EdgeInsets.fromLTRB(side, 8, side, 20),
-              showHeader:    showHeader,
-              state:         states[index],
-              game:          game,
-              isActiveSlot:  index == provider.currentPlayerIndex,
-              isNextSlot:    index != provider.currentPlayerIndex &&
-                             index == provider.nextSlotIndex,
-              currentLeg:    provider.currentLeg,
-              currentSet:    provider.currentSet,
+              padding: EdgeInsets.fromLTRB(side, 8, side, 20),
+              showHeader: showHeader,
+              state: states[index],
+              game: game,
+              isActiveSlot: index == provider.currentPlayerIndex,
+              isNextSlot:
+                  index != provider.currentPlayerIndex &&
+                  index == provider.nextSlotIndex,
+              currentLeg: provider.currentLeg,
+              currentSet: provider.currentSet,
               liveRemaining: provider.liveDisplayRemaining,
-              liveBust:      provider.liveBust,
-              dartsInVisit:  provider.dartsInVisit,
+              liveBust: provider.liveBust,
+              dartsInVisit: provider.dartsInVisit,
             );
           },
         );
@@ -279,21 +289,26 @@ class LivePlayerStatsPanel extends StatelessWidget {
 class _SlotStatsPage extends StatelessWidget {
   final PlayerState state;
   final Game game;
+
   /// Whether this slot currently holds the turn.
   final bool isActiveSlot;
+
   /// Whether this slot throws right after the active one.
   final bool isNextSlot;
   final int currentLeg;
   final int currentSet;
+
   /// Remaining score including the darts of the in-progress visit; only
   /// meaningful for the active slot.
   final int liveRemaining;
   final bool liveBust;
   final int dartsInVisit;
+
   /// Padding around the list. The full screen centres its column with
   /// [contentPadding], which measures the whole window and would therefore
   /// overshoot inside a pane that is only a part of it.
   final EdgeInsetsGeometry? padding;
+
   /// Whether the header card is part of the page.
   final bool showHeader;
 
@@ -316,29 +331,32 @@ class _SlotStatsPage extends StatelessWidget {
     final l = context.l10n;
 
     final match = ThrowStats.fromThrows(state.throws);
-    final leg   = ThrowStats.fromThrows(
-        throwsInLeg(state.throws, currentLeg, currentSet));
+    final theoretical = B74CheckoutStats.fromThrows(state.throws);
+    final leg = ThrowStats.fromThrows(
+      throwsInLeg(state.throws, currentLeg, currentSet),
+    );
 
     return ListView(
-      padding: padding ?? contentPadding(context, top: 8, bottom: 24, innerH: 12),
+      padding:
+          padding ?? contentPadding(context, top: 8, bottom: 24, innerH: 12),
       children: [
         if (showHeader) ...[
           _HeaderCard(
-            state:         state,
-            game:          game,
-            isActiveSlot:  isActiveSlot,
-            isNextSlot:    isNextSlot,
+            state: state,
+            game: game,
+            isActiveSlot: isActiveSlot,
+            isNextSlot: isNextSlot,
             liveRemaining: liveRemaining,
-            liveBust:      liveBust,
-            dartsInVisit:  dartsInVisit,
+            liveBust: liveBust,
+            dartsInVisit: dartsInVisit,
           ),
           const SizedBox(height: 10),
         ] else ...[
           _PanelTitle(
-            state:        state,
-            game:         game,
+            state: state,
+            game: game,
             isActiveSlot: isActiveSlot,
-            isNextSlot:   isNextSlot,
+            isNextSlot: isNextSlot,
           ),
           const SizedBox(height: 10),
         ],
@@ -349,29 +367,41 @@ class _SlotStatsPage extends StatelessWidget {
         _SectionCard(
           title: l.thisLeg,
           rows: [
-            (l.legAverage,        leg.average.toStringAsFixed(2)),
-            (l.dartsThisLeg,      '${leg.totalDarts}'),
-            (l.visitsThisLeg,     '${leg.totalVisits}'),
-            (l.bestVisitThisLeg,  '${leg.highestVisit}'),
+            (l.legAverage, leg.average.toStringAsFixed(2)),
+            (l.dartsThisLeg, '${leg.totalDarts}'),
+            (l.visitsThisLeg, '${leg.totalVisits}'),
+            (l.bestVisitThisLeg, '${leg.highestVisit}'),
           ],
         ),
         const SizedBox(height: 10),
         _SectionCard(
           title: l.matchSoFar,
           rows: [
-            (l.threeDartAvg,    match.average.toStringAsFixed(2)),
-            (l.first9Average,   match.first9Average.toStringAsFixed(2)),
-            (l.totalDarts,      '${match.totalDarts}'),
-            (l.visits,          '${match.totalVisits}'),
-            (l.highestVisit,    '${match.highestVisit}'),
+            (l.threeDartAvg, match.average.toStringAsFixed(2)),
+            (l.first9Average, match.first9Average.toStringAsFixed(2)),
+            (l.totalDarts, '${match.totalDarts}'),
+            (l.visits, '${match.totalVisits}'),
+            (l.highestVisit, '${match.highestVisit}'),
             (l.highestCheckout, '${match.highestCheckout}'),
-            (l.checkoutsHit,
-                '${match.checkoutSuccesses} / ${match.checkoutAttempts}'),
-            (l.checkoutRate,    '${match.checkoutRate.toStringAsFixed(1)} %'),
-            (l.dartsAtFinish,   '${match.checkoutDarts}'),
-            (l.doubleRate,      '${match.doubleRate.toStringAsFixed(1)} %'),
-            (l.busts,
-                '${match.busts} (${match.bustRate.toStringAsFixed(0)} %)'),
+            (
+              l.checkoutsHit,
+              '${match.checkoutSuccesses} / ${match.checkoutAttempts}',
+            ),
+            (l.checkoutRate, '${match.checkoutRate.toStringAsFixed(1)} %'),
+            (
+              'B74 theoretische finishkansen',
+              '${theoretical.finishes} / ${theoretical.opportunities}',
+            ),
+            (
+              'B74 finishpercentage (theoretisch)',
+              '${theoretical.rate.toStringAsFixed(1)} %',
+            ),
+            (l.dartsAtFinish, '${match.checkoutDarts}'),
+            (l.doubleRate, '${match.doubleRate.toStringAsFixed(1)} %'),
+            (
+              l.busts,
+              '${match.busts} (${match.bustRate.toStringAsFixed(0)} %)',
+            ),
           ],
         ),
         const SizedBox(height: 10),
@@ -379,10 +409,10 @@ class _SlotStatsPage extends StatelessWidget {
         if (state.isTeam) ...[
           const SizedBox(height: 10),
           _TeamMembersCard(
-            state:        state,
-            game:         game,
+            state: state,
+            game: game,
             isActiveSlot: isActiveSlot,
-            isNextSlot:   isNextSlot,
+            isNextSlot: isNextSlot,
           ),
         ],
       ],
@@ -415,11 +445,13 @@ class _HeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
 
-    final showBust  = isActiveSlot && liveBust;
-    final remaining = isActiveSlot && !liveBust ? liveRemaining : state.remaining;
+    final showBust = isActiveSlot && liveBust;
+    final remaining = isActiveSlot && !liveBust
+        ? liveRemaining
+        : state.remaining;
     // Placement mode keeps its own leg counter, because there every slot checks
     // out every leg.
     final legsWon = game.placementMode
@@ -437,23 +469,25 @@ class _HeaderCard extends StatelessWidget {
               state.label(context.l10n),
               textAlign: TextAlign.center,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             if (state.isTeam)
               Text(
                 state.player.label(context.l10n),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
             const SizedBox(height: 6),
             _StatusChip(
-              state:        state,
-              game:         game,
+              state: state,
+              game: game,
               isActiveSlot: isActiveSlot,
-              isNextSlot:   isNextSlot,
+              isNextSlot: isNextSlot,
             ),
             const SizedBox(height: 6),
             Text(
@@ -470,8 +504,9 @@ class _HeaderCard extends StatelessWidget {
             Text(
               l.setsLegsWon(state.setsWon, legsWon),
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
             ),
             FinishSuggestionWidget(
               remaining: showBust ? state.remaining : remaining,
@@ -508,7 +543,7 @@ class _PanelTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 2, 4, 0),
@@ -522,25 +557,27 @@ class _PanelTitle extends StatelessWidget {
                 Text(
                   state.label(context.l10n),
                   overflow: TextOverflow.ellipsis,
-                  style: theme.textTheme.titleLarge
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 if (state.isTeam)
                   Text(
                     state.player.label(context.l10n),
                     overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: cs.onSurfaceVariant),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
                   ),
               ],
             ),
           ),
           const SizedBox(width: 10),
           _StatusChip(
-            state:        state,
-            game:         game,
+            state: state,
+            game: game,
             isActiveSlot: isActiveSlot,
-            isNextSlot:   isNextSlot,
+            isNextSlot: isNextSlot,
           ),
         ],
       ),
@@ -566,21 +603,21 @@ class _StatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
-    final l  = context.l10n;
+    final l = context.l10n;
 
     final String label;
     final Color background;
     final Color foreground;
     if (game.placementMode && state.legPlacement != null) {
-      label      = l.placementBadge(state.legPlacement!);
+      label = l.placementBadge(state.legPlacement!);
       background = cs.secondaryContainer;
       foreground = cs.onSecondaryContainer;
     } else if (isActiveSlot) {
-      label      = l.throwingNow;
+      label = l.throwingNow;
       background = cs.primary;
       foreground = cs.onPrimary;
     } else if (isNextSlot) {
-      label      = l.throwsNext;
+      label = l.throwsNext;
       background = cs.surfaceContainerHighest;
       foreground = cs.onSurfaceVariant;
     } else {
@@ -596,10 +633,10 @@ class _StatusChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: Theme.of(context)
-              .textTheme
-              .labelSmall
-              ?.copyWith(color: foreground, fontWeight: FontWeight.bold),
+          style: Theme.of(context).textTheme.labelSmall?.copyWith(
+            color: foreground,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
@@ -624,7 +661,7 @@ class _RulesCard extends StatelessWidget {
       return _SectionCard(
         title: l.rulesLabel,
         rows: [
-          (l.checkIn,  checkInLabel(l, game.checkInFor(id))),
+          (l.checkIn, checkInLabel(l, game.checkInFor(id))),
           (l.checkOut, checkOutLabel(l, game.checkOutFor(id))),
         ],
       );
@@ -662,8 +699,9 @@ class _SectionCard extends StatelessWidget {
           children: [
             Text(
               title,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 6),
             for (final row in rows) StatRow(label: row.$1, value: row.$2),
@@ -689,7 +727,7 @@ class _RecentVisitsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l     = context.l10n;
+    final l = context.l10n;
 
     final ordered = List<DartThrow>.of(state.throws)
       ..sort((a, b) {
@@ -708,24 +746,28 @@ class _RecentVisitsCard extends StatelessWidget {
           children: [
             Text(
               l.lastVisits,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 6),
             if (recent.isEmpty)
-              Text(l.noVisitsYet,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: theme.colorScheme.onSurfaceVariant))
+              Text(
+                l.noVisitsYet,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              )
             else
               for (final t in recent)
                 ThrowRow(
-                  t:          t,
+                  t: t,
                   playerName: state.isTeam
                       ? state.players
-                          .firstWhere((p) => p.id == t.playerId)
-                          .label(l)
+                            .firstWhere((p) => p.id == t.playerId)
+                            .label(l)
                       : null,
-                  showSet:    game.sets > 1,
+                  showSet: game.sets > 1,
                 ),
           ],
         ),
@@ -751,15 +793,22 @@ class _HighlightsRow extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-              child: _HighlightTile(label: l.count180, value: stats.count180)),
+            child: _HighlightTile(label: l.count180, value: stats.count180),
+          ),
           const SizedBox(width: 8),
           Expanded(
-              child: _HighlightTile(
-                  label: l.count140plus, value: stats.count140plus)),
+            child: _HighlightTile(
+              label: l.count140plus,
+              value: stats.count140plus,
+            ),
+          ),
           const SizedBox(width: 8),
           Expanded(
-              child: _HighlightTile(
-                  label: l.count100plus, value: stats.count100plus)),
+            child: _HighlightTile(
+              label: l.count100plus,
+              value: stats.count100plus,
+            ),
+          ),
         ],
       ),
     );
@@ -776,7 +825,7 @@ class _HighlightTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10),
@@ -795,8 +844,9 @@ class _HighlightTile extends StatelessWidget {
           ),
           Text(
             label,
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: cs.onSurfaceVariant),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -822,7 +872,7 @@ class _TeamMembersCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final l     = context.l10n;
+    final l = context.l10n;
     final order = state.throwingOrder;
 
     return Card(
@@ -833,8 +883,9 @@ class _TeamMembersCard extends StatelessWidget {
           children: [
             Text(
               l.throwingOrderLabel,
-              style: theme.textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 4),
             for (var i = 0; i < order.length; i++)
@@ -846,10 +897,10 @@ class _TeamMembersCard extends StatelessWidget {
                 statusLabel: i != 0
                     ? null
                     : isActiveSlot
-                        ? l.throwingNow
-                        : isNextSlot
-                            ? l.throwsNext
-                            : null,
+                    ? l.throwingNow
+                    : isNextSlot
+                    ? l.throwsNext
+                    : null,
                 initiallyExpanded: i == 0 && isActiveSlot,
               ),
           ],
@@ -870,6 +921,7 @@ class _MemberRow extends StatelessWidget {
   final Player player;
   final List<DartThrow> throws;
   final String? statusLabel;
+
   /// Whether the details start out open, used for the member at the oche.
   final bool initiallyExpanded;
 
@@ -883,8 +935,8 @@ class _MemberRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
     final stats = ThrowStats.fromThrows(throws);
     final hasThrown = stats.totalDarts > 0;
 
@@ -892,7 +944,9 @@ class _MemberRow extends StatelessWidget {
       radius: 12,
       backgroundColor: cs.primaryContainer,
       child: Text(
-        player.label(context.l10n).isNotEmpty ? player.label(context.l10n)[0].toUpperCase() : '?',
+        player.label(context.l10n).isNotEmpty
+            ? player.label(context.l10n)[0].toUpperCase()
+            : '?',
         style: TextStyle(
           fontSize: 11,
           fontWeight: FontWeight.bold,
@@ -907,8 +961,9 @@ class _MemberRow extends StatelessWidget {
           child: Text(
             player.label(context.l10n),
             overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodyMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         if (statusLabel != null) ...[
@@ -924,8 +979,8 @@ class _MemberRow extends StatelessWidget {
     final summary = Text(
       hasThrown
           ? 'Ø ${stats.average.toStringAsFixed(1)}'
-              '  ·  ${l.highAbbr} ${stats.highestVisit}'
-              '  ·  ${l.dartsN(stats.totalDarts)}'
+                '  ·  ${l.highAbbr} ${stats.highestVisit}'
+                '  ·  ${l.dartsN(stats.totalDarts)}'
           : l.noThrowData,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
@@ -965,12 +1020,13 @@ class _MemberRow extends StatelessWidget {
         subtitle: summary,
         children: [
           StatRow(
-              label: l.threeDartAvg, value: stats.average.toStringAsFixed(2)),
-          StatRow(label: l.totalDarts,   value: '${stats.totalDarts}'),
-          StatRow(label: l.visits,       value: '${stats.totalVisits}'),
+            label: l.threeDartAvg,
+            value: stats.average.toStringAsFixed(2),
+          ),
+          StatRow(label: l.totalDarts, value: '${stats.totalDarts}'),
+          StatRow(label: l.visits, value: '${stats.totalVisits}'),
           StatRow(label: l.highestVisit, value: '${stats.highestVisit}'),
-          StatRow(
-              label: l.highestCheckout, value: '${stats.highestCheckout}'),
+          StatRow(label: l.highestCheckout, value: '${stats.highestCheckout}'),
           StatRow(
             label: l.checkoutsHit,
             value: '${stats.checkoutSuccesses} / ${stats.checkoutAttempts}',
@@ -988,7 +1044,7 @@ class _MemberRow extends StatelessWidget {
             label: l.busts,
             value: '${stats.busts} (${stats.bustRate.toStringAsFixed(0)} %)',
           ),
-          StatRow(label: l.count180,     value: '${stats.count180}'),
+          StatRow(label: l.count180, value: '${stats.count180}'),
           StatRow(label: l.count140plus, value: '${stats.count140plus}'),
           StatRow(label: l.count100plus, value: '${stats.count100plus}'),
         ],

@@ -6,8 +6,7 @@ import '../models/dart_throw.dart';
 bool isB74CheckoutOpportunity(int remainingBefore) =>
     remainingBefore >= 2 &&
     remainingBefore <= 170 &&
-    !const {159, 162, 163, 165, 166, 168, 169}
-        .contains(remainingBefore);
+    !const {159, 162, 163, 165, 166, 168, 169}.contains(remainingBefore);
 
 /// A numeric-input-friendly measure, independent of per-dart hit data.
 /// Each committed visit counts at most once, including a bust.
