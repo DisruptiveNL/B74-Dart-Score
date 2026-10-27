@@ -74,10 +74,29 @@ void main() {
       EdgeInsets insets = EdgeInsets.zero,
     }) {
       final limit = surface.height - insets.bottom;
-      for (final label in ['Miss', 'Bull (25)']) {
-        final rect = tester.getRect(find.widgetWithText(InkWell, label).first);
-        expect(rect.bottom, lessThanOrEqualTo(limit),
-            reason: '"$label" reaches into the bottom system inset');
+
+      for (final label in ['MISS', 'ACCEPT']) {
+        final finder = find.text(label);
+
+        expect(
+          finder,
+          findsOneWidget,
+          reason: '"$label" must exist on the scoring screen',
+        );
+
+        final rect = tester.getRect(finder);
+
+        expect(
+          rect.top,
+          greaterThanOrEqualTo(insets.top),
+          reason: '"$label" is above the visible area',
+        );
+
+        expect(
+          rect.bottom,
+          lessThanOrEqualTo(limit),
+          reason: '"$label" reaches into the bottom system inset',
+        );
       }
     }
 
@@ -112,26 +131,21 @@ void main() {
       expectActionRowVisible(tester, _seSurface);
     });
 
-    testWidgets('gives Miss and Bull the same size', (tester) async {
+    testWidgets('MISS and BUST have equally sized touch targets', (tester) async {
       await pumpGame(tester, ['Ada', 'Zoe']);
-
-      final miss = tester.getRect(find.widgetWithText(InkWell, 'Miss').first);
-      final bull =
-          tester.getRect(find.widgetWithText(InkWell, 'Bull (25)').first);
-
-      expect(miss.width, moreOrLessEquals(bull.width, epsilon: 1));
-      expect(miss.height, moreOrLessEquals(bull.height, epsilon: 1));
+      final miss = tester.getRect(find.text('MISS'));
+      final bust = tester.getRect(find.text('BUST').last);
+      expect(miss.width, moreOrLessEquals(bust.width, epsilon: 1));
+      expect(miss.height, moreOrLessEquals(bust.height, epsilon: 1));
     });
 
-    testWidgets('still offers all twenty fields and the modifiers',
-        (tester) async {
+    testWidgets('numeric input offers quick scores and confirmation', (tester) async {
       await pumpGame(tester, ['Ada', 'Zoe', 'Ben', 'Cleo']);
-
-      for (var field = 1; field <= 20; field++) {
-        expect(find.widgetWithText(InkWell, '$field'), findsWidgets,
-            reason: 'field $field is missing from the compact grid');
+      for (final score in ['26', '30', '57', '41', '45', '60', '95', '100', '140', '180']) {
+        expect(find.text(score), findsWidgets);
       }
-      expect(find.text('Triple'), findsOneWidget);
+      expect(find.text('ACCEPT'), findsOneWidget);
+      expect(find.text('CLEAR'), findsOneWidget);
     });
 
     testWidgets('leaves the bottom inset of a rounded phone to the system',
@@ -146,22 +160,12 @@ void main() {
       expectActionRowVisible(tester, _roundedSurface, insets: _roundedInsets);
     });
 
-    testWidgets('opens no gap between the grid and the action row',
-        (tester) async {
-      // A GridView without a padding of its own helps itself to the vertical
-      // MediaQuery padding. Unconsumed, the home indicator inset therefore used
-      // to end up inside the grid, as dead space above the action row.
-      await pumpGame(
-        tester,
-        ['Ada', 'Zoe', 'Ben', 'Cleo'],
-        surface: _roundedSurface,
-        insets: _roundedInsets,
-      );
-
-      final grid = tester.getRect(find.byType(GridView));
-      final lastRow = tester.getRect(find.widgetWithText(InkWell, '20').first);
-      expect(grid.bottom - lastRow.bottom, lessThan(1),
-          reason: 'the grid reserves space below its last row');
+    testWidgets('action controls stay outside the scrolling keypad', (tester) async {
+      await pumpGame(tester, ['Ada', 'Zoe']);
+      final scroll = find.byType(SingleChildScrollView);
+      final accept = find.text('ACCEPT');
+      expect(accept, findsOneWidget);
+      expect(find.ancestor(of: accept, matching: scroll), findsNothing);
     });
 
     testWidgets('fits on a phone that is both short and rounded',
@@ -180,10 +184,9 @@ void main() {
           insets: _roundedInsets);
     });
 
-    testWidgets('a field button stays large enough to hit', (tester) async {
+    testWidgets('action buttons stay large enough to hit', (tester) async {
       await pumpGame(tester, ['Ada', 'Zoe', 'Ben', 'Cleo']);
-
-      final button = tester.getSize(find.widgetWithText(InkWell, '20').first);
+      final button = tester.getSize(find.widgetWithText(OutlinedButton, 'MISS'));
       expect(button.height, greaterThanOrEqualTo(30));
       expect(button.width, greaterThanOrEqualTo(44));
     });

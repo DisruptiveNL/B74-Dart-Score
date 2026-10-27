@@ -1055,6 +1055,46 @@ class GameProvider extends ChangeNotifier
     await startGame(game, ordered);
   }
 
+  /// B74 v0.3: commit one numeric X01 visit only after explicit ACCEPT.
+  /// [finishDart] is required for a checkout, and forbidden otherwise.
+  /// This first increment supports straight-in, double-out competition games.
+  bool _numericVisitSubmitting = false;
+
+  Future<void> submitNumericVisit(int score, {int? finishDart, bool bust = false}) async {
+    if (_numericVisitSubmitting) throw StateError('Beurt wordt al verwerkt');
+    if (_game == null || _gameOver || isBotTurn || inputLocked) {
+      throw StateError('Score-invoer is momenteel niet beschikbaar');
+    }
+    if (_currentVisitDarts.isNotEmpty) {
+      throw StateError('Wissel niet tussen dart- en beurtinvoer binnen een beurt');
+    }
+    if (score < 0 || score > 180) throw ArgumentError('Score moet tussen 0 en 180 liggen');
+    if (bust && score != 0) throw ArgumentError('BUST heeft altijd score 0');
+    if (currentGameMode != GameMode.straightIn) {
+      throw StateError('Numerieke invoer ondersteunt nog geen double/master-in');
+    }
+    final remaining = currentPlayerState.remaining;
+    final after = remaining - score;
+    if (!bust && (after < 0 || (currentCheckoutMode != CheckoutMode.straightOut && after == 1))) {
+      throw ArgumentError('Ongeldige score: gebruik BUST');
+    }
+    final checkout = !bust && after == 0;
+    if (checkout && (finishDart == null || finishDart < 1 || finishDart > 3)) {
+      throw ArgumentError('Selecteer finishdart 1, 2 of 3');
+    }
+    if (!checkout && finishDart != null) throw ArgumentError('Geen finishdart zonder checkout');
+    if (checkout && currentCheckoutMode == CheckoutMode.doubleOut &&
+        (remaining > 170 || const {159,162,163,165,166,168,169}.contains(remaining))) {
+      throw ArgumentError('Geen mogelijke double-out finish');
+    }
+    _numericVisitSubmitting = true;
+    try {
+      await _submitVisit(score, checkout ? finishDart! : 3, bust: bust);
+    } finally {
+      _numericVisitSubmitting = false;
+    }
+  }
+
   // ── Submit visit ──────────────────────────────────────────────────────────
 
   /// Records the current slot's visit: persists the throw (optionally with

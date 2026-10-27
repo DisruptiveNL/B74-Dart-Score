@@ -4,6 +4,7 @@ import '../l10n/app_localizations.dart';
 import '../providers/game_provider.dart';
 import '../providers/tablet_layout_provider.dart';
 import '../widgets/dartboard_input.dart';
+import '../widgets/b74_numeric_input.dart';
 import '../widgets/finish_suggestion_widget.dart';
 import '../models/game.dart';
 import 'game_summary_screen.dart';
@@ -306,7 +307,7 @@ class _PhoneBody extends StatelessWidget {
                 child: scoreboardBlock,
               ),
             ),
-            const Expanded(child: DartboardInput<GameProvider>()),
+            const Expanded(child: B74NumericInput()),
           ],
         ),
       ),
@@ -365,7 +366,7 @@ class _TabletBody extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             scoreboardBlock,
-            const Expanded(child: DartboardInput<GameProvider>(fillHeight: true)),
+            const Expanded(child: B74NumericInput()),
           ],
         ),
         secondary: stats,
@@ -410,10 +411,10 @@ class _TabletBody extends StatelessWidget {
                         children: [
                           checkoutHint,
                           const Expanded(
-                              child: DartboardInput<GameProvider>(fillHeight: true)),
+                              child: B74NumericInput()),
                         ],
                       )
-                    : const DartboardInput<GameProvider>(fillHeight: true),
+                    : const B74NumericInput(),
                 secondary: stats,
               ),
             ),

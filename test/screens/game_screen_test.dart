@@ -2,6 +2,7 @@ import 'package:dartscore_app/database/db_helper.dart';
 import 'package:dartscore_app/models/game.dart';
 import 'package:dartscore_app/models/player.dart';
 import 'package:dartscore_app/providers/bot_runner.dart';
+import 'package:dartscore_app/widgets/b74_numeric_input.dart';
 import 'package:dartscore_app/providers/game_provider.dart';
 import 'package:dartscore_app/screens/game_screen.dart';
 import 'package:flutter/material.dart';
@@ -39,10 +40,16 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    /// Taps a field button on the dartboard input.
-    Future<void> tapField(WidgetTester tester, String label) async {
-      await tester.tap(find.widgetWithText(InkWell, label).first);
+    /// Selects a quick visit score, then explicitly accepts it.
+    Future<void> acceptScore(WidgetTester tester, String score) async {
+      final input = find.byType(B74NumericInput);
+      await tester.tap(find.descendant(of: input, matching: find.text(score)).first);
       await tester.pump();
+      await tester.runAsync(() async {
+        await tester.tap(find.text('ACCEPT'));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+      await tester.pumpAndSettle();
     }
 
     testWidgets('locks the input while a bot is on turn', (tester) async {
@@ -70,39 +77,29 @@ void main() {
 
       expect(find.text('Pro bot'), findsOneWidget);
 
-      await tapField(tester, '20');
-      await tester.pump();
-
+      final accept = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'ACCEPT'));
+      expect(accept.onPressed, isNull);
       expect(provider.dartsInVisit, 0);
       expect(provider.playerStates[0].remaining, 501);
     });
 
-    testWidgets('offers Continue while a finished visit is on show',
+    testWidgets('requires ACCEPT and advances after a numeric visit',
         (tester) async {
-      // A pause long enough never to run out on its own: what ends it here
-      // is the button.
-      TurnPacing.debugVisitPause = const Duration(hours: 1);
       await pumpGame(tester);
-
-      await tapField(tester, '20');
-      await tapField(tester, '20');
-      await tapField(tester, '20');
-
-      expect(provider.visitPending, isTrue);
-      expect(find.text('Continue'), findsOneWidget);
-      expect(find.text('Miss'), findsNothing, reason: 'its place is taken');
-
-      // Recording the visit is a real write, let through.
+      await tester.tap(find.descendant(
+        of: find.byType(B74NumericInput), matching: find.text('60')).first);
+      await tester.pump();
+      expect(provider.currentPlayerIndex, 0);
+      expect(provider.playerStates[0].remaining, 501);
+      expect(find.text('ACCEPT'), findsOneWidget);
       await tester.runAsync(() async {
-        await tester.tap(find.text('Continue'));
+        await tester.tap(find.text('ACCEPT'));
         await Future<void>.delayed(const Duration(milliseconds: 50));
       });
       await tester.pumpAndSettle();
-
-      expect(provider.visitPending, isFalse);
+      expect(provider.playerStates[0].remaining, 441);
       expect(provider.currentPlayerIndex, 1);
       expect(find.text('Continue'), findsNothing);
-      expect(find.text('Miss'), findsOneWidget);
     });
 
     testWidgets('shows both players on their start score', (tester) async {
@@ -132,30 +129,24 @@ void main() {
       expect(provider.currentPlayerState.player.name, isNot(firstUp));
     });
 
-    testWidgets('takes a dart back when undo is tapped', (tester) async {
+    testWidgets('undoes the last accepted numeric visit', (tester) async {
       await pumpGame(tester);
-
-      await tapField(tester, '20');
-      expect(provider.dartsInVisit, 1);
-
-      await tester.tap(find.byIcon(Icons.undo_rounded));
+      await acceptScore(tester, '60');
+      expect(provider.playerStates[0].remaining, 441);
+      expect(provider.currentPlayerIndex, 1);
+      await tester.runAsync(() async {
+        await tester.tap(find.byIcon(Icons.undo_rounded));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
       await tester.pumpAndSettle();
-
-      expect(provider.dartsInVisit, 0);
-      expect(find.text('501'), findsNWidgets(2));
+      expect(provider.playerStates[0].remaining, 501);
+      expect(provider.currentPlayerIndex, 0);
     });
 
-    testWidgets('scores a triple when the triple segment is selected',
-        (tester) async {
+    testWidgets('scores a numeric visit of 60 after ACCEPT', (tester) async {
       await pumpGame(tester);
-
-      await tester.tap(find.text('Triple'));
-      await tester.pumpAndSettle();
-      await tapField(tester, '20');
-      await tester.pumpAndSettle();
-
-      // 501 - 60, shown live while the visit is still open.
-      expect(find.text('441'), findsOneWidget);
+      await acceptScore(tester, '60');
+      expect(provider.playerStates[0].remaining, 441);
     });
 
     testWidgets('asks before leaving when the close button is used',
