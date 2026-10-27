@@ -28,7 +28,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 26;
+  static const int schemaVersion = 27;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -274,6 +274,9 @@ class DbHelper {
     if (oldVersion < 26) {
       await _createCompetitionInbox(db);
     }
+    if (oldVersion < 27) {
+      await _createCompetitionGameLinks(db);
+    }
   }
 
   /// Recomputes `dart_throws.checkout_darts` for every visit already on the
@@ -485,6 +488,17 @@ class DbHelper {
         'FOREIGN KEY(player_id) REFERENCES players(id))');
   }
 
+  /// Each official single owns at most one X01 game; game creation and
+  /// linking are committed in the same SQLite transaction.
+  Future<void> _createCompetitionGameLinks(Database db) async {
+    await db.execute('CREATE TABLE IF NOT EXISTS competition_game_links ('
+        'match_id TEXT NOT NULL, slot INTEGER NOT NULL, game_id INTEGER NOT NULL UNIQUE, '
+        'starter_external_id TEXT NOT NULL, '
+        'PRIMARY KEY(match_id, slot), '
+        'FOREIGN KEY(match_id) REFERENCES competition_inbox(match_id), '
+        'FOREIGN KEY(game_id) REFERENCES games(id))');
+  }
+
   /// Generates a random RFC 4122 version-4 UUID for migrating rows that predate
   /// the uuid column.
   static String _generateUuid() {
@@ -517,6 +531,7 @@ class DbHelper {
       )
     ''');
     await _createCompetitionInbox(db);
+    await _createCompetitionGameLinks(db);
     await db.execute('''
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -728,19 +743,59 @@ class DbHelper {
   // Games
 
   /// Inserts an X01 game and its ordered player list, returning the game id.
-  Future<int> insertGame(Game g, List<int> playerIds) async {
+  Future<int> insertGame(Game g, List<int> playerIds, {
+    String? competitionMatchId,
+    int? competitionSlot,
+    String? starterExternalId,
+  }) async {
     final d = await db;
-    final map = g.toMap()..remove('id');
-    final gameId = await d.insert('games', map);
-    for (var i = 0; i < playerIds.length; i++) {
-      await d.insert('game_players', {
-        'game_id': gameId,
-        'player_id': playerIds[i],
-        'sort_order': i,
-      });
-    }
-    return gameId;
+    return d.transaction((txn) async {
+      if (competitionMatchId != null) {
+        if (competitionSlot == null || starterExternalId == null) {
+          throw ArgumentError('Incomplete competition game link');
+        }
+        final existing = await txn.query('competition_game_links',
+            where: 'match_id = ? AND slot = ?',
+            whereArgs: [competitionMatchId, competitionSlot]);
+        if (existing.isNotEmpty) {
+          throw StateError('Deze competitiesingle heeft al een X01-game');
+        }
+      }
+      final map = g.toMap()..remove('id');
+      final gameId = await txn.insert('games', map);
+      for (var i = 0; i < playerIds.length; i++) {
+        await txn.insert('game_players', {
+          'game_id': gameId,
+          'player_id': playerIds[i],
+          'sort_order': i,
+        });
+      }
+      if (competitionMatchId != null) {
+        await txn.insert('competition_game_links', {
+          'match_id': competitionMatchId,
+          'slot': competitionSlot,
+          'game_id': gameId,
+          'starter_external_id': starterExternalId,
+        });
+      }
+      return gameId;
+    });
   }
+
+  Future<int?> competitionGameId(String matchId, int slot) async {
+    final d = await db;
+    final rows = await d.query('competition_game_links',
+        columns: ['game_id'], where: 'match_id = ? AND slot = ?',
+        whereArgs: [matchId, slot]);
+    return rows.isEmpty ? null : rows.single['game_id'] as int;
+  }
+
+  Future<Game?> getGame(int id) async {
+    final d = await db;
+    final rows = await d.query('games', where: 'id = ?', whereArgs: [id]);
+    return rows.isEmpty ? null : Game.fromMap(rows.single);
+  }
+
 
   /// The ids of the finished games [playerId] won, their team games included.
   ///

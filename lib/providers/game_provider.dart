@@ -1017,11 +1017,18 @@ class GameProvider extends ChangeNotifier
 
   /// Starts a brand-new game: persists it, builds fresh per-slot state for the
   /// players or teams, resets leg/set/turn counters, and clears undo/redo.
-  Future<void> startGame(Game game, List<Player> players) async {
+  Future<void> startGame(Game game, List<Player> players, {
+    String? competitionMatchId,
+    int? competitionSlot,
+    String? starterExternalId,
+  }) async {
     _handicaps = game.handicaps ?? {};
 
     final ids = players.map((p) => p.id!).toList();
-    final gameId = await _db.insertGame(game, ids);
+    final gameId = await _db.insertGame(game, ids,
+        competitionMatchId: competitionMatchId,
+        competitionSlot: competitionSlot,
+        starterExternalId: starterExternalId);
     _game = Game(
       id: gameId,
       startScore: game.startScore,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/competition_match_catalog.dart';
 import '../services/competition_sync_contract.dart';
+import 'competition_single_screen.dart';
 
 /// Imported competition matches. Scoring integration follows in Patch 02E.
 class CompetitionMatchesScreen extends StatefulWidget {
@@ -82,14 +83,8 @@ class _MatchCard extends StatelessWidget {
                 'VS\n${match.away}: ${single.awayPlayer}${_bond(single.awayBond)}'),
             isThreeLine: true,
             trailing: const Icon(Icons.chevron_right),
-            onTap: () => showDialog<void>(context: context, builder: (ctx) =>
-              AlertDialog(
-                title: Text('Single ${single.slot}'),
-                content: const Text('De opstelling en spelregels zijn ontvangen. '
-                    'Starten via de bestaande X01-scoremotor volgt in Patch 02E.'),
-                actions: [TextButton(onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Sluiten'))],
-              )),
+            onTap: () => Navigator.push(context, MaterialPageRoute<void>(
+                builder: (_) => CompetitionSingleScreen(match: match, single: single))),
           ),
         ),
       ],

@@ -49,19 +49,23 @@ class CompetitionMatchSummary {
 
 class CompetitionSingleSummary {
   final int slot;
+  final String homeId;
+  final String awayId;
   final String homePlayer;
   final String awayPlayer;
   final String? homeBond;
   final String? awayBond;
 
-  CompetitionSingleSummary._(this.slot, this.homePlayer, this.awayPlayer,
-      this.homeBond, this.awayBond);
+  CompetitionSingleSummary._(this.slot, this.homeId, this.awayId,
+      this.homePlayer, this.awayPlayer, this.homeBond, this.awayBond);
 
   factory CompetitionSingleSummary.fromPacket(Map<String, dynamic> packet) {
     final home = packet['homePlayer'] as Map<String, dynamic>;
     final away = packet['awayPlayer'] as Map<String, dynamic>;
     return CompetitionSingleSummary._(
       packet['slot'] as int,
+      home['id'] as String,
+      away['id'] as String,
       home['name'] as String,
       away['name'] as String,
       home['bondNumber'] as String?,
