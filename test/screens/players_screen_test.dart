@@ -43,10 +43,12 @@ void main() {
 
     /// Taps the sync action of the player named [name].
     Future<void> openSync(WidgetTester tester, String name) async {
-      await tester.tap(find.descendant(
-        of: find.ancestor(of: find.text(name), matching: find.byType(Card)),
-        matching: find.byIcon(Icons.share_rounded),
-      ));
+      await tester.tap(
+        find.descendant(
+          of: find.ancestor(of: find.text(name), matching: find.byType(Card)),
+          matching: find.byIcon(Icons.share_rounded),
+        ),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
     }
@@ -59,19 +61,19 @@ void main() {
     /// reaches. Opening a second player in the same test is deliberately not
     /// covered here, because the second read deadlocks against the first.
     Future<void> openStats(WidgetTester tester, String name) async {
-      await tester.tap(find.descendant(
-        of: find.ancestor(
-          of: find.text(name),
-          matching: find.byType(Card),
+      await tester.tap(
+        find.descendant(
+          of: find.ancestor(of: find.text(name), matching: find.byType(Card)),
+          matching: find.byIcon(Icons.bar_chart_rounded),
         ),
-        matching: find.byIcon(Icons.bar_chart_rounded),
-      ));
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
     }
 
-    testWidgets('opens the statistics beside the list on a tablet',
-        (tester) async {
+    testWidgets('opens the statistics beside the list on a tablet', (
+      tester,
+    ) async {
       await pumpPlayers(tester, const Size(1180, 820));
 
       expect(find.textContaining('Pick a player'), findsOneWidget);
@@ -79,7 +81,8 @@ void main() {
       await openStats(tester, 'Zoe');
 
       final stats = tester.widget<PlayerStatsScreen>(
-          find.byType(PlayerStatsScreen));
+        find.byType(PlayerStatsScreen),
+      );
       expect(stats.embedded, isTrue);
       expect(stats.player.name, 'Zoe');
       expect(find.textContaining('Pick a player'), findsNothing);
@@ -90,27 +93,33 @@ void main() {
       expect(title.left, greaterThan(list.right));
     });
 
-    testWidgets('shows sync in the same pane, one thing at a time',
-        (tester) async {
+    testWidgets('shows sync in the same pane, one thing at a time', (
+      tester,
+    ) async {
       await pumpPlayers(tester, const Size(1180, 820));
 
       await openSync(tester, 'Zoe');
 
       final sync = tester.widget<SyncScreen>(find.byType(SyncScreen));
-      expect(sync.embedded, isTrue,
-          reason: 'the pane brings its own title bar');
+      expect(
+        sync.embedded,
+        isTrue,
+        reason: 'the pane brings its own title bar',
+      );
       expect(sync.initialPlayer?.name, 'Zoe');
       expect(find.text('Sync of Zoe'), findsOneWidget);
       // One at a time: the statistics gave the pane up rather than sharing it.
       expect(find.byType(PlayerStatsScreen), findsNothing);
     });
 
-    testWidgets('sends the button over the list into the pane as well',
-        (tester) async {
+    testWidgets('sends the button over the list into the pane as well', (
+      tester,
+    ) async {
       await pumpPlayers(tester, const Size(1180, 820));
 
       await tester.tap(
-          find.widgetWithText(FloatingActionButton, 'Sync Profile'));
+        find.widgetWithText(FloatingActionButton, 'Sync Profile'),
+      );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
@@ -122,8 +131,9 @@ void main() {
       expect(find.text('Profile Sync'), findsWidgets);
     });
 
-    testWidgets('never lists a bot, whatever tier has been played against',
-        (tester) async {
+    testWidgets('never lists a bot, whatever tier has been played against', (
+      tester,
+    ) async {
       await tester.runAsync(() => players.botFor(BotLevel.pro));
 
       await pumpPlayers(tester, const Size(390, 844));
@@ -139,7 +149,8 @@ void main() {
       await openStats(tester, 'Zoe');
 
       final stats = tester.widget<PlayerStatsScreen>(
-          find.byType(PlayerStatsScreen));
+        find.byType(PlayerStatsScreen),
+      );
       expect(stats.embedded, isFalse);
     });
 
@@ -150,14 +161,16 @@ void main() {
       // not over the statistics, which is where a scaffold would float them.
       final divider = tester.getRect(find.byKey(kPaneDividerKey));
       for (final label in ['Add Player', 'Sync Profile']) {
-        final button = tester.getRect(find.widgetWithText(
-            FloatingActionButton, label));
+        final button = tester.getRect(
+          find.widgetWithText(FloatingActionButton, label),
+        );
         expect(button.right, lessThan(divider.left));
       }
     });
 
-    testWidgets('does not start over while the divider is dragged',
-        (tester) async {
+    testWidgets('does not start over while the divider is dragged', (
+      tester,
+    ) async {
       await pumpPlayers(tester, const Size(1180, 820));
       await openStats(tester, 'Zoe');
       await pumpUntilLoaded(tester);
@@ -167,8 +180,11 @@ void main() {
 
       // A drag rebuilds the pane on every frame. Reading the database again
       // for each of them would put the spinner back for the whole gesture.
-      await tester.drag(find.byKey(kPaneDividerKey), const Offset(80, 0),
-          touchSlopX: 0);
+      await tester.drag(
+        find.byKey(kPaneDividerKey),
+        const Offset(80, 0),
+        touchSlopX: 0,
+      );
       await tester.pump();
 
       expect(find.byType(CircularProgressIndicator), findsNothing);

@@ -142,8 +142,9 @@ class DonationProvider extends ChangeNotifier {
     _errorMessage = null;
     notifyListeners();
 
-    final response =
-        await InAppPurchase.instance.queryProductDetails(productIds);
+    final response = await InAppPurchase.instance.queryProductDetails(
+      productIds,
+    );
     // The store's own words for why it refused, which the plugin hands over and
     // the screen has so far thrown away. Without it a failed query and a store
     // that lists nothing look the same from the outside.

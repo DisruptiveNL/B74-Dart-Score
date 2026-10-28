@@ -7,8 +7,9 @@ import 'package:flutter/services.dart';
 /// CocoaPods on iOS and this project builds without it. That keeps the contract
 /// to the one thing the backup restore needs.
 class DocumentPicker {
-  static const MethodChannel _channel =
-      MethodChannel('dartscore/document_picker');
+  static const MethodChannel _channel = MethodChannel(
+    'dartscore/document_picker',
+  );
 
   /// Opens the document picker and returns a path this app can read, or null
   /// when the user backed out without choosing anything.

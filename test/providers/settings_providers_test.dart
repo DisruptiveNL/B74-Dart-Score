@@ -31,17 +31,21 @@ void main() {
       expect(TurnPacing.visitPause, const Duration(seconds: 2));
     });
 
-    test('comes back on the pace the user left it on, and hands it to the games',
-        () async {
-      SharedPreferences.setMockInitialValues({'game_pace': GamePace.fast.index});
+    test(
+      'comes back on the pace the user left it on, and hands it to the games',
+      () async {
+        SharedPreferences.setMockInitialValues({
+          'game_pace': GamePace.fast.index,
+        });
 
-      final provider = await _loaded(PaceProvider());
+        final provider = await _loaded(PaceProvider());
 
-      expect(provider.pace, GamePace.fast);
-      expect(TurnPacing.pace, GamePace.fast);
-      expect(TurnPacing.botDartDelay, const Duration(milliseconds: 400));
-      expect(TurnPacing.visitPause, const Duration(seconds: 1));
-    });
+        expect(provider.pace, GamePace.fast);
+        expect(TurnPacing.pace, GamePace.fast);
+        expect(TurnPacing.botDartDelay, const Duration(milliseconds: 400));
+        expect(TurnPacing.visitPause, const Duration(seconds: 1));
+      },
+    );
 
     test('writes a change down and passes it on at once', () async {
       SharedPreferences.setMockInitialValues({});
@@ -54,14 +58,16 @@ void main() {
       expect(prefs.getInt('game_pace'), GamePace.slow.index);
     });
 
-    test('shrugs off a stored value from a version with other options',
-        () async {
-      SharedPreferences.setMockInitialValues({'game_pace': 42});
+    test(
+      'shrugs off a stored value from a version with other options',
+      () async {
+        SharedPreferences.setMockInitialValues({'game_pace': 42});
 
-      final provider = await _loaded(PaceProvider());
+        final provider = await _loaded(PaceProvider());
 
-      expect(provider.pace, GamePace.normal);
-    });
+        expect(provider.pace, GamePace.normal);
+      },
+    );
   });
 
   group('ThemeProvider', () {
@@ -88,8 +94,10 @@ void main() {
       await provider.setMode(ThemeMode.light);
 
       expect(provider.mode, ThemeMode.light);
-      expect(await _loaded(ThemeProvider()).then((p) => p.mode),
-          ThemeMode.light);
+      expect(
+        await _loaded(ThemeProvider()).then((p) => p.mode),
+        ThemeMode.light,
+      );
     });
 
     test('falls back to B74 dark for an unknown stored theme', () async {
@@ -137,8 +145,10 @@ void main() {
 
       await provider.setLanguage('en');
 
-      expect(await _loaded(LanguageProvider()).then((p) => p.languageCode),
-          'en');
+      expect(
+        await _loaded(LanguageProvider()).then((p) => p.languageCode),
+        'en',
+      );
     });
 
     test('clears the override rather than storing a null language', () async {
@@ -163,11 +173,15 @@ void main() {
       provider.setSplitFraction(SplitPane.game, 0.65, landscape: true);
 
       expect(provider.splitFraction(SplitPane.game, landscape: true), 0.65);
-      expect(provider.splitFraction(SplitPane.game, landscape: false),
-          kDefaultSplitFraction);
+      expect(
+        provider.splitFraction(SplitPane.game, landscape: false),
+        kDefaultSplitFraction,
+      );
       // And the other screens are untouched by it.
-      expect(provider.splitFraction(SplitPane.history, landscape: true),
-          kDefaultSplitFraction);
+      expect(
+        provider.splitFraction(SplitPane.history, landscape: true),
+        kDefaultSplitFraction,
+      );
     });
 
     test('comes back on the split each orientation was left on', () async {
@@ -182,8 +196,10 @@ void main() {
 
       expect(next.splitFraction(SplitPane.game, landscape: true), 0.65);
       expect(next.splitFraction(SplitPane.players, landscape: false), 0.38);
-      expect(next.splitFraction(SplitPane.game, landscape: false),
-          kDefaultSplitFraction);
+      expect(
+        next.splitFraction(SplitPane.game, landscape: false),
+        kDefaultSplitFraction,
+      );
     });
 
     test('refuses a split that would leave a pane unusable', () async {
@@ -192,8 +208,10 @@ void main() {
 
       provider.setSplitFraction(SplitPane.game, 0.95, landscape: true);
 
-      expect(provider.splitFraction(SplitPane.game, landscape: true),
-          kMaxSplitFraction);
+      expect(
+        provider.splitFraction(SplitPane.game, landscape: true),
+        kMaxSplitFraction,
+      );
     });
   });
 }

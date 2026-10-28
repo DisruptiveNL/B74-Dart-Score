@@ -33,7 +33,10 @@ void main() {
     final db = await DbHelper.instance.db;
     expect((await db.query('players')).length, 8);
     expect((await db.query('competition_player_links')).length, 8);
-    expect((await db.query('players')).every((p) => p['favorite_doubles'] == 'Bull'), isTrue);
+    expect(
+      (await db.query('players')).every((p) => p['favorite_doubles'] == 'Bull'),
+      isTrue,
+    );
     expect((await db.query('competition_inbox')).length, 1);
   });
 
@@ -42,8 +45,10 @@ void main() {
     await inbox.receive(CompetitionSyncContract.encode(packet()));
     final changed = packet();
     (changed['singles'] as List)[0]['homePlayer']['name'] = 'Different';
-    await expectLater(inbox.receive(CompetitionSyncContract.encode(changed)),
-        throwsStateError);
+    await expectLater(
+      inbox.receive(CompetitionSyncContract.encode(changed)),
+      throwsStateError,
+    );
     final db = await DbHelper.instance.db;
     expect((await db.query('competition_inbox')).length, 1);
     expect((await db.query('players')).length, 8);

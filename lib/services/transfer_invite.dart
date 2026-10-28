@@ -90,14 +90,13 @@ class TransferInvite {
     required int port,
     required String token,
     HotspotCredentials? hotspot,
-  }) =>
-      TransferInvite(
-        addresses: addresses,
-        port: port,
-        token: token,
-        hotspot: hotspot,
-        expiresAt: DateTime.now().add(kInviteLifetime),
-      );
+  }) => TransferInvite(
+    addresses: addresses,
+    port: port,
+    token: token,
+    hotspot: hotspot,
+    expiresAt: DateTime.now().add(kInviteLifetime),
+  );
 
   /// Whether this invitation is past [expiresAt].
   bool get isExpired => DateTime.now().isAfter(expiresAt);
@@ -127,8 +126,9 @@ class TransferInvite {
 
     final Map<String, dynamic> record;
     try {
-      final decoded =
-          jsonDecode(utf8.decode(base45Decode(raw.substring(prefix.length))));
+      final decoded = jsonDecode(
+        utf8.decode(base45Decode(raw.substring(prefix.length))),
+      );
       if (decoded is! Map<String, dynamic>) return null;
       record = decoded;
     } catch (_) {
@@ -165,8 +165,8 @@ class TransferInvite {
   /// Every address as the URL the client asks for. In the order they should be
   /// tried.
   List<Uri> get endpoints => [
-        for (final address in addresses) endpointAt(address),
-      ];
+    for (final address in addresses) endpointAt(address),
+  ];
 
   /// The URL this invitation's server answers on at [address].
   ///

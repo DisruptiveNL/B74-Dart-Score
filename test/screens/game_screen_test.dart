@@ -42,7 +42,9 @@ void main() {
     /// Selects a quick visit score, then explicitly accepts it.
     Future<void> acceptScore(WidgetTester tester, String score) async {
       final input = find.byType(B74NumericInput);
-      await tester.tap(find.descendant(of: input, matching: find.text(score)).first);
+      await tester.tap(
+        find.descendant(of: input, matching: find.text(score)).first,
+      );
       await tester.pump();
       await tester.runAsync(() async {
         await tester.tap(find.text('ACCEPT'));
@@ -55,10 +57,13 @@ void main() {
       // Real writes, let through: the fake clock of a widget test never
       // completes them.
       await tester.runAsync(() async {
-        final botId = await DbHelper.instance.insertPlayer(Player(
+        final botId = await DbHelper.instance.insertPlayer(
+          Player(
             name: BotLevel.pro.storedName,
             uuid: BotLevel.pro.uuid,
-            botLevel: BotLevel.pro));
+            botLevel: BotLevel.pro,
+          ),
+        );
         final bot = (await DbHelper.instance.getPlayer(botId))!;
         await provider.startGame(
           Game(
@@ -76,17 +81,26 @@ void main() {
 
       expect(find.text('Pro bot'), findsOneWidget);
 
-      final accept = tester.widget<FilledButton>(find.widgetWithText(FilledButton, 'ACCEPT'));
+      final accept = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, 'ACCEPT'),
+      );
       expect(accept.onPressed, isNull);
       expect(provider.dartsInVisit, 0);
       expect(provider.playerStates[0].remaining, 501);
     });
 
-    testWidgets('requires ACCEPT and advances after a numeric visit',
-        (tester) async {
+    testWidgets('requires ACCEPT and advances after a numeric visit', (
+      tester,
+    ) async {
       await pumpGame(tester);
-      await tester.tap(find.descendant(
-        of: find.byType(B74NumericInput), matching: find.text('60')).first);
+      await tester.tap(
+        find
+            .descendant(
+              of: find.byType(B74NumericInput),
+              matching: find.text('60'),
+            )
+            .first,
+      );
       await tester.pump();
       expect(provider.currentPlayerIndex, 0);
       expect(provider.playerStates[0].remaining, 501);
@@ -148,23 +162,28 @@ void main() {
       expect(provider.playerStates[0].remaining, 441);
     });
 
-    testWidgets('asks before leaving when the close button is used',
-        (tester) async {
+    testWidgets('asks before leaving when the close button is used', (
+      tester,
+    ) async {
       await pumpGame(tester);
 
       // Scoped to the app bar: the Miss button on the dartboard carries a
       // close icon of its own, and tapping that would score instead of asking
       // anything.
-      await tester.tap(find.descendant(
-        of: find.byType(AppBar),
-        matching: find.byIcon(Icons.close_rounded),
-      ));
+      await tester.tap(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byIcon(Icons.close_rounded),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.byType(AlertDialog), findsOneWidget);
     });
 
-    testWidgets('answers the system back with the same question', (tester) async {
+    testWidgets('answers the system back with the same question', (
+      tester,
+    ) async {
       // CLAUDE.md makes this a convention across all four live screens: a
       // running game must not be lost to a stray back gesture, so the route
       // refuses to pop and asks instead.
@@ -177,8 +196,9 @@ void main() {
       expect(find.byType(GameScreen), findsOneWidget);
     });
 
-    testWidgets('stays in the game when the question is declined',
-        (tester) async {
+    testWidgets('stays in the game when the question is declined', (
+      tester,
+    ) async {
       await pumpGame(tester);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();

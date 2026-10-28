@@ -42,9 +42,9 @@ class ModeLiveInfoScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: listenable,
       builder: (context, _) {
-        final info  = data(context);
+        final info = data(context);
         final theme = Theme.of(context);
-        final l     = context.l10n;
+        final l = context.l10n;
 
         return Scaffold(
           appBar: AppBar(
@@ -53,9 +53,12 @@ class ModeLiveInfoScreen extends StatelessWidget {
               children: [
                 Text(info.title),
                 if (info.subtitle != null)
-                  Text(info.subtitle!,
-                      style: theme.textTheme.labelSmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    info.subtitle!,
+                    style: theme.textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
               ],
             ),
             centerTitle: true,
@@ -69,14 +72,20 @@ class ModeLiveInfoScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(l.lastVisits,
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        l.lastVisits,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 6),
                       if (info.recentVisits.isEmpty)
-                        Text(l.noVisitsYet,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.onSurfaceVariant))
+                        Text(
+                          l.noVisitsYet,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        )
                       else
                         for (final v in info.recentVisits)
                           Padding(
@@ -87,13 +96,18 @@ class ModeLiveInfoScreen extends StatelessWidget {
                                   child: Align(
                                     alignment: Alignment.centerLeft,
                                     child: VisitDartsRow(
-                                        darts: v.darts, slots: info.visitSlots),
+                                      darts: v.darts,
+                                      slots: info.visitSlots,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                Text(v.yield,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                        color: theme.colorScheme.onSurfaceVariant)),
+                                Text(
+                                  v.yield,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -108,9 +122,12 @@ class ModeLiveInfoScreen extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text(l.statistics,
-                          style: theme.textTheme.titleSmall
-                              ?.copyWith(fontWeight: FontWeight.bold)),
+                      Text(
+                        l.statistics,
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       const SizedBox(height: 4),
                       for (final (label, value) in info.stats)
                         StatRow(label: label, value: value),

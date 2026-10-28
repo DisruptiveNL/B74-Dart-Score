@@ -18,17 +18,22 @@ void main() {
       yield const LicenseEntryWithLineBreaks(['beta'], 'Beta license text.');
       // One entry covering two packages is listed under both, the way the
       // registry means it.
-      yield const LicenseEntryWithLineBreaks(
-          ['alpha', 'gamma'], 'Shared license text.');
+      yield const LicenseEntryWithLineBreaks([
+        'alpha',
+        'gamma',
+      ], 'Shared license text.');
       // The linter ships with no build, and the engine registers one notice
       // whose package name is a bare dash.
-      yield const LicenseEntryWithLineBreaks(
-          ['flutter_lints'], 'Lint license text.');
+      yield const LicenseEntryWithLineBreaks([
+        'flutter_lints',
+      ], 'Lint license text.');
       yield const LicenseEntryWithLineBreaks(['-'], 'Nameless license text.');
       // A development package sharing an entry with a shipped one: the entry
       // has to survive under the shipped name.
-      yield const LicenseEntryWithLineBreaks(
-          ['test_api', 'beta'], 'Shared with a dev package.');
+      yield const LicenseEntryWithLineBreaks([
+        'test_api',
+        'beta',
+      ], 'Shared with a dev package.');
     });
   });
 
@@ -41,8 +46,9 @@ void main() {
     await pumpUntilLoaded(tester);
   }
 
-  testWidgets('lists every package, and a package under each of its licenses',
-      (tester) async {
+  testWidgets('lists every package, and a package under each of its licenses', (
+    tester,
+  ) async {
     await pumpLicenses(tester, const Size(400, 900));
 
     expect(find.text('alpha'), findsOneWidget);
@@ -54,8 +60,9 @@ void main() {
     expect(find.text('1 license'), findsNWidgets(2));
   });
 
-  testWidgets('leaves out what only a development machine runs',
-      (tester) async {
+  testWidgets('leaves out what only a development machine runs', (
+    tester,
+  ) async {
     await pumpLicenses(tester, const Size(400, 900));
 
     expect(find.text('flutter_lints'), findsNothing);
@@ -68,8 +75,9 @@ void main() {
     expect(find.text('Shared with a dev package.'), findsOneWidget);
   });
 
-  testWidgets('writes a word where the registry names a package with a dash',
-      (tester) async {
+  testWidgets('writes a word where the registry names a package with a dash', (
+    tester,
+  ) async {
     await pumpLicenses(tester, const Size(400, 900));
 
     expect(find.text('-'), findsNothing);

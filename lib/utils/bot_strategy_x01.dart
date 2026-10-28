@@ -41,12 +41,19 @@ BoardHit x01Target({
     return _oneDartFinish(remaining, checkOut);
   }
 
-  final within = FinishCalculator.getRoutes(remaining, null,
-      maxDarts: dartsLeft, checkoutMode: checkOut);
+  final within = FinishCalculator.getRoutes(
+    remaining,
+    null,
+    maxDarts: dartsLeft,
+    checkoutMode: checkOut,
+  );
   if (within.primary != null) return _parseLabel(within.primary!.first);
 
-  final setup = FinishCalculator.getRoutes(remaining, null,
-      checkoutMode: checkOut);
+  final setup = FinishCalculator.getRoutes(
+    remaining,
+    null,
+    checkoutMode: checkOut,
+  );
   if (setup.primary != null) return _parseLabel(setup.primary!.first);
 
   return (field: 20, multiplier: 3);
@@ -73,6 +80,10 @@ BoardHit _oneDartFinish(int remaining, CheckoutMode checkOut) {
 BoardHit _parseLabel(String label) {
   if (label == 'Bull') return (field: 25, multiplier: 2);
   if (label == '25') return (field: 25, multiplier: 1);
-  final multiplier = switch (label[0]) { 'T' => 3, 'D' => 2, _ => 1 };
+  final multiplier = switch (label[0]) {
+    'T' => 3,
+    'D' => 2,
+    _ => 1,
+  };
   return (field: int.parse(label.substring(1)), multiplier: multiplier);
 }

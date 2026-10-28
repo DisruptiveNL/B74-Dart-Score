@@ -39,10 +39,10 @@ void main() {
         players = await insertPlayers(names);
         await game.startGame(
           Game(
-            startScore:    501,
-            legs:          1,
-            sets:          1,
-            createdAt:     DateTime(2026, 4, 1),
+            startScore: 501,
+            legs: 1,
+            sets: 1,
+            createdAt: DateTime(2026, 4, 1),
             startingOrder: StartingOrder.fixed,
           ),
           players,
@@ -64,16 +64,19 @@ void main() {
 
     /// Where the header card naming [name] sits.
     Rect headerRect(WidgetTester tester, String name) => tester.getRect(
-          find.descendant(of: find.byType(Card), matching: find.text(name)),
-        );
+      find.descendant(of: find.byType(Card), matching: find.text(name)),
+    );
 
-    testWidgets('carries two players side by side on a tablet turned over',
-        (tester) async {
+    testWidgets('carries two players side by side on a tablet turned over', (
+      tester,
+    ) async {
       await pumpInfo(tester, size: const Size(1180, 820));
 
       expect(find.byKey(kPaneDividerKey), findsOneWidget);
-      expect(headerRect(tester, 'Zoe').left,
-          greaterThan(headerRect(tester, 'Ada').right));
+      expect(
+        headerRect(tester, 'Zoe').left,
+        greaterThan(headerRect(tester, 'Ada').right),
+      );
       // Both are named at once, so the bar names both.
       expect(find.text('Ada · Zoe'), findsOneWidget);
     });
@@ -86,8 +89,9 @@ void main() {
       expect(find.text('Zoe'), findsNothing);
     });
 
-    testWidgets('pages in twos, and gives the odd player the middle',
-        (tester) async {
+    testWidgets('pages in twos, and gives the odd player the middle', (
+      tester,
+    ) async {
       await pumpInfo(
         tester,
         size: const Size(1180, 820),
@@ -109,8 +113,9 @@ void main() {
       expect(find.byKey(kPaneDividerKey), findsNothing);
     });
 
-    testWidgets('shows the last three visits, and says so before the first',
-        (tester) async {
+    testWidgets('shows the last three visits, and says so before the first', (
+      tester,
+    ) async {
       await pumpInfo(tester, size: const Size(400, 1400));
       expect(find.text('No visits yet'), findsOneWidget);
       expect(find.byType(ThrowRow), findsNothing);
@@ -132,8 +137,11 @@ void main() {
           .widgetList<ThrowRow>(find.byType(ThrowRow))
           .map((r) => r.t.score)
           .toList();
-      expect(shown, [57, 54, 51],
-          reason: 'the newest three in order, the sixty has dropped off');
+      expect(shown, [
+        57,
+        54,
+        51,
+      ], reason: 'the newest three in order, the sixty has dropped off');
     });
 
     testWidgets('is one column at a phone size', (tester) async {

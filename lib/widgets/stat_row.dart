@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 class StatRow extends StatelessWidget {
   final String label;
   final String value;
+
   /// Taller rows for lists that separate their entries with dividers, where
   /// the tighter spacing would crowd the lines.
   final bool spacious;
@@ -34,8 +35,9 @@ class StatRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.right,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],

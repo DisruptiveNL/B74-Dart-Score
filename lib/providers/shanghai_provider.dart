@@ -22,17 +22,22 @@ import 'bot_runner.dart';
 class ShanghaiPlayerState implements LabelledSlot {
   @override
   final String displayName;
+
   /// All players in this slot: 1 for individual, N for team.
   @override
   final List<Player> players;
+
   /// Which player in [players] throws NEXT (rotates after each team visit).
   final int currentPlayerIdx;
+
   /// Whether this slot represents a team rather than a single player.
   @override
   final bool isTeamSlot;
   final int score;
+
   /// Sequential variant only: the number this slot is currently aiming for (1-20).
   final int progress;
+
   /// Sequential variant only: total darts thrown once the slot completed target 20.
   final int? finishedAtDart;
 
@@ -65,16 +70,15 @@ class ShanghaiPlayerState implements LabelledSlot {
     int? progress,
     int? finishedAtDart,
     int? currentPlayerIdx,
-  }) =>
-      ShanghaiPlayerState(
-        displayName: displayName,
-        players: players,
-        currentPlayerIdx: currentPlayerIdx ?? this.currentPlayerIdx,
-        isTeamSlot: isTeamSlot,
-        score: score ?? this.score,
-        progress: progress ?? this.progress,
-        finishedAtDart: finishedAtDart ?? this.finishedAtDart,
-      );
+  }) => ShanghaiPlayerState(
+    displayName: displayName,
+    players: players,
+    currentPlayerIdx: currentPlayerIdx ?? this.currentPlayerIdx,
+    isTeamSlot: isTeamSlot,
+    score: score ?? this.score,
+    progress: progress ?? this.progress,
+    finishedAtDart: finishedAtDart ?? this.finishedAtDart,
+  );
 }
 
 // ── Variant constants ─────────────────────────────────────────────────────────
@@ -105,6 +109,7 @@ class ShanghaiProvider extends ChangeNotifier
 
   /// Darts thrown so far in the current visit.
   final List<ShanghaiThrow> _visitBuffer = [];
+
   /// All persisted throws for undo (newest last).
   final List<ShanghaiThrow> _throwHistory = [];
 
@@ -123,14 +128,17 @@ class ShanghaiProvider extends ChangeNotifier
   ShanghaiGame? get game => _game;
   List<ShanghaiPlayerState> get playerStates => _playerStates;
   int get currentPlayerIndex => _currentPlayerIndex;
-  ShanghaiPlayerState get currentPlayerState => _playerStates[_currentPlayerIndex];
+  ShanghaiPlayerState get currentPlayerState =>
+      _playerStates[_currentPlayerIndex];
   int get currentRound => _currentRound;
   bool get gameOver => _gameOver;
   int? get winnerId => _winnerId;
   List<ShanghaiThrow> get visitBuffer => List.unmodifiable(_visitBuffer);
   int get dartsInVisit => _visitBuffer.length;
+
   /// Every persisted dart of the game, oldest first.
   List<ShanghaiThrow> get throwHistory => List.unmodifiable(_throwHistory);
+
   /// Whether there is a dart to undo. Not while a bot is throwing, and not
   /// when every recorded dart is a bot's: those are never undone on their
   /// own, see [undoLastDart].
@@ -169,7 +177,8 @@ class ShanghaiProvider extends ChangeNotifier
   }
 
   /// Maximum darts in a single visit (7 for clockwise, otherwise 3).
-  int get visitDartLimit => _variant == ShanghaiVariant.clockwise ? _clockwiseMaxTarget : 3;
+  int get visitDartLimit =>
+      _variant == ShanghaiVariant.clockwise ? _clockwiseMaxTarget : 3;
 
   // ── Shanghai hint ──────────────────────────────────────────────────────────
 
@@ -182,7 +191,8 @@ class ShanghaiProvider extends ChangeNotifier
     final target = activeTarget;
     final hit = <int>[];
     for (final d in _visitBuffer) {
-      if (d.isMiss || d.target != target || hit.contains(d.multiplier)) return null;
+      if (d.isMiss || d.target != target || hit.contains(d.multiplier))
+        return null;
       hit.add(d.multiplier);
     }
     return [1, 2, 3].where((m) => !hit.contains(m)).toList();
@@ -193,7 +203,8 @@ class ShanghaiProvider extends ChangeNotifier
   /// Null if a Shanghai is no longer reachable in the current visit.
   int? get shanghaiStreakNeeded {
     if (_game == null ||
-        (_variant != ShanghaiVariant.clockwise && _variant != ShanghaiVariant.sequential)) {
+        (_variant != ShanghaiVariant.clockwise &&
+            _variant != ShanghaiVariant.sequential)) {
       return null;
     }
 
@@ -218,7 +229,10 @@ class ShanghaiProvider extends ChangeNotifier
 
   /// Builds one scoreboard slot per team (if [teams] is set) or one slot per
   /// player (individual game), each with zero score and fresh progress.
-  List<ShanghaiPlayerState> _buildSlots(List<Player> players, List<TeamConfig>? teams) {
+  List<ShanghaiPlayerState> _buildSlots(
+    List<Player> players,
+    List<TeamConfig>? teams,
+  ) {
     if (teams != null && teams.isNotEmpty) {
       return teams.map((team) {
         final teamPlayers = team.playerIds
@@ -226,17 +240,18 @@ class ShanghaiProvider extends ChangeNotifier
             .toList();
         return ShanghaiPlayerState(
           displayName: team.name,
-          players:     teamPlayers,
-          isTeamSlot:  true,
-          score:       0,
+          players: teamPlayers,
+          isTeamSlot: true,
+          score: 0,
         );
       }).toList();
     }
-    return players.map((p) => ShanghaiPlayerState(
-      displayName: p.name,
-      players:     [p],
-      score:       0,
-    )).toList();
+    return players
+        .map(
+          (p) =>
+              ShanghaiPlayerState(displayName: p.name, players: [p], score: 0),
+        )
+        .toList();
   }
 
   // ── Resume / Start ─────────────────────────────────────────────────────────
@@ -299,18 +314,19 @@ class ShanghaiProvider extends ChangeNotifier
   /// a fixed order.
   Future<void> startRematch(ShanghaiGame template, List<Player> players) async {
     final isRandom = template.startingOrder == StartingOrder.random;
-    final ordered  = isRandom ? (List.of(players)..shuffle(Random()))
-                              : List.of(players);
-    final teams    = isRandom && template.teams != null
+    final ordered = isRandom
+        ? (List.of(players)..shuffle(Random()))
+        : List.of(players);
+    final teams = isRandom && template.teams != null
         ? (List.of(template.teams!)..shuffle(Random()))
         : template.teams;
     final game = ShanghaiGame(
-      variant:   template.variant,
-      legs:      template.legs,
-      sets:      template.sets,
+      variant: template.variant,
+      legs: template.legs,
+      sets: template.sets,
       createdAt: DateTime.now(),
       playerIds: ordered.map((p) => p.id!).toList(),
-      teams:     teams,
+      teams: teams,
       startingOrder: template.startingOrder,
     );
     await startGame(game, ordered);
@@ -336,8 +352,8 @@ class ShanghaiProvider extends ChangeNotifier
   Future<void> throwBotDart() async {
     final target = activeTarget;
     final aim = shanghaiTarget(
-      target:             target,
-      neededMultipliers:  shanghaiNeededMultipliers,
+      target: target,
+      neededMultipliers: shanghaiNeededMultipliers,
     );
     final hit = botThrower.throwAt(aim, currentPlayerState.player.botLevel!);
     // A dart on any other number is a miss here: the visit is scored on the
@@ -404,12 +420,15 @@ class ShanghaiProvider extends ChangeNotifier
     final points = t.multiplier * t.target;
     var updated = state.copyWith(score: state.score + points);
 
-    if (_variant == ShanghaiVariant.sequential && t.target == updated.progress) {
+    if (_variant == ShanghaiVariant.sequential &&
+        t.target == updated.progress) {
       final nextProgress = updated.progress + 1;
       updated = updated.copyWith(progress: nextProgress);
       if (updated.progress > _sequentialMaxTarget) {
         final slotPlayerIds = state.players.map((p) => p.id).toSet();
-        final dartsThrown = _throwHistory.where((h) => slotPlayerIds.contains(h.playerId)).length;
+        final dartsThrown = _throwHistory
+            .where((h) => slotPlayerIds.contains(h.playerId))
+            .length;
         updated = updated.copyWith(finishedAtDart: dartsThrown);
       }
     }
@@ -559,7 +578,9 @@ class ShanghaiProvider extends ChangeNotifier
     final s = _playerStates[_currentPlayerIndex];
     if (s.isTeamSlot) {
       final nextIdx = (s.currentPlayerIdx + 1) % s.players.length;
-      _playerStates[_currentPlayerIndex] = s.copyWith(currentPlayerIdx: nextIdx);
+      _playerStates[_currentPlayerIndex] = s.copyWith(
+        currentPlayerIdx: nextIdx,
+      );
     }
 
     _currentPlayerIndex = (_currentPlayerIndex + 1) % _playerStates.length;
@@ -572,8 +593,12 @@ class ShanghaiProvider extends ChangeNotifier
   /// Index of the player with the strictly highest score, or null if the
   /// top score is shared (draw).
   int? _scoreWinnerIndex() {
-    final topScore = _playerStates.map((s) => s.score).reduce((a, b) => a > b ? a : b);
-    final leaders = _playerStates.indexed.where((e) => e.$2.score == topScore).toList();
+    final topScore = _playerStates
+        .map((s) => s.score)
+        .reduce((a, b) => a > b ? a : b);
+    final leaders = _playerStates.indexed
+        .where((e) => e.$2.score == topScore)
+        .toList();
     return leaders.length == 1 ? leaders.first.$1 : null;
   }
 
@@ -639,12 +664,14 @@ class ShanghaiProvider extends ChangeNotifier
     final allThrows = await _db.getShanghaiThrowsForGame(_game!.id!);
 
     _playerStates = _playerStates
-        .map((s) => ShanghaiPlayerState(
-              displayName: s.displayName,
-              players:     s.players,
-              isTeamSlot:  s.isTeamSlot,
-              score:       0,
-            ))
+        .map(
+          (s) => ShanghaiPlayerState(
+            displayName: s.displayName,
+            players: s.players,
+            isTeamSlot: s.isTeamSlot,
+            score: 0,
+          ),
+        )
         .toList();
 
     _gameOver = false;
@@ -691,8 +718,7 @@ class ShanghaiProvider extends ChangeNotifier
         _pendingShanghaiPlayerId = null;
         if (!shanghai) {
           _gameOver = true;
-          _winnerId =
-              pendingPlayerId ?? _playerStates[pendingIdx].player.id;
+          _winnerId = pendingPlayerId ?? _playerStates[pendingIdx].player.id;
           return;
         }
       } else if (shanghai) {

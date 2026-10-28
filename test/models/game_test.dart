@@ -11,7 +11,9 @@ void main() {
         createdAt: createdAt,
         handicaps: {
           7: const PlayerHandicap(
-              checkIn: GameMode.doubleIn, checkOut: CheckoutMode.masterOut),
+            checkIn: GameMode.doubleIn,
+            checkOut: CheckoutMode.masterOut,
+          ),
           9: const PlayerHandicap(checkIn: GameMode.masterIn),
         },
       );
@@ -51,7 +53,9 @@ void main() {
         createdAt: createdAt,
         handicaps: {
           7: const PlayerHandicap(
-              checkIn: GameMode.doubleIn, checkOut: CheckoutMode.masterOut),
+            checkIn: GameMode.doubleIn,
+            checkOut: CheckoutMode.masterOut,
+          ),
         },
       );
 
@@ -70,9 +74,7 @@ void main() {
           TeamConfig(name: 'Team 1', playerIds: [7, 8]),
           TeamConfig(name: 'Team 2', playerIds: [9]),
         ],
-        handicaps: {
-          7: const PlayerHandicap(checkOut: CheckoutMode.masterOut),
-        },
+        handicaps: {7: const PlayerHandicap(checkOut: CheckoutMode.masterOut)},
       );
 
       final restored = Game.fromMap(game.toMap());
@@ -133,8 +135,10 @@ void main() {
         startingOrder: StartingOrder.fixed,
       );
 
-      expect(game.copyWith(finishedAt: createdAt).startingOrder,
-          StartingOrder.fixed);
+      expect(
+        game.copyWith(finishedAt: createdAt).startingOrder,
+        StartingOrder.fixed,
+      );
     });
   });
 }

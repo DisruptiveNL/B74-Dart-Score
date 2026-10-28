@@ -16,12 +16,15 @@ void main() {
 
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(channel, (call) async => <String, dynamic>{
-              'appName':     'DartScore',
-              'packageName': 'com.ratka.dartscore',
-              'version':     '1.0.0',
-              'buildNumber': '1',
-            });
+        .setMockMethodCallHandler(
+          channel,
+          (call) async => <String, dynamic>{
+            'appName': 'DartScore',
+            'packageName': 'com.ratka.dartscore',
+            'version': '1.0.0',
+            'buildNumber': '1',
+          },
+        );
   });
 
   tearDown(() {
@@ -35,8 +38,9 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('reads the licence notice in a column, not across the tablet',
-      (tester) async {
+  testWidgets('reads the licence notice in a column, not across the tablet', (
+    tester,
+  ) async {
     await pumpAbout(tester, const Size(1180, 820));
 
     await tester.tap(find.text('License').last);
@@ -44,8 +48,9 @@ void main() {
 
     // The notice is a page of prose, so it keeps the width the rest of the app
     // reads at rather than running the whole way across.
-    final notice =
-        tester.getRect(find.textContaining('GNU General Public').last);
+    final notice = tester.getRect(
+      find.textContaining('GNU General Public').last,
+    );
     expect(notice.width, lessThan(700));
     expect(notice.center.dx, closeTo(1180 / 2, 20));
   });
@@ -61,12 +66,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-        find.textContaining('https://github.com/Rdiger-36/DartScore'),
-        findsOneWidget);
+      find.textContaining('https://github.com/Rdiger-36/DartScore'),
+      findsOneWidget,
+    );
   });
 
-  testWidgets('opens the packaged licenses in the app\'s own screen',
-      (tester) async {
+  testWidgets('opens the packaged licenses in the app\'s own screen', (
+    tester,
+  ) async {
     await pumpAbout(tester, const Size(1180, 820));
 
     await tester.tap(find.text('Open Source Licenses').last);

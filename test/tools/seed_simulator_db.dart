@@ -50,11 +50,11 @@ const _kPrefix = 'ZZ Test';
 /// close to the cap is the one worth trying by hand: it runs for half a minute
 /// and is where a camera dropping frames shows up at all.
 const _kProfiles = [
-  (name: '$_kPrefix Klein',    visits: 220,   days: 5),
-  (name: '$_kPrefix Mittel',   visits: 2500,  days: 45),
-  (name: '$_kPrefix Gross',    visits: 19000, days: 150),
-  (name: '$_kPrefix Riesig',   visits: 45000, days: 220),
-  (name: '$_kPrefix Snapshot', visits: 500,   days: 20),
+  (name: '$_kPrefix Klein', visits: 220, days: 5),
+  (name: '$_kPrefix Mittel', visits: 2500, days: 45),
+  (name: '$_kPrefix Gross', visits: 19000, days: 150),
+  (name: '$_kPrefix Riesig', visits: 45000, days: 220),
+  (name: '$_kPrefix Snapshot', visits: 500, days: 20),
 ];
 
 void main() {
@@ -74,8 +74,13 @@ void main() {
 
     final random = Random(7);
     for (final profile in _kProfiles) {
-      final player = await _seedProfile(db, profile.name, profile.visits,
-          profile.days, random);
+      final player = await _seedProfile(
+        db,
+        profile.name,
+        profile.visits,
+        profile.days,
+        random,
+      );
 
       // One profile keeps part of its history only as a snapshot, which is what
       // a player who cleared their old games looks like. The ids come back
@@ -90,7 +95,9 @@ void main() {
 
       final throws = await db.getThrowsForPlayer(player.id!);
       // ignore: avoid_print
-      print('${profile.name}: ${throws.length} visits over ${profile.days} days');
+      print(
+        '${profile.name}: ${throws.length} visits over ${profile.days} days',
+      );
     }
 
     // ignore: avoid_print
@@ -100,12 +107,19 @@ void main() {
 
 /// Locates the app's database inside the booted simulator's data container.
 String _findSimulatorDatabase() {
-  final result = Process.runSync(
-      'xcrun', ['simctl', 'get_app_container', 'booted', _kBundleId, 'data']);
+  final result = Process.runSync('xcrun', [
+    'simctl',
+    'get_app_container',
+    'booted',
+    _kBundleId,
+    'data',
+  ]);
 
   if (result.exitCode != 0) {
-    fail('Could not find the app container. Is a simulator booted with the '
-        'app installed?\n${result.stderr}');
+    fail(
+      'Could not find the app container. Is a simulator booted with the '
+      'app installed?\n${result.stderr}',
+    );
   }
 
   final path = '${(result.stdout as String).trim()}/Documents/dartscore.db';
@@ -118,17 +132,29 @@ String _findSimulatorDatabase() {
 /// Deletes every player this tool created before, with their games and throws.
 Future<void> _removeSeededProfiles(DbHelper db) async {
   final d = await db.db;
-  final rows = await d.query('players',
-      columns: ['id'], where: 'name LIKE ?', whereArgs: ['$_kPrefix%']);
+  final rows = await d.query(
+    'players',
+    columns: ['id'],
+    where: 'name LIKE ?',
+    whereArgs: ['$_kPrefix%'],
+  );
 
   for (final row in rows) {
     final playerId = row['id'] as int;
-    final gameIds = await d.query('game_players',
-        columns: ['game_id'], where: 'player_id = ?', whereArgs: [playerId]);
+    final gameIds = await d.query(
+      'game_players',
+      columns: ['game_id'],
+      where: 'player_id = ?',
+      whereArgs: [playerId],
+    );
     for (final game in gameIds) {
       await db.deleteGame(game['game_id'] as int);
     }
-    await d.delete('dart_throws', where: 'player_id = ?', whereArgs: [playerId]);
+    await d.delete(
+      'dart_throws',
+      where: 'player_id = ?',
+      whereArgs: [playerId],
+    );
     await d.delete('players', where: 'id = ?', whereArgs: [playerId]);
   }
 }
@@ -139,7 +165,12 @@ Future<void> _removeSeededProfiles(DbHelper db) async {
 /// seventh of a month, which is what makes the picker walk through the
 /// transports instead of jumping straight from one code to the server.
 Future<Player> _seedProfile(
-    DbHelper db, String name, int visits, int days, Random random) async {
+  DbHelper db,
+  String name,
+  int visits,
+  int days,
+  Random random,
+) async {
   final playerId = await db.insertPlayer(Player(name: name));
   final perSession = (visits / days).ceil();
 
@@ -168,16 +199,16 @@ Future<Player> _seedProfile(
     final batch = d.batch();
     for (final t in throws) {
       batch.insert('dart_throws', {
-        'game_id':          gameId,
-        'player_id':        playerId,
-        'score':            t.score,
-        'darts_used':       t.dartsUsed,
-        'leg':              t.leg,
-        'set_':             t.set,
+        'game_id': gameId,
+        'player_id': playerId,
+        'score': t.score,
+        'darts_used': t.dartsUsed,
+        'leg': t.leg,
+        'set_': t.set,
         'remaining_before': t.remainingBefore,
-        'thrown_at':        t.thrownAt.millisecondsSinceEpoch,
-        'bust':             t.bust ? 1 : 0,
-        'hits_json':        t.hitsJson,
+        'thrown_at': t.thrownAt.millisecondsSinceEpoch,
+        'bust': t.bust ? 1 : 0,
+        'hits_json': t.hitsJson,
       });
     }
     await batch.commit(noResult: true);
@@ -208,7 +239,7 @@ List<DartThrow> _playSession(int visits, int startMs, Random random) {
     var finished = false;
 
     while (darts.length < 3 && !bust && !finished) {
-      final aim  = _aimFor(remaining - scored);
+      final aim = _aimFor(remaining - scored);
       final dart = _throwAt(aim.$1, aim.$2, random);
       darts.add(dart);
 
@@ -222,26 +253,30 @@ List<DartThrow> _playSession(int visits, int startMs, Random random) {
       }
     }
 
-    out.add(DartThrow(
-      gameId: 0, // filled in by the caller
-      playerId: 0,
-      score: bust ? 0 : scored,
-      dartsUsed: darts.length,
-      leg: leg,
-      set: set,
-      remainingBefore: remaining,
-      thrownAt: DateTime.fromMillisecondsSinceEpoch(time),
-      bust: bust,
-      hitsJson: jsonEncode(
-          darts.map((d) => {'f': d.$1, 'm': d.$2}).toList()),
-    ));
+    out.add(
+      DartThrow(
+        gameId: 0, // filled in by the caller
+        playerId: 0,
+        score: bust ? 0 : scored,
+        dartsUsed: darts.length,
+        leg: leg,
+        set: set,
+        remainingBefore: remaining,
+        thrownAt: DateTime.fromMillisecondsSinceEpoch(time),
+        bust: bust,
+        hitsJson: jsonEncode(darts.map((d) => {'f': d.$1, 'm': d.$2}).toList()),
+      ),
+    );
 
     time += 35000 + random.nextInt(25000);
     if (!bust) remaining -= scored;
 
     if (remaining == 0) {
       leg++;
-      if (leg > 3) { set++; leg = 1; }
+      if (leg > 3) {
+        set++;
+        leg = 1;
+      }
       remaining = 501;
     }
   }
@@ -278,15 +313,37 @@ List<DartThrow> _playSession(int visits, int startMs, Random random) {
 
 /// A segment next to [field] on the board, either side.
 int _neighbourOf(int field, Random random) {
-  const order = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5];
+  const order = [
+    20,
+    1,
+    18,
+    4,
+    13,
+    6,
+    10,
+    15,
+    2,
+    17,
+    3,
+    19,
+    7,
+    16,
+    8,
+    11,
+    14,
+    9,
+    12,
+    5,
+  ];
   final index = order.indexOf(field);
   if (index < 0) return field; // the bull has no neighbours worth modelling
-  return order[(index + (random.nextBool() ? 1 : order.length - 1)) % order.length];
+  return order[(index + (random.nextBool() ? 1 : order.length - 1)) %
+      order.length];
 }
 
 /// Points a dart on [field] with [multiplier] is worth.
 int _dartScore(int field, int multiplier) => switch (field) {
-      0  => 0,
-      25 => multiplier == 2 ? 50 : 25,
-      _  => field * multiplier,
-    };
+  0 => 0,
+  25 => multiplier == 2 ? 50 : 25,
+  _ => field * multiplier,
+};

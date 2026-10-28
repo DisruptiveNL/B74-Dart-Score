@@ -25,18 +25,22 @@ class AroundTheClockScreen extends StatelessWidget {
       builder: (context, provider, _) {
         if (provider.game == null) {
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (provider.gameOver) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const AroundTheClockSummaryScreen()),
+              MaterialPageRoute(
+                builder: (_) => const AroundTheClockSummaryScreen(),
+              ),
             );
           });
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         return _AroundTheClockGameView(provider: provider);
@@ -54,19 +58,19 @@ class _AroundTheClockGameView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l       = context.l10n;
-    final theme   = Theme.of(context);
-    final cs      = theme.colorScheme;
-    final states  = provider.playerStates;
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final states = provider.playerStates;
     final current = provider.currentPlayerState;
 
-    final tablet    = isTabletLayout(context);
-    final landscape = MediaQuery.sizeOf(context).width >=
-        MediaQuery.sizeOf(context).height;
+    final tablet = isTabletLayout(context);
+    final landscape =
+        MediaQuery.sizeOf(context).width >= MediaQuery.sizeOf(context).height;
 
     final scoreboard = _AroundTheClockBoard(
-      provider:   provider,
-      states:     states,
+      provider: provider,
+      states: states,
       currentIdx: provider.currentPlayerIndex,
       throwCount: provider.dartsInVisit,
     );
@@ -74,11 +78,8 @@ class _AroundTheClockGameView extends StatelessWidget {
     /// The player list on a tablet: standing in the middle of its box while it
     /// is short and scrolled once it is not.
     Widget listPane(EdgeInsets padding) => Center(
-          child: SingleChildScrollView(
-            padding: padding,
-            child: scoreboard,
-          ),
-        );
+      child: SingleChildScrollView(padding: padding, child: scoreboard),
+    );
 
     return PopScope(
       // A running game must not be lost to a stray back gesture; the system
@@ -169,7 +170,10 @@ class _AroundTheClockGameView extends StatelessWidget {
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -206,10 +210,12 @@ class _AroundTheClockGameView extends StatelessWidget {
                               onTap: provider.visitPending
                                   ? provider.flushHeldVisit
                                   : null,
-                              child: VisitDartsRow(darts: [
-                                for (final t in provider.visitBuffer)
-                                  visitDartFrom(t.field, t.multiplier, l),
-                              ]),
+                              child: VisitDartsRow(
+                                darts: [
+                                  for (final t in provider.visitBuffer)
+                                    visitDartFrom(t.field, t.multiplier, l),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -236,23 +242,25 @@ class _AroundTheClockGameView extends StatelessWidget {
       context: context,
       builder: (_) => Center(
         child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
-        child: AlertDialog(
-          title: Text(l.quitTitle),
-          content: Text(l.quitBody),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
-            FilledButton(
-              onPressed: () {
-                context.read<AroundTheClockProvider>().leaveGame();
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: Text(l.leave),
-            ),
-          ],
-        ),
+          constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
+          child: AlertDialog(
+            title: Text(l.quitTitle),
+            content: Text(l.quitBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l.cancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  context.read<AroundTheClockProvider>().leaveGame();
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: Text(l.leave),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -295,7 +303,6 @@ class _TargetDartboard extends StatelessWidget {
   }
 }
 
-
 // ── Scoreboard ────────────────────────────────────────────────────────────────
 
 /// Scrollable scoreboard listing each player's target and progress, auto-
@@ -333,7 +340,8 @@ class _AroundTheClockBoardState extends State<_AroundTheClockBoard> {
     if (old.states.length != widget.states.length) {
       _keys = List.generate(widget.states.length, (_) => GlobalKey());
     }
-    if (old.currentIdx != widget.currentIdx || old.throwCount != widget.throwCount) {
+    if (old.currentIdx != widget.currentIdx ||
+        old.throwCount != widget.throwCount) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrent());
     }
   }
@@ -354,8 +362,8 @@ class _AroundTheClockBoardState extends State<_AroundTheClockBoard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
     final total = aroundTheClockOrder.length;
 
     return Card(
@@ -367,61 +375,67 @@ class _AroundTheClockBoardState extends State<_AroundTheClockBoard> {
             final s = e.$2;
             final isActive = i == widget.currentIdx;
             final hit = s.progress.clamp(0, total);
-            final targetLabel = s.currentTarget == 25 ? l.bull : '${s.currentTarget}';
+            final targetLabel = s.currentTarget == 25
+                ? l.bull
+                : '${s.currentTarget}';
             return Padding(
               key: _keys[i],
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: InkWell(
-              onTap: () => openAroundTheClockSlotInfo(context, i),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          s.label(l),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                            color: isActive ? cs.primary : cs.onSurface,
-                          ),
-                        ),
-                        if (s.isTeamSlot)
+                onTap: () => openAroundTheClockSlotInfo(context, i),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
                           Text(
-                            s.player.label(l),
+                            s.label(l),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: isActive
-                                  ? cs.primary.withValues(alpha: 0.75)
-                                  : cs.onSurfaceVariant,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              fontWeight: isActive
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: isActive ? cs.primary : cs.onSurface,
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  if (!s.isFinished)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Text(
-                        '→ $targetLabel',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
+                          if (s.isTeamSlot)
+                            Text(
+                              s.player.label(l),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: isActive
+                                    ? cs.primary.withValues(alpha: 0.75)
+                                    : cs.onSurfaceVariant,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                  Text(
-                    s.isFinished ? l.aroundClockDartsUsed(s.finishedAtDart!) : '$hit/$total',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isActive ? cs.primary : cs.onSurfaceVariant,
+                    if (!s.isFinished)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          '→ $targetLabel',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    Text(
+                      s.isFinished
+                          ? l.aroundClockDartsUsed(s.finishedAtDart!)
+                          : '$hit/$total',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isActive ? cs.primary : cs.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -432,7 +446,6 @@ class _AroundTheClockBoardState extends State<_AroundTheClockBoard> {
 }
 
 // ── Dart dot indicator ────────────────────────────────────────────────────────
-
 
 // ── Hint (full-segments variant) ──────────────────────────────────────────────
 
@@ -451,7 +464,7 @@ class _AroundTheClockHint extends StatelessWidget {
     }
 
     final target = provider.activeTarget;
-    final hit    = provider.currentPlayerState.hitSegments;
+    final hit = provider.currentPlayerState.hitSegments;
 
     // Bull has no Triple: only S and D chips.
     final multipliers = target == 25 ? const [1, 2] : const [1, 2, 3];
@@ -485,8 +498,8 @@ class _SegmentChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme    = Theme.of(context);
-    final cs       = theme.colorScheme;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final activeBg = tripleContainerColor(context);
     final activeFg = onTripleContainerColor(context);
 
@@ -501,9 +514,7 @@ class _SegmentChip extends StatelessWidget {
         label,
         style: theme.textTheme.labelSmall?.copyWith(
           fontWeight: FontWeight.bold,
-          color: done
-              ? cs.onSurface.withValues(alpha: 0.35)
-              : activeFg,
+          color: done ? cs.onSurface.withValues(alpha: 0.35) : activeFg,
           decoration: done ? TextDecoration.lineThrough : null,
           decorationColor: cs.onSurface.withValues(alpha: 0.35),
         ),
@@ -522,23 +533,26 @@ class _AroundTheClockInput extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l      = context.l10n;
+    final l = context.l10n;
     final target = provider.activeTarget;
 
-    final showJoker  = provider.game!.variant == AroundTheClockVariant.skipRules && target != 25;
+    final showJoker =
+        provider.game!.variant == AroundTheClockVariant.skipRules &&
+        target != 25;
     final showTriple = target != 25;
 
     // Number of buttons that should fit in one row
     final btnCount = 2 + (showTriple ? 1 : 0) + (showJoker ? 1 : 0) + 1;
-    const spacing  = 10.0;
+    const spacing = 10.0;
 
     // Dimmed and deaf while a bot throws or a finished visit is still on
     // show; the provider refuses the dart either way, this only says so.
     final locked = provider.inputLocked;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final btnW = ((constraints.maxWidth - spacing * (btnCount - 1)) / btnCount)
-            .clamp(48.0, 72.0);
+        final btnW =
+            ((constraints.maxWidth - spacing * (btnCount - 1)) / btnCount)
+                .clamp(48.0, 72.0);
         final btnH = (btnW * 64 / 72).clamp(44.0, 64.0);
 
         if (provider.visitPending) {
@@ -553,27 +567,54 @@ class _AroundTheClockInput extends StatelessWidget {
         return IgnorePointer(
           ignoring: locked,
           child: Opacity(
-          opacity: locked ? 0.5 : 1,
-          child: Wrap(
-          alignment: WrapAlignment.center,
-          spacing: spacing,
-          runSpacing: spacing,
-          children: [
-            _MultBtn(label: l.single, sub: '×1', multiplier: 1, width: btnW, height: btnH,
-                onTap: () => provider.recordDart(target, 1)),
-            _MultBtn(label: l.double_, sub: '×2', multiplier: 2, width: btnW, height: btnH,
-                onTap: () => provider.recordDart(target, 2)),
-            if (showTriple)
-              _MultBtn(label: l.triple, sub: '×3', multiplier: 3, width: btnW, height: btnH,
-                  onTap: () => provider.recordDart(target, 3)),
-            if (showJoker)
-              _JokerBtn(label: l.aroundClockJoker, sub: 'Bull', width: btnW, height: btnH,
-                  onTap: () => provider.recordDart(25, 2)),
-            _MissBtn(label: l.aroundClockMiss, width: btnW, height: btnH,
-                onTap: () => provider.recordDart(0, 0)),
-          ],
-        ),
-        ),
+            opacity: locked ? 0.5 : 1,
+            child: Wrap(
+              alignment: WrapAlignment.center,
+              spacing: spacing,
+              runSpacing: spacing,
+              children: [
+                _MultBtn(
+                  label: l.single,
+                  sub: '×1',
+                  multiplier: 1,
+                  width: btnW,
+                  height: btnH,
+                  onTap: () => provider.recordDart(target, 1),
+                ),
+                _MultBtn(
+                  label: l.double_,
+                  sub: '×2',
+                  multiplier: 2,
+                  width: btnW,
+                  height: btnH,
+                  onTap: () => provider.recordDart(target, 2),
+                ),
+                if (showTriple)
+                  _MultBtn(
+                    label: l.triple,
+                    sub: '×3',
+                    multiplier: 3,
+                    width: btnW,
+                    height: btnH,
+                    onTap: () => provider.recordDart(target, 3),
+                  ),
+                if (showJoker)
+                  _JokerBtn(
+                    label: l.aroundClockJoker,
+                    sub: 'Bull',
+                    width: btnW,
+                    height: btnH,
+                    onTap: () => provider.recordDart(25, 2),
+                  ),
+                _MissBtn(
+                  label: l.aroundClockMiss,
+                  width: btnW,
+                  height: btnH,
+                  onTap: () => provider.recordDart(0, 0),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -627,15 +668,19 @@ class _MultBtn extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(label,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: fg,
-                      )),
-              Text(sub,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: fg.withValues(alpha: 0.7),
-                      )),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: fg,
+                ),
+              ),
+              Text(
+                sub,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: fg.withValues(alpha: 0.7),
+                ),
+              ),
             ],
           ),
         ),
@@ -677,15 +722,15 @@ class _JokerBtn extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: fg,
-                    ),
+                  fontWeight: FontWeight.bold,
+                  color: fg,
+                ),
               ),
               Text(
                 sub,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: fg.withValues(alpha: 0.7),
-                    ),
+                  color: fg.withValues(alpha: 0.7),
+                ),
               ),
             ],
           ),
@@ -724,9 +769,9 @@ class _MissBtn extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: cs.onErrorContainer,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: cs.onErrorContainer,
+              ),
             ),
           ),
         ),
@@ -739,46 +784,54 @@ class _MissBtn extends StatelessWidget {
 /// three visits and the numbers the mode is played by.
 void openAroundTheClockSlotInfo(BuildContext context, int slotIndex) {
   final provider = context.read<AroundTheClockProvider>();
-  Navigator.of(context).push(MaterialPageRoute<void>(
-    builder: (_) => ModeLiveInfoScreen(
-      listenable: provider,
-      data: (context) {
-        final l       = context.l10n;
-        final s       = provider.playerStates[slotIndex];
-        final ids     = s.players.map((p) => p.id).toSet();
-        final throws  = provider.throwHistory
-            .where((t) => ids.contains(t.playerId))
-            .toList();
-        final variant = provider.game!.variant;
-        final stats   = AroundTheClockStats.of(throws, variant);
-        final visits  = aroundTheClockVisits(throws);
-        final hits    = stats.visitHits;
-        final from    = visits.length <= 3 ? 0 : visits.length - 3;
-        return (
-          title:    s.label(l),
-          subtitle: s.isTeamSlot ? s.player.label(l) : null,
-          visitSlots: 3,
-          recentVisits: [
-            for (var i = visits.length - 1; i >= from; i--)
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => ModeLiveInfoScreen(
+        listenable: provider,
+        data: (context) {
+          final l = context.l10n;
+          final s = provider.playerStates[slotIndex];
+          final ids = s.players.map((p) => p.id).toSet();
+          final throws = provider.throwHistory
+              .where((t) => ids.contains(t.playerId))
+              .toList();
+          final variant = provider.game!.variant;
+          final stats = AroundTheClockStats.of(throws, variant);
+          final visits = aroundTheClockVisits(throws);
+          final hits = stats.visitHits;
+          final from = visits.length <= 3 ? 0 : visits.length - 3;
+          return (
+            title: s.label(l),
+            subtitle: s.isTeamSlot ? s.player.label(l) : null,
+            visitSlots: 3,
+            recentVisits: [
+              for (var i = visits.length - 1; i >= from; i--)
+                (
+                  darts: [
+                    for (final t in visits[i])
+                      visitDartFrom(t.field, t.multiplier, l),
+                  ],
+                  yield: l.hitsN(hits[i].where((h) => h).length),
+                ),
+            ],
+            stats: [
               (
-                darts: [for (final t in visits[i]) visitDartFrom(t.field, t.multiplier, l)],
-                yield: l.hitsN(hits[i].where((h) => h).length),
-              ),
-          ],
-          stats: [
-            (l.aroundClockProgress,
+                l.aroundClockProgress,
                 l.aroundClockProgressN(
-                    s.progress.clamp(0, aroundTheClockOrder.length),
-                    aroundTheClockOrder.length)),
-            (l.dartsThrown, '${stats.darts}'),
-            (l.dartsPerTarget, stats.dartsPerTarget.toStringAsFixed(1)),
-            (l.hitRate, '${(stats.hitRate * 100).round()} %'),
-            (l.longestStreak, '${stats.longestStreak}'),
-            if (variant == AroundTheClockVariant.skipRules)
-              (l.fieldsSkipped, '${stats.fieldsSkipped}'),
-          ],
-        );
-      },
+                  s.progress.clamp(0, aroundTheClockOrder.length),
+                  aroundTheClockOrder.length,
+                ),
+              ),
+              (l.dartsThrown, '${stats.darts}'),
+              (l.dartsPerTarget, stats.dartsPerTarget.toStringAsFixed(1)),
+              (l.hitRate, '${(stats.hitRate * 100).round()} %'),
+              (l.longestStreak, '${stats.longestStreak}'),
+              if (variant == AroundTheClockVariant.skipRules)
+                (l.fieldsSkipped, '${stats.fieldsSkipped}'),
+            ],
+          );
+        },
+      ),
     ),
-  ));
+  );
 }

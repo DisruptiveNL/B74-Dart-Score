@@ -10,7 +10,8 @@ import '../models/dart_throw.dart';
 import '../models/cricket_game.dart';
 import '../models/shanghai_game.dart';
 import '../models/around_the_clock_game.dart';
-import '../models/checkout_ladder_game.dart' show CheckoutLadderGame, CheckoutLadderThrow;
+import '../models/checkout_ladder_game.dart'
+    show CheckoutLadderGame, CheckoutLadderThrow;
 import '../services/competition_single_result_lifecycle.dart';
 import '../services/sync_service.dart' show SyncOrigin, kLegacyOrigin;
 import '../utils/finish_calculator.dart';
@@ -74,43 +75,46 @@ class DbHelper {
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await db.execute(
-          'ALTER TABLE players ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0');
+        'ALTER TABLE players ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0',
+      );
     }
     if (oldVersion < 3) {
       await db.execute(
-          "ALTER TABLE players ADD COLUMN uuid TEXT NOT NULL DEFAULT ''");
-      await db.execute(
-          'ALTER TABLE players ADD COLUMN last_synced_at INTEGER');
+        "ALTER TABLE players ADD COLUMN uuid TEXT NOT NULL DEFAULT ''",
+      );
+      await db.execute('ALTER TABLE players ADD COLUMN last_synced_at INTEGER');
       final players = await db.query('players');
       for (final p in players) {
         final uuid = _generateUuid();
-        await db.update('players', {'uuid': uuid},
-            where: 'id = ?', whereArgs: [p['id']]);
+        await db.update(
+          'players',
+          {'uuid': uuid},
+          where: 'id = ?',
+          whereArgs: [p['id']],
+        );
       }
     }
     if (oldVersion < 4) {
       await db.execute(
-          'ALTER TABLE games ADD COLUMN is_synced INTEGER NOT NULL DEFAULT 0');
+        'ALTER TABLE games ADD COLUMN is_synced INTEGER NOT NULL DEFAULT 0',
+      );
     }
     if (oldVersion < 5) {
-      await db.execute(
-          'ALTER TABLE players ADD COLUMN synced_stats TEXT');
+      await db.execute('ALTER TABLE players ADD COLUMN synced_stats TEXT');
     }
     if (oldVersion < 6) {
       await db.execute(
-          'ALTER TABLE players ADD COLUMN is_primary INTEGER NOT NULL DEFAULT 0');
+        'ALTER TABLE players ADD COLUMN is_primary INTEGER NOT NULL DEFAULT 0',
+      );
     }
     if (oldVersion < 7) {
-      await db.execute(
-          'ALTER TABLE games ADD COLUMN team_config_json TEXT');
+      await db.execute('ALTER TABLE games ADD COLUMN team_config_json TEXT');
     }
     if (oldVersion < 8) {
-      await db.execute(
-          'ALTER TABLE players ADD COLUMN local_stats_json TEXT');
+      await db.execute('ALTER TABLE players ADD COLUMN local_stats_json TEXT');
     }
     if (oldVersion < 9) {
-      await db.execute(
-          'ALTER TABLE dart_throws ADD COLUMN hits_json TEXT');
+      await db.execute('ALTER TABLE dart_throws ADD COLUMN hits_json TEXT');
     }
     if (oldVersion < 10) {
       await db.execute('''
@@ -191,19 +195,23 @@ class DbHelper {
     }
     if (oldVersion < 13) {
       await db.execute(
-          'ALTER TABLE cricket_games ADD COLUMN team_config_json TEXT');
+        'ALTER TABLE cricket_games ADD COLUMN team_config_json TEXT',
+      );
     }
     if (oldVersion < 14) {
       await db.execute(
-          'ALTER TABLE shanghai_games ADD COLUMN team_config_json TEXT');
+        'ALTER TABLE shanghai_games ADD COLUMN team_config_json TEXT',
+      );
     }
     if (oldVersion < 15) {
       await db.execute(
-          'ALTER TABLE around_the_clock_games ADD COLUMN team_config_json TEXT');
+        'ALTER TABLE around_the_clock_games ADD COLUMN team_config_json TEXT',
+      );
     }
     if (oldVersion < 16) {
       await db.execute(
-          'ALTER TABLE games ADD COLUMN placement_mode INTEGER NOT NULL DEFAULT 0');
+        'ALTER TABLE games ADD COLUMN placement_mode INTEGER NOT NULL DEFAULT 0',
+      );
     }
     if (oldVersion < 17) {
       await db.execute('ALTER TABLE games ADD COLUMN handicap_json TEXT');
@@ -218,7 +226,8 @@ class DbHelper {
         'around_the_clock_games',
       ]) {
         await db.execute(
-            'ALTER TABLE $table ADD COLUMN starting_order INTEGER NOT NULL DEFAULT 0');
+          'ALTER TABLE $table ADD COLUMN starting_order INTEGER NOT NULL DEFAULT 0',
+        );
       }
     }
     if (oldVersion < 19) {
@@ -230,27 +239,35 @@ class DbHelper {
 
       // Everything a sync brought in so far came from an unnamed device, so it
       // all goes into the legacy bucket, throws and snapshot alike.
-      await db.update('games', {'origin_device': kLegacyOrigin},
-          where: 'is_synced = 1');
+      await db.update('games', {
+        'origin_device': kLegacyOrigin,
+      }, where: 'is_synced = 1');
 
       // For a player that was ever imported, `local_stats_json` is whatever the
       // last packet carried: the import overwrote the column outright. Moving
       // it to the legacy origin says so, and frees the column to mean what it
       // says from here on, this device's own cleared games. A player that was
       // never synced keeps their column untouched.
-      final synced = await db.query('players',
-          columns: ['id', 'local_stats_json'],
-          where: 'last_synced_at IS NOT NULL '
-              "AND local_stats_json IS NOT NULL AND local_stats_json != ''");
+      final synced = await db.query(
+        'players',
+        columns: ['id', 'local_stats_json'],
+        where:
+            'last_synced_at IS NOT NULL '
+            "AND local_stats_json IS NOT NULL AND local_stats_json != ''",
+      );
 
       for (final row in synced) {
         await db.insert('player_origin_stats', {
-          'player_id':     row['id'],
+          'player_id': row['id'],
           'origin_device': kLegacyOrigin,
           'snapshot_json': row['local_stats_json'],
         });
-        await db.update('players', {'local_stats_json': null},
-            where: 'id = ?', whereArgs: [row['id']]);
+        await db.update(
+          'players',
+          {'local_stats_json': null},
+          where: 'id = ?',
+          whereArgs: [row['id']],
+        );
       }
     }
     if (oldVersion < 21) {
@@ -258,7 +275,8 @@ class DbHelper {
     }
     if (oldVersion < 22) {
       await db.execute(
-          'ALTER TABLE dart_throws ADD COLUMN checkout_darts INTEGER NOT NULL DEFAULT 0');
+        'ALTER TABLE dart_throws ADD COLUMN checkout_darts INTEGER NOT NULL DEFAULT 0',
+      );
       await _backfillCheckoutDarts(db);
     }
     if (oldVersion < 23) {
@@ -267,7 +285,8 @@ class DbHelper {
     if (oldVersion < 24) {
       await db.execute('ALTER TABLE players ADD COLUMN bot_ordinal INTEGER');
       await db.execute(
-          'UPDATE players SET bot_ordinal = 1 WHERE bot_level IS NOT NULL');
+        'UPDATE players SET bot_ordinal = 1 WHERE bot_level IS NOT NULL',
+      );
     }
     if (oldVersion < 25) {
       await _createCheckoutLadder(db);
@@ -300,8 +319,10 @@ class DbHelper {
   /// nothing about how they were really played, so they fall back to
   /// double-out, the app default.
   static Future<void> _backfillCheckoutDarts(Database db) async {
-    final gameRows = await db.query('games',
-        columns: ['id', 'checkout_mode', 'handicap_json']);
+    final gameRows = await db.query(
+      'games',
+      columns: ['id', 'checkout_mode', 'handicap_json'],
+    );
     final modes = <int, CheckoutMode>{};
     final handicaps = <int, Map<int, PlayerHandicap>>{};
     for (final g in gameRows) {
@@ -316,41 +337,57 @@ class DbHelper {
     const chunk = 500;
     var offset = 0;
     while (true) {
-      final rows = await db.query('dart_throws',
-          columns: [
-            'id', 'game_id', 'player_id', 'score', 'remaining_before', 'bust',
-            'hits_json',
-          ],
-          orderBy: 'id ASC',
-          limit: chunk,
-          offset: offset);
+      final rows = await db.query(
+        'dart_throws',
+        columns: [
+          'id',
+          'game_id',
+          'player_id',
+          'score',
+          'remaining_before',
+          'bust',
+          'hits_json',
+        ],
+        orderBy: 'id ASC',
+        limit: chunk,
+        offset: offset,
+      );
       if (rows.isEmpty) break;
       offset += rows.length;
 
       final batch = db.batch();
       for (final r in rows) {
-        final gameId    = r['game_id'] as int;
-        final playerId  = r['player_id'] as int;
+        final gameId = r['game_id'] as int;
+        final playerId = r['player_id'] as int;
         final remaining = r['remaining_before'] as int;
-        final score     = r['score'] as int;
-        final bust      = (r['bust'] as int? ?? 0) == 1;
-        final mode      = handicaps[gameId]?[playerId]?.checkOut ??
+        final score = r['score'] as int;
+        final bust = (r['bust'] as int? ?? 0) == 1;
+        final mode =
+            handicaps[gameId]?[playerId]?.checkOut ??
             modes[gameId] ??
             CheckoutMode.doubleOut;
         final checkedOut = !bust && remaining - score == 0;
 
         final darts = _dartScoresOf(r['hits_json'] as String?);
         final atFinish = darts != null
-            ? checkoutDartsInVisit(remaining, darts, mode,
-                checkedOut: checkedOut)
+            ? checkoutDartsInVisit(
+                remaining,
+                darts,
+                mode,
+                checkedOut: checkedOut,
+              )
             : (checkedOut ||
-                    FinishCalculator.canFinishWithOneDart(remaining, mode))
-                ? 1
-                : 0;
+                  FinishCalculator.canFinishWithOneDart(remaining, mode))
+            ? 1
+            : 0;
 
         if (atFinish == 0) continue;
-        batch.update('dart_throws', {'checkout_darts': atFinish},
-            where: 'id = ?', whereArgs: [r['id']]);
+        batch.update(
+          'dart_throws',
+          {'checkout_darts': atFinish},
+          where: 'id = ?',
+          whereArgs: [r['id']],
+        );
       }
       await batch.commit(noResult: true);
     }
@@ -455,18 +492,30 @@ class DbHelper {
   /// primary key, but a prefix index cannot answer a lookup by `player_id`
   /// alone, so that one gets its own.
   Future<void> _createIndexes(Database db) async {
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_dart_throws_player '
-        'ON dart_throws(player_id, thrown_at)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_dart_throws_game '
-        'ON dart_throws(game_id, player_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_game_players_player '
-        'ON game_players(player_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_cricket_throws_game '
-        'ON cricket_throws(game_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_shanghai_throws_game '
-        'ON shanghai_throws(game_id)');
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_atc_throws_game '
-        'ON around_the_clock_throws(game_id)');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_dart_throws_player '
+      'ON dart_throws(player_id, thrown_at)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_dart_throws_game '
+      'ON dart_throws(game_id, player_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_game_players_player '
+      'ON game_players(player_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_cricket_throws_game '
+      'ON cricket_throws(game_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_shanghai_throws_game '
+      'ON shanghai_throws(game_id)',
+    );
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_atc_throws_game '
+      'ON around_the_clock_throws(game_id)',
+    );
   }
 
   /// Creates the Checkout Ladder tables and their index, for a fresh install
@@ -477,57 +526,72 @@ class DbHelper {
   Future<void> _createCheckoutLadder(Database db) async {
     await db.execute(_kCreateCheckoutLadderGames);
     await db.execute(_kCreateCheckoutLadderThrows);
-    await db.execute('CREATE INDEX IF NOT EXISTS idx_ladder_throws_game '
-        'ON checkout_ladder_throws(game_id)');
+    await db.execute(
+      'CREATE INDEX IF NOT EXISTS idx_ladder_throws_game '
+      'ON checkout_ladder_throws(game_id)',
+    );
   }
 
   /// Competition imports are isolated from legacy player/statistics sync.
   Future<void> _createCompetitionInbox(Database db) async {
-    await db.execute('CREATE TABLE IF NOT EXISTS competition_inbox ('
-        'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, '
-        'received_at INTEGER NOT NULL)');
-    await db.execute('CREATE TABLE IF NOT EXISTS competition_player_links ('
-        'external_player_id TEXT PRIMARY KEY, player_id INTEGER NOT NULL, '
-        'bond_number TEXT UNIQUE, source TEXT NOT NULL, '
-        'FOREIGN KEY(player_id) REFERENCES players(id))');
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS competition_inbox ('
+      'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, '
+      'received_at INTEGER NOT NULL)',
+    );
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS competition_player_links ('
+      'external_player_id TEXT PRIMARY KEY, player_id INTEGER NOT NULL, '
+      'bond_number TEXT UNIQUE, source TEXT NOT NULL, '
+      'FOREIGN KEY(player_id) REFERENCES players(id))',
+    );
   }
 
   /// Each official single owns at most one X01 game; game creation and
   /// linking are committed in the same SQLite transaction.
   Future<void> _createCompetitionGameLinks(Database db) async {
-    await db.execute('CREATE TABLE IF NOT EXISTS competition_game_links ('
-        'match_id TEXT NOT NULL, slot INTEGER NOT NULL, game_id INTEGER NOT NULL UNIQUE, '
-        'starter_external_id TEXT NOT NULL, '
-        'PRIMARY KEY(match_id, slot), '
-        'FOREIGN KEY(match_id) REFERENCES competition_inbox(match_id), '
-        'FOREIGN KEY(game_id) REFERENCES games(id))');
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS competition_game_links ('
+      'match_id TEXT NOT NULL, slot INTEGER NOT NULL, game_id INTEGER NOT NULL UNIQUE, '
+      'starter_external_id TEXT NOT NULL, '
+      'PRIMARY KEY(match_id, slot), '
+      'FOREIGN KEY(match_id) REFERENCES competition_inbox(match_id), '
+      'FOREIGN KEY(game_id) REFERENCES games(id))',
+    );
   }
 
   /// Durable per-single outbox. An acknowledgement, not a send attempt,
   /// is what makes the result immutable.
   Future<void> _createCompetitionSingleResults(Database db) async {
-    await db.execute('CREATE TABLE IF NOT EXISTS competition_single_results ('
-        'match_id TEXT NOT NULL, slot INTEGER NOT NULL, '
-        "status TEXT NOT NULL DEFAULT 'completed', "
-        'payload TEXT NOT NULL, acknowledged_at INTEGER, '
-        'PRIMARY KEY(match_id, slot), '
-        'FOREIGN KEY(match_id, slot) '
-        'REFERENCES competition_game_links(match_id, slot))');
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS competition_single_results ('
+      'match_id TEXT NOT NULL, slot INTEGER NOT NULL, '
+      "status TEXT NOT NULL DEFAULT 'completed', "
+      'payload TEXT NOT NULL, acknowledged_at INTEGER, '
+      'PRIMARY KEY(match_id, slot), '
+      'FOREIGN KEY(match_id, slot) '
+      'REFERENCES competition_game_links(match_id, slot))',
+    );
   }
 
   /// Persists a completed result, without allowing an already submitted
   /// or archived result to be silently replaced.
   Future<void> saveCompletedCompetitionSingleResult(
-      String matchId, int slot, String payload) async {
+    String matchId,
+    int slot,
+    String payload,
+  ) async {
     CompetitionSingleResultLifecycle.resultKey(matchId, slot);
     if (payload.trim().isEmpty) throw ArgumentError('Leeg resultaat');
     final d = await db;
     await d.transaction((txn) async {
-      final rows = await txn.query('competition_single_results',
-          columns: ['status'], where: 'match_id = ? AND slot = ?',
-          whereArgs: [matchId, slot]);
-      if (rows.isNotEmpty &&
-          rows.single['status'] != 'completed') {
+      final rows = await txn.query(
+        'competition_single_results',
+        columns: ['status'],
+        where: 'match_id = ? AND slot = ?',
+        whereArgs: [matchId, slot],
+      );
+      if (rows.isNotEmpty && rows.single['status'] != 'completed') {
         throw StateError('Resultaat wordt verzonden of is gearchiveerd');
       }
       await txn.insert('competition_single_results', {
@@ -541,55 +605,73 @@ class DbHelper {
   }
 
   Future<Map<String, Object?>?> competitionSingleResult(
-      String matchId, int slot) async {
+    String matchId,
+    int slot,
+  ) async {
     final d = await db;
-    final rows = await d.query('competition_single_results',
-        where: 'match_id = ? AND slot = ?',
-        whereArgs: [matchId, slot]);
+    final rows = await d.query(
+      'competition_single_results',
+      where: 'match_id = ? AND slot = ?',
+      whereArgs: [matchId, slot],
+    );
     return rows.isEmpty ? null : rows.single;
   }
 
   /// Atomically claim a completed result for transport.
   Future<bool> beginCompetitionSingleResultSend(
-      String matchId, int slot) async {
+    String matchId,
+    int slot,
+  ) async {
     final d = await db;
     final count = await d.update(
-        'competition_single_results', {'status': 'sending'},
-        where: "match_id = ? AND slot = ? AND status = 'completed'",
-        whereArgs: [matchId, slot]);
+      'competition_single_results',
+      {'status': 'sending'},
+      where: "match_id = ? AND slot = ? AND status = 'completed'",
+      whereArgs: [matchId, slot],
+    );
     return count == 1;
   }
 
   /// Reverts a failed or interrupted send, leaving the payload untouched.
-  Future<bool> failCompetitionSingleResultSend(
-      String matchId, int slot) async {
+  Future<bool> failCompetitionSingleResultSend(String matchId, int slot) async {
     final d = await db;
     final count = await d.update(
-        'competition_single_results', {'status': 'completed'},
-        where: "match_id = ? AND slot = ? AND status = 'sending'",
-        whereArgs: [matchId, slot]);
+      'competition_single_results',
+      {'status': 'completed'},
+      where: "match_id = ? AND slot = ? AND status = 'sending'",
+      whereArgs: [matchId, slot],
+    );
     return count == 1;
   }
 
   /// Called only after the Dashboard acknowledges the submitted payload.
   /// Duplicate acknowledgements are harmless; archived payloads stay frozen.
   Future<bool> acknowledgeCompetitionSingleResult(
-      String matchId, int slot, String acknowledgedPayload) async {
+    String matchId,
+    int slot,
+    String acknowledgedPayload,
+  ) async {
     final d = await db;
     return d.transaction((txn) async {
-      final rows = await txn.query('competition_single_results',
-          where: 'match_id = ? AND slot = ?',
-          whereArgs: [matchId, slot]);
+      final rows = await txn.query(
+        'competition_single_results',
+        where: 'match_id = ? AND slot = ?',
+        whereArgs: [matchId, slot],
+      );
       if (rows.isEmpty || rows.single['payload'] != acknowledgedPayload) {
         return false;
       }
       if (rows.single['status'] == 'archived') return true;
       if (rows.single['status'] != 'sending') return false;
-      final count = await txn.update('competition_single_results', {
-        'status': 'archived',
-        'acknowledged_at': DateTime.now().millisecondsSinceEpoch,
-      }, where: "match_id = ? AND slot = ? AND status = 'sending'",
-          whereArgs: [matchId, slot]);
+      final count = await txn.update(
+        'competition_single_results',
+        {
+          'status': 'archived',
+          'acknowledged_at': DateTime.now().millisecondsSinceEpoch,
+        },
+        where: "match_id = ? AND slot = ? AND status = 'sending'",
+        whereArgs: [matchId, slot],
+      );
       return count == 1;
     });
   }
@@ -758,8 +840,10 @@ class DbHelper {
   /// The primary (non-deleted) player, or null if none is set.
   Future<Player?> getPrimaryPlayer() async {
     final d = await db;
-    final rows = await d.query('players',
-        where: 'is_primary = 1 AND is_deleted = 0');
+    final rows = await d.query(
+      'players',
+      where: 'is_primary = 1 AND is_deleted = 0',
+    );
     return rows.isEmpty ? null : Player.fromMap(rows.first);
   }
 
@@ -769,8 +853,12 @@ class DbHelper {
     // Atomic: clear all, then set one, which prevents a crash window
     await d.transaction((txn) async {
       await txn.update('players', {'is_primary': 0});
-      await txn.update('players', {'is_primary': 1},
-          where: 'id = ?', whereArgs: [id]);
+      await txn.update(
+        'players',
+        {'is_primary': 1},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
     });
   }
 
@@ -787,8 +875,11 @@ class DbHelper {
   /// [getBots] holds the rest and [getPlayersById] both.
   Future<List<Player>> getPlayers() async {
     final d = await db;
-    final rows = await d.query('players',
-        where: 'is_deleted = 0 AND bot_level IS NULL', orderBy: 'name ASC');
+    final rows = await d.query(
+      'players',
+      where: 'is_deleted = 0 AND bot_level IS NULL',
+      orderBy: 'name ASC',
+    );
     return rows.map(Player.fromMap).toList();
   }
 
@@ -796,9 +887,11 @@ class DbHelper {
   /// within it.
   Future<List<Player>> getBots() async {
     final d = await db;
-    final rows = await d.query('players',
-        where: 'is_deleted = 0 AND bot_level IS NOT NULL',
-        orderBy: 'bot_level ASC, bot_ordinal ASC');
+    final rows = await d.query(
+      'players',
+      where: 'is_deleted = 0 AND bot_level IS NOT NULL',
+      orderBy: 'bot_level ASC, bot_ordinal ASC',
+    );
     return rows.map(Player.fromMap).toList();
   }
 
@@ -832,14 +925,20 @@ class DbHelper {
   Future<void> deletePlayer(int id) async {
     final d = await db;
     // Soft delete: keeps name visible in history/stats
-    await d.update('players', {'is_deleted': 1},
-        where: 'id = ?', whereArgs: [id]);
+    await d.update(
+      'players',
+      {'is_deleted': 1},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   // Games
 
   /// Inserts an X01 game and its ordered player list, returning the game id.
-  Future<int> insertGame(Game g, List<int> playerIds, {
+  Future<int> insertGame(
+    Game g,
+    List<int> playerIds, {
     String? competitionMatchId,
     int? competitionSlot,
     String? starterExternalId,
@@ -850,9 +949,11 @@ class DbHelper {
         if (competitionSlot == null || starterExternalId == null) {
           throw ArgumentError('Incomplete competition game link');
         }
-        final existing = await txn.query('competition_game_links',
-            where: 'match_id = ? AND slot = ?',
-            whereArgs: [competitionMatchId, competitionSlot]);
+        final existing = await txn.query(
+          'competition_game_links',
+          where: 'match_id = ? AND slot = ?',
+          whereArgs: [competitionMatchId, competitionSlot],
+        );
         if (existing.isNotEmpty) {
           throw StateError('Deze competitiesingle heeft al een X01-game');
         }
@@ -881,17 +982,24 @@ class DbHelper {
   /// True only for games linked to an official competition single.
   Future<bool> isCompetitionGame(int gameId) async {
     final d = await db;
-    final rows = await d.query('competition_game_links',
-        columns: ['game_id'], where: 'game_id = ?',
-        whereArgs: [gameId], limit: 1);
+    final rows = await d.query(
+      'competition_game_links',
+      columns: ['game_id'],
+      where: 'game_id = ?',
+      whereArgs: [gameId],
+      limit: 1,
+    );
     return rows.isNotEmpty;
   }
 
   Future<int?> competitionGameId(String matchId, int slot) async {
     final d = await db;
-    final rows = await d.query('competition_game_links',
-        columns: ['game_id'], where: 'match_id = ? AND slot = ?',
-        whereArgs: [matchId, slot]);
+    final rows = await d.query(
+      'competition_game_links',
+      columns: ['game_id'],
+      where: 'match_id = ? AND slot = ?',
+      whereArgs: [matchId, slot],
+    );
     return rows.isEmpty ? null : rows.single['game_id'] as int;
   }
 
@@ -900,7 +1008,6 @@ class DbHelper {
     final rows = await d.query('games', where: 'id = ?', whereArgs: [id]);
     return rows.isEmpty ? null : Game.fromMap(rows.single);
   }
-
 
   /// The ids of the finished games [playerId] won, their team games included.
   ///
@@ -928,9 +1035,11 @@ class DbHelper {
       final throws = game.placementMode
           ? await getThrowsForGame(game.id!)
           : await _checkoutThrowsOfGame(game.id!);
-      if (winningPlayerIds(game, throws,
-              participantIds: lineUps[game.id!] ?? const [])
-          .contains(playerId)) {
+      if (winningPlayerIds(
+        game,
+        throws,
+        participantIds: lineUps[game.id!] ?? const [],
+      ).contains(playerId)) {
         won.add(game.id!);
       }
     }
@@ -960,8 +1069,15 @@ class DbHelper {
 
   // Minimum darts to finish from a given start score (double-out).
   // Mirrors game_provider.dart: kept local to avoid circular import.
-  static const _kMinDarts = {101: 2, 170: 3, 201: 4, 301: 6, 501: 9, 701: 12, 1001: 17};
-
+  static const _kMinDarts = {
+    101: 2,
+    170: 3,
+    201: 4,
+    301: 6,
+    501: 9,
+    701: 12,
+    1001: 17,
+  };
 
   /// Counts perfect legs in [throws], all of which come from one game and so
   /// share the same [minDarts].
@@ -972,38 +1088,50 @@ class DbHelper {
   /// `local_stats_json`, so lifetime stats survive deleting the game. Call this
   /// BEFORE [deleteGame].
   Future<void> snapshotGameStats(int gameId) async {
-    final d      = await db;
+    final d = await db;
     final throws = await getThrowsForGame(gameId);
     if (throws.isEmpty) return;
 
     // Fetch the game to compute perfect legs and to name its winner.
-    final gameRows  = await d.query('games', where: 'id = ?', whereArgs: [gameId]);
-    final game       = gameRows.isEmpty ? null : Game.fromMap(gameRows.first);
-    final minDarts   = game != null ? _kMinDarts[game.startScore] : null;
-    final winners    = game == null
+    final gameRows = await d.query(
+      'games',
+      where: 'id = ?',
+      whereArgs: [gameId],
+    );
+    final game = gameRows.isEmpty ? null : Game.fromMap(gameRows.first);
+    final minDarts = game != null ? _kMinDarts[game.startScore] : null;
+    final winners = game == null
         ? const <int>{}
-        : winningPlayerIds(game, throws,
-            participantIds: await getGamePlayerIds(gameId));
+        : winningPlayerIds(
+            game,
+            throws,
+            participantIds: await getGamePlayerIds(gameId),
+          );
 
     final byPlayer = <int, List<DartThrow>>{};
     for (final t in throws) {
       byPlayer.putIfAbsent(t.playerId, () => []).add(t);
     }
 
-    final isFinished = gameRows.isNotEmpty && gameRows.first['finished_at'] != null ? 1 : 0;
+    final isFinished =
+        gameRows.isNotEmpty && gameRows.first['finished_at'] != null ? 1 : 0;
 
     for (final entry in byPlayer.entries) {
-      final playerId     = entry.key;
+      final playerId = entry.key;
       final playerThrows = entry.value;
 
       final stats = <String, dynamic>{
         ..._computeStatsFromThrows(playerThrows),
-        'perfect_legs':    _perfectLegsFor(playerThrows, minDarts),
-        'games_finished':  isFinished,
-        'games_won':       isFinished == 1 && winners.contains(playerId) ? 1 : 0,
+        'perfect_legs': _perfectLegsFor(playerThrows, minDarts),
+        'games_finished': isFinished,
+        'games_won': isFinished == 1 && winners.contains(playerId) ? 1 : 0,
       };
 
-      final rows = await d.query('players', where: 'id = ?', whereArgs: [playerId]);
+      final rows = await d.query(
+        'players',
+        where: 'id = ?',
+        whereArgs: [playerId],
+      );
       if (rows.isEmpty) continue;
       final existing = rows.first['local_stats_json'] as String?;
 
@@ -1011,8 +1139,12 @@ class DbHelper {
           ? _mergeStats(jsonDecode(existing) as Map<String, dynamic>, stats)
           : stats;
 
-      await d.update('players', {'local_stats_json': jsonEncode(merged)},
-          where: 'id = ?', whereArgs: [playerId]);
+      await d.update(
+        'players',
+        {'local_stats_json': jsonEncode(merged)},
+        where: 'id = ?',
+        whereArgs: [playerId],
+      );
     }
   }
 
@@ -1032,8 +1164,10 @@ class DbHelper {
   /// way. Those numbers already travelled as part of the sending device's
   /// snapshot, so they are simply left out here.
   Future<Map<String, dynamic>?> foldThrowsIntoSnapshot(
-      String? snapshotJson, List<DartThrow> excluded,
-      {bool gameFacts = true}) async {
+    String? snapshotJson,
+    List<DartThrow> excluded, {
+    bool gameFacts = true,
+  }) async {
     var merged = (snapshotJson != null && snapshotJson.isNotEmpty)
         ? jsonDecode(snapshotJson) as Map<String, dynamic>
         : null;
@@ -1078,26 +1212,31 @@ class DbHelper {
   /// Those throws are one player's, which is the player the win is counted
   /// for: a snapshot is folded per player.
   Future<Map<String, dynamic>> _gameFactsOf(
-      int gameId, List<DartThrow> throws) async {
+    int gameId,
+    List<DartThrow> throws,
+  ) async {
     final d = await db;
     final rows = await d.query('games', where: 'id = ?', whereArgs: [gameId]);
 
-    final game     = rows.isEmpty ? null : Game.fromMap(rows.first);
+    final game = rows.isEmpty ? null : Game.fromMap(rows.first);
     final minDarts = game != null ? _kMinDarts[game.startScore] : null;
     final finished = game?.finishedAt != null;
     // Who won needs every throw of the game, not only the ones being accounted
     // for here: the deciding checkout may well be the opponent's.
-    final won = finished &&
+    final won =
+        finished &&
         throws.isNotEmpty &&
-        winningPlayerIds(game!, await getThrowsForGame(gameId),
-                participantIds: await getGamePlayerIds(gameId))
-            .contains(throws.first.playerId);
+        winningPlayerIds(
+          game!,
+          await getThrowsForGame(gameId),
+          participantIds: await getGamePlayerIds(gameId),
+        ).contains(throws.first.playerId);
 
     return {
-      'perfect_legs':     _perfectLegsFor(throws, minDarts),
-      'games_played':     1,
-      'games_finished':   finished ? 1 : 0,
-      'games_won':        won ? 1 : 0,
+      'perfect_legs': _perfectLegsFor(throws, minDarts),
+      'games_played': 1,
+      'games_finished': finished ? 1 : 0,
+      'games_won': won ? 1 : 0,
       'highest_game_avg': bestGameAverage(throws),
     };
   }
@@ -1119,7 +1258,9 @@ class DbHelper {
   /// game average taken over one heap of every game at once can only come out
   /// below the real one, which the merge then discards in favour of this.
   Future<Map<String, dynamic>?> addTravellingGameFacts(
-      Map<String, dynamic>? snapshot, List<DartThrow> throws) async {
+    Map<String, dynamic>? snapshot,
+    List<DartThrow> throws,
+  ) async {
     if (throws.isEmpty) return snapshot;
 
     final byGame = <int, List<DartThrow>>{};
@@ -1151,26 +1292,30 @@ class DbHelper {
   static Map<String, dynamic> _computeStatsFromThrows(List<DartThrow> throws) {
     final stats = ThrowStats.fromThrows(throws);
 
-    final segmentHits  = segmentHitsOf(throws);
+    final segmentHits = segmentHitsOf(throws);
     final scoreDistrib = <String, int>{};
     // date → {scored, darts, visits, s180} for week-comparison reconstruction
-    final dailyStats   = <String, Map<String, int>>{};
+    final dailyStats = <String, Map<String, int>>{};
     final gameIds = throws.map((t) => t.gameId).toSet();
 
     for (final t in throws) {
       // Daily stats (all throws, bust or not, for activity heat and week windows)
-      final day = '${t.thrownAt.year}-'
+      final day =
+          '${t.thrownAt.year}-'
           '${t.thrownAt.month.toString().padLeft(2, '0')}-'
           '${t.thrownAt.day.toString().padLeft(2, '0')}';
-      final ds = dailyStats.putIfAbsent(day, () => {'scored': 0, 'darts': 0, 'visits': 0, 's180': 0});
+      final ds = dailyStats.putIfAbsent(
+        day,
+        () => {'scored': 0, 'darts': 0, 'visits': 0, 's180': 0},
+      );
       ds['darts'] = (ds['darts'] ?? 0) + t.dartsUsed;
 
       if (!t.bust) {
         final bucket = ((t.score ~/ 20) * 20).toString();
         scoreDistrib[bucket] = (scoreDistrib[bucket] ?? 0) + 1;
 
-        ds['scored']  = (ds['scored']  ?? 0) + t.score;
-        ds['visits']  = (ds['visits']  ?? 0) + 1;
+        ds['scored'] = (ds['scored'] ?? 0) + t.score;
+        ds['visits'] = (ds['visits'] ?? 0) + 1;
         if (t.score == 180) ds['s180'] = (ds['s180'] ?? 0) + 1;
       }
     }
@@ -1178,40 +1323,47 @@ class DbHelper {
     // Recent throws: last 20, newest first, as compact maps
     final sortedThrows = [...throws]
       ..sort((a, b) => b.thrownAt.compareTo(a.thrownAt));
-    final recentThrows = sortedThrows.take(20).map((t) => {
-      'score':            t.score,
-      'darts_used':       t.dartsUsed,
-      'bust':             t.bust ? 1 : 0,
-      'remaining_before': t.remainingBefore,
-      'thrown_at':        t.thrownAt.millisecondsSinceEpoch,
-    }).toList();
+    final recentThrows = sortedThrows
+        .take(20)
+        .map(
+          (t) => {
+            'score': t.score,
+            'darts_used': t.dartsUsed,
+            'bust': t.bust ? 1 : 0,
+            'remaining_before': t.remainingBefore,
+            'thrown_at': t.thrownAt.millisecondsSinceEpoch,
+          },
+        )
+        .toList();
 
     return {
-      'total_darts':        stats.totalDarts,
-      'total_scored':       stats.totalScored,
-      'total_visits':       stats.totalVisits,
+      'total_darts': stats.totalDarts,
+      'total_scored': stats.totalScored,
+      'total_visits': stats.totalVisits,
       // A leg is won by finishing it, so every successful checkout is a leg.
-      'legs_won':           stats.checkoutSuccesses,
-      'busts':              stats.busts,
-      'highest_visit':      stats.highestVisit,
-      'highest_checkout':   stats.highestCheckout,
-      'count_180':          stats.count180,
-      'count_140_plus':     stats.count140plus,
-      'count_100_plus':     stats.count100plus,
-      'checkout_attempts':  stats.checkoutAttempts,
+      'legs_won': stats.checkoutSuccesses,
+      'busts': stats.busts,
+      'highest_visit': stats.highestVisit,
+      'highest_checkout': stats.highestCheckout,
+      'count_180': stats.count180,
+      'count_140_plus': stats.count140plus,
+      'count_100_plus': stats.count100plus,
+      'checkout_attempts': stats.checkoutAttempts,
       'checkout_successes': stats.checkoutSuccesses,
-      'checkout_darts':     stats.checkoutDarts,
-      'games_played':       gameIds.length,
-      'score_sum_squares':  stats.scoreSumSquares,
-      'highest_game_avg':   bestGameAverage(throws),
-      'co_at_sub40':  stats.coAttemptSub40,  'co_ok_sub40':  stats.coSuccessSub40,
-      'co_at_sub60':  stats.coAttemptSub60,  'co_ok_sub60':  stats.coSuccessSub60,
-      'co_at_sub100': stats.coAttemptSub100, 'co_ok_sub100': stats.coSuccessSub100,
-      'co_at_sub170': stats.coAttemptSub170, 'co_ok_sub170': stats.coSuccessSub170,
-      'segment_hits':       segmentHits,
+      'checkout_darts': stats.checkoutDarts,
+      'games_played': gameIds.length,
+      'score_sum_squares': stats.scoreSumSquares,
+      'highest_game_avg': bestGameAverage(throws),
+      'co_at_sub40': stats.coAttemptSub40, 'co_ok_sub40': stats.coSuccessSub40,
+      'co_at_sub60': stats.coAttemptSub60, 'co_ok_sub60': stats.coSuccessSub60,
+      'co_at_sub100': stats.coAttemptSub100,
+      'co_ok_sub100': stats.coSuccessSub100,
+      'co_at_sub170': stats.coAttemptSub170,
+      'co_ok_sub170': stats.coSuccessSub170,
+      'segment_hits': segmentHits,
       'score_distribution': scoreDistrib,
-      'daily_stats':        dailyStats,
-      'recent_throws':      recentThrows,
+      'daily_stats': dailyStats,
+      'recent_throws': recentThrows,
     };
   }
 
@@ -1225,7 +1377,7 @@ class DbHelper {
       try {
         for (final h in jsonDecode(t.hitsJson!) as List<dynamic>) {
           final field = (h['f'] as int).toString();
-          final mul   = (h['m'] as int).toString();
+          final mul = (h['m'] as int).toString();
           hits.putIfAbsent(field, () => {});
           hits[field]![mul] = (hits[field]![mul] ?? 0) + 1;
         }
@@ -1242,7 +1394,7 @@ class DbHelper {
     Map<String, dynamic> b,
   ) {
     int add(String k) => (a[k] as int? ?? 0) + (b[k] as int? ?? 0);
-    int mx(String k)  => max(a[k] as int? ?? 0, b[k] as int? ?? 0);
+    int mx(String k) => max(a[k] as int? ?? 0, b[k] as int? ?? 0);
     double mxd(String k) =>
         max((a[k] as num? ?? 0).toDouble(), (b[k] as num? ?? 0).toDouble());
 
@@ -1253,7 +1405,7 @@ class DbHelper {
     for (final f in {...aHits.keys, ...bHits.keys}) {
       final aM = (aHits[f] as Map?)?.cast<String, dynamic>() ?? {};
       final bM = (bHits[f] as Map?)?.cast<String, dynamic>() ?? {};
-      final m  = <String, int>{};
+      final m = <String, int>{};
       for (final mul in {...aM.keys, ...bM.keys}) {
         m[mul] = (aM[mul] as int? ?? 0) + (bM[mul] as int? ?? 0);
       }
@@ -1261,8 +1413,10 @@ class DbHelper {
     }
 
     // score_distribution: bucket → count
-    final aDist = (a['score_distribution'] as Map?)?.cast<String, dynamic>() ?? {};
-    final bDist = (b['score_distribution'] as Map?)?.cast<String, dynamic>() ?? {};
+    final aDist =
+        (a['score_distribution'] as Map?)?.cast<String, dynamic>() ?? {};
+    final bDist =
+        (b['score_distribution'] as Map?)?.cast<String, dynamic>() ?? {};
     final mergedDist = <String, int>{};
     for (final k in {...aDist.keys, ...bDist.keys}) {
       mergedDist[k] = (aDist[k] as int? ?? 0) + (bDist[k] as int? ?? 0);
@@ -1276,51 +1430,56 @@ class DbHelper {
       final aD = (aDs[day] as Map?)?.cast<String, dynamic>() ?? {};
       final bD = (bDs[day] as Map?)?.cast<String, dynamic>() ?? {};
       mergedDs[day] = {
-        'scored':  (aD['scored']  as int? ?? 0) + (bD['scored']  as int? ?? 0),
-        'darts':   (aD['darts']   as int? ?? 0) + (bD['darts']   as int? ?? 0),
-        'visits':  (aD['visits']  as int? ?? 0) + (bD['visits']  as int? ?? 0),
-        's180':    (aD['s180']    as int? ?? 0) + (bD['s180']    as int? ?? 0),
+        'scored': (aD['scored'] as int? ?? 0) + (bD['scored'] as int? ?? 0),
+        'darts': (aD['darts'] as int? ?? 0) + (bD['darts'] as int? ?? 0),
+        'visits': (aD['visits'] as int? ?? 0) + (bD['visits'] as int? ?? 0),
+        's180': (aD['s180'] as int? ?? 0) + (bD['s180'] as int? ?? 0),
       };
     }
 
     // recent_throws: combine, sort newest-first, keep 20
     final aRt = (a['recent_throws'] as List?)?.cast<dynamic>() ?? [];
     final bRt = (b['recent_throws'] as List?)?.cast<dynamic>() ?? [];
-    final combined = [...aRt, ...bRt]
-        .cast<Map<String, dynamic>>()
-        .toList()
-      ..sort((x, y) => ((y['thrown_at'] as int? ?? 0)
-          .compareTo(x['thrown_at'] as int? ?? 0)));
+    final combined = [...aRt, ...bRt].cast<Map<String, dynamic>>().toList()
+      ..sort(
+        (x, y) => ((y['thrown_at'] as int? ?? 0).compareTo(
+          x['thrown_at'] as int? ?? 0,
+        )),
+      );
     final mergedRt = combined.take(20).toList();
 
     return {
-      'total_darts':        add('total_darts'),
-      'total_scored':       add('total_scored'),
-      'total_visits':       add('total_visits'),
-      'legs_won':           add('legs_won'),
-      'busts':              add('busts'),
-      'highest_visit':      mx('highest_visit'),
-      'highest_checkout':   mx('highest_checkout'),
-      'highest_game_avg':   mxd('highest_game_avg'),
-      'count_180':          add('count_180'),
-      'count_140_plus':     add('count_140_plus'),
-      'count_100_plus':     add('count_100_plus'),
-      'checkout_attempts':  add('checkout_attempts'),
-      'checkout_darts':     add('checkout_darts'),
+      'total_darts': add('total_darts'),
+      'total_scored': add('total_scored'),
+      'total_visits': add('total_visits'),
+      'legs_won': add('legs_won'),
+      'busts': add('busts'),
+      'highest_visit': mx('highest_visit'),
+      'highest_checkout': mx('highest_checkout'),
+      'highest_game_avg': mxd('highest_game_avg'),
+      'count_180': add('count_180'),
+      'count_140_plus': add('count_140_plus'),
+      'count_100_plus': add('count_100_plus'),
+      'checkout_attempts': add('checkout_attempts'),
+      'checkout_darts': add('checkout_darts'),
       'checkout_successes': add('checkout_successes'),
-      'games_played':       add('games_played'),
-      'games_finished':     add('games_finished'),
-      'games_won':          add('games_won'),
-      'score_sum_squares':  add('score_sum_squares'),
-      'perfect_legs':       add('perfect_legs'),
-      'co_at_sub40':  add('co_at_sub40'),  'co_ok_sub40':  add('co_ok_sub40'),
-      'co_at_sub60':  add('co_at_sub60'),  'co_ok_sub60':  add('co_ok_sub60'),
-      'co_at_sub100': add('co_at_sub100'), 'co_ok_sub100': add('co_ok_sub100'),
-      'co_at_sub170': add('co_at_sub170'), 'co_ok_sub170': add('co_ok_sub170'),
-      'segment_hits':       mergedHits,
+      'games_played': add('games_played'),
+      'games_finished': add('games_finished'),
+      'games_won': add('games_won'),
+      'score_sum_squares': add('score_sum_squares'),
+      'perfect_legs': add('perfect_legs'),
+      'co_at_sub40': add('co_at_sub40'),
+      'co_ok_sub40': add('co_ok_sub40'),
+      'co_at_sub60': add('co_at_sub60'),
+      'co_ok_sub60': add('co_ok_sub60'),
+      'co_at_sub100': add('co_at_sub100'),
+      'co_ok_sub100': add('co_ok_sub100'),
+      'co_at_sub170': add('co_at_sub170'),
+      'co_ok_sub170': add('co_ok_sub170'),
+      'segment_hits': mergedHits,
       'score_distribution': mergedDist,
-      'daily_stats':        mergedDs,
-      'recent_throws':      mergedRt,
+      'daily_stats': mergedDs,
+      'recent_throws': mergedRt,
     };
   }
 
@@ -1333,8 +1492,11 @@ class DbHelper {
   /// All non-sync X01 games, newest first.
   Future<List<Game>> getGames() async {
     final d = await db;
-    final rows = await d.query('games',
-        where: 'is_synced = 0', orderBy: 'created_at DESC');
+    final rows = await d.query(
+      'games',
+      where: 'is_synced = 0',
+      orderBy: 'created_at DESC',
+    );
     return rows.map(Game.fromMap).toList();
   }
 
@@ -1386,38 +1548,62 @@ class DbHelper {
   /// Atomically updates a numeric visit and its later remaining-before values.
   /// No partial correction is ever visible to the game replay.
   Future<void> correctNumericVisit(
-      int gameId, int throwId, int score, int dartsUsed,
-      Map<int, int> laterRemainingBefore) async {
+    int gameId,
+    int throwId,
+    int score,
+    int dartsUsed,
+    Map<int, int> laterRemainingBefore,
+  ) async {
     final database = await db;
     await database.transaction((txn) async {
-      final changed = await txn.update('dart_throws',
-          {'score': score, 'darts_used': dartsUsed},
-          where: 'id = ? AND game_id = ?', whereArgs: [throwId, gameId]);
+      final changed = await txn.update(
+        'dart_throws',
+        {'score': score, 'darts_used': dartsUsed},
+        where: 'id = ? AND game_id = ?',
+        whereArgs: [throwId, gameId],
+      );
       if (changed != 1) throw StateError('Beurt niet gevonden');
       for (final entry in laterRemainingBefore.entries) {
-        await txn.update('dart_throws',
-            {'remaining_before': entry.value},
-            where: 'id = ? AND game_id = ?',
-            whereArgs: [entry.key, gameId]);
+        await txn.update(
+          'dart_throws',
+          {'remaining_before': entry.value},
+          where: 'id = ? AND game_id = ?',
+          whereArgs: [entry.key, gameId],
+        );
       }
     });
   }
 
   /// Atomically corrects visit kind as well as score and dart count.
-  Future<void> correctVisit(int gameId, int throwId, int score,
-      int dartsUsed, bool bust, Map<int, int> laterRemainingBefore) async {
+  Future<void> correctVisit(
+    int gameId,
+    int throwId,
+    int score,
+    int dartsUsed,
+    bool bust,
+    Map<int, int> laterRemainingBefore,
+  ) async {
     final database = await db;
     await database.transaction((txn) async {
-      final changed = await txn.update('dart_throws',
-          {'score': score, 'darts_used': dartsUsed, 'bust': bust ? 1 : 0,
-           'checkout_darts': 0},
-          where: 'id = ? AND game_id = ?', whereArgs: [throwId, gameId]);
+      final changed = await txn.update(
+        'dart_throws',
+        {
+          'score': score,
+          'darts_used': dartsUsed,
+          'bust': bust ? 1 : 0,
+          'checkout_darts': 0,
+        },
+        where: 'id = ? AND game_id = ?',
+        whereArgs: [throwId, gameId],
+      );
       if (changed != 1) throw StateError('Beurt niet gevonden');
       for (final entry in laterRemainingBefore.entries) {
-        await txn.update('dart_throws',
-            {'remaining_before': entry.value},
-            where: 'id = ? AND game_id = ?',
-            whereArgs: [entry.key, gameId]);
+        await txn.update(
+          'dart_throws',
+          {'remaining_before': entry.value},
+          where: 'id = ? AND game_id = ?',
+          whereArgs: [entry.key, gameId],
+        );
       }
     });
   }
@@ -1484,14 +1670,19 @@ class DbHelper {
   /// The non-deleted player matching [uuid] (used to merge synced players), or null.
   Future<Player?> getPlayerByUuid(String uuid) async {
     final d = await db;
-    final rows = await d.query('players',
-        where: 'uuid = ? AND is_deleted = 0', whereArgs: [uuid]);
+    final rows = await d.query(
+      'players',
+      where: 'uuid = ? AND is_deleted = 0',
+      whereArgs: [uuid],
+    );
     return rows.isEmpty ? null : Player.fromMap(rows.first);
   }
 
   /// Throws since [sinceMs] (exclusive) for a player.
   Future<List<DartThrow>> getThrowsForPlayerSince(
-      int playerId, int sinceMs) async {
+    int playerId,
+    int sinceMs,
+  ) async {
     final d = await db;
     final rows = await d.query(
       'dart_throws',
@@ -1525,7 +1716,8 @@ class DbHelper {
   /// into it is how their data comes home to them as part of ours and gets
   /// counted a second time.
   Future<Map<String?, List<DartThrow>>> getThrowsForPlayerByOrigin(
-      int playerId) async {
+    int playerId,
+  ) async {
     final d = await db;
     final rows = await d.rawQuery(
       'SELECT t.*, g.origin_device AS origin_device FROM dart_throws t '
@@ -1550,8 +1742,10 @@ class DbHelper {
   /// returns its id.
   ///
   /// Call once per import session, then pass the id to [insertSyncedThrows].
-  Future<int> createSyncGame(int playerStartScore,
-      {String originDevice = kLegacyOrigin}) async {
+  Future<int> createSyncGame(
+    int playerStartScore, {
+    String originDevice = kLegacyOrigin,
+  }) async {
     final d = await db;
     return d.insert('games', {
       'start_score': playerStartScore,
@@ -1576,8 +1770,10 @@ class DbHelper {
   /// keeping both would count the same leg twice. What a different device sent
   /// is no longer touched by that, and games played on this device carry
   /// `is_synced = 0` and never were.
-  Future<void> deleteSyncedThrowsForPlayer(int playerId,
-      {Set<String>? origins}) async {
+  Future<void> deleteSyncedThrowsForPlayer(
+    int playerId, {
+    Set<String>? origins,
+  }) async {
     final d = await db;
 
     final filter = origins == null
@@ -1593,12 +1789,17 @@ class DbHelper {
 
     for (final row in rows) {
       final gameId = row['id'] as int;
-      await d.delete('dart_throws',
-          where: 'game_id = ? AND player_id = ?',
-          whereArgs: [gameId, playerId]);
+      await d.delete(
+        'dart_throws',
+        where: 'game_id = ? AND player_id = ?',
+        whereArgs: [gameId, playerId],
+      );
 
-      final remaining = Sqflite.firstIntValue(await d.rawQuery(
-          'SELECT COUNT(*) FROM dart_throws WHERE game_id = ?', [gameId]));
+      final remaining = Sqflite.firstIntValue(
+        await d.rawQuery('SELECT COUNT(*) FROM dart_throws WHERE game_id = ?', [
+          gameId,
+        ]),
+      );
       if (remaining == 0) await deleteGame(gameId);
     }
   }
@@ -1610,7 +1811,10 @@ class DbHelper {
   /// Callers that show progress pass the throws in slices and get a chance to
   /// report between the calls.
   Future<void> insertSyncedThrows(
-      int playerId, int gameId, List<DartThrow> throws) async {
+    int playerId,
+    int gameId,
+    List<DartThrow> throws,
+  ) async {
     final d = await db;
     final batch = d.batch();
 
@@ -1639,8 +1843,11 @@ class DbHelper {
   /// player's `local_stats_json`.
   Future<Map<String, String>> getOriginSnapshots(int playerId) async {
     final d = await db;
-    final rows = await d.query('player_origin_stats',
-        where: 'player_id = ?', whereArgs: [playerId]);
+    final rows = await d.query(
+      'player_origin_stats',
+      where: 'player_id = ?',
+      whereArgs: [playerId],
+    );
     return {
       for (final r in rows)
         r['origin_device'] as String: r['snapshot_json'] as String,
@@ -1676,10 +1883,12 @@ class DbHelper {
       if (origin.device == localDevice) continue;
       if (origin.snapshotJson.isEmpty) continue;
 
-      final rows = await d.query('player_origin_stats',
-          columns: ['snapshot_json'],
-          where: 'player_id = ? AND origin_device = ?',
-          whereArgs: [playerId, origin.device]);
+      final rows = await d.query(
+        'player_origin_stats',
+        columns: ['snapshot_json'],
+        where: 'player_id = ? AND origin_device = ?',
+        whereArgs: [playerId, origin.device],
+      );
 
       if (rows.isNotEmpty &&
           _dartsIn(rows.first['snapshot_json'] as String) >=
@@ -1687,15 +1896,11 @@ class DbHelper {
         continue;
       }
 
-      await d.insert(
-        'player_origin_stats',
-        {
-          'player_id':     playerId,
-          'origin_device': origin.device,
-          'snapshot_json': origin.snapshotJson,
-        },
-        conflictAlgorithm: ConflictAlgorithm.replace,
-      );
+      await d.insert('player_origin_stats', {
+        'player_id': playerId,
+        'origin_device': origin.device,
+        'snapshot_json': origin.snapshotJson,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
   }
 
@@ -1713,13 +1918,13 @@ class DbHelper {
 
   /// Drops the snapshots [origins] name for a player, so an import can replace
   /// what a device sent before instead of adding to it.
-  Future<void> deleteOriginSnapshots(
-      int playerId, Set<String> origins) async {
+  Future<void> deleteOriginSnapshots(int playerId, Set<String> origins) async {
     if (origins.isEmpty) return;
     final d = await db;
     await d.delete(
       'player_origin_stats',
-      where: 'player_id = ? AND origin_device IN '
+      where:
+          'player_id = ? AND origin_device IN '
           '(${origins.map((_) => '?').join(',')})',
       whereArgs: [playerId, ...origins],
     );
@@ -1734,8 +1939,12 @@ class DbHelper {
   Future<String?> combinedSnapshotJson(int playerId) async {
     final d = await db;
 
-    final playerRows = await d.query('players',
-        columns: ['local_stats_json'], where: 'id = ?', whereArgs: [playerId]);
+    final playerRows = await d.query(
+      'players',
+      columns: ['local_stats_json'],
+      where: 'id = ?',
+      whereArgs: [playerId],
+    );
     final own = playerRows.isEmpty
         ? null
         : playerRows.first['local_stats_json'] as String?;
@@ -1768,13 +1977,15 @@ class DbHelper {
   }
 
   /// Records the last sync time and optional received stats snapshot for a player.
-  Future<void> updatePlayerSyncTime(int playerId, int syncedAt,
-      {String? syncedStatsJson}) async {
+  Future<void> updatePlayerSyncTime(
+    int playerId,
+    int syncedAt, {
+    String? syncedStatsJson,
+  }) async {
     final d = await db;
     final map = <String, dynamic>{'last_synced_at': syncedAt};
     if (syncedStatsJson != null) map['synced_stats'] = syncedStatsJson;
-    await d.update('players', map,
-        where: 'id = ?', whereArgs: [playerId]);
+    await d.update('players', map, where: 'id = ?', whereArgs: [playerId]);
   }
 
   // ── Cricket ──────────────────────────────────────────────────────────────────
@@ -1789,8 +2000,12 @@ class DbHelper {
   /// Updates a Cricket game row (e.g. to mark it finished).
   Future<void> updateCricketGame(CricketGame g) async {
     final d = await db;
-    await d.update('cricket_games', g.toMap(),
-        where: 'id = ?', whereArgs: [g.id]);
+    await d.update(
+      'cricket_games',
+      g.toMap(),
+      where: 'id = ?',
+      whereArgs: [g.id],
+    );
   }
 
   /// Inserts a Cricket dart and returns its id.
@@ -1846,8 +2061,12 @@ class DbHelper {
   /// Updates a Shanghai game row (e.g. to mark it finished).
   Future<void> updateShanghaiGame(ShanghaiGame g) async {
     final d = await db;
-    await d.update('shanghai_games', g.toMap(),
-        where: 'id = ?', whereArgs: [g.id]);
+    await d.update(
+      'shanghai_games',
+      g.toMap(),
+      where: 'id = ?',
+      whereArgs: [g.id],
+    );
   }
 
   /// Inserts a Shanghai dart and returns its id.
@@ -1887,7 +2106,11 @@ class DbHelper {
   /// Permanently deletes a Shanghai game and its darts.
   Future<void> deleteShanghaiGame(int gameId) async {
     final d = await db;
-    await d.delete('shanghai_throws', where: 'game_id = ?', whereArgs: [gameId]);
+    await d.delete(
+      'shanghai_throws',
+      where: 'game_id = ?',
+      whereArgs: [gameId],
+    );
     await d.delete('shanghai_games', where: 'id = ?', whereArgs: [gameId]);
   }
 
@@ -1903,8 +2126,12 @@ class DbHelper {
   /// Updates an Around the Clock game row (e.g. to mark it finished).
   Future<void> updateAroundTheClockGame(AroundTheClockGame g) async {
     final d = await db;
-    await d.update('around_the_clock_games', g.toMap(),
-        where: 'id = ?', whereArgs: [g.id]);
+    await d.update(
+      'around_the_clock_games',
+      g.toMap(),
+      where: 'id = ?',
+      whereArgs: [g.id],
+    );
   }
 
   /// Inserts an Around the Clock dart and returns its id.
@@ -1921,7 +2148,9 @@ class DbHelper {
   }
 
   /// All Around the Clock darts for a game in chronological order.
-  Future<List<AroundTheClockThrow>> getAroundTheClockThrowsForGame(int gameId) async {
+  Future<List<AroundTheClockThrow>> getAroundTheClockThrowsForGame(
+    int gameId,
+  ) async {
     final d = await db;
     final rows = await d.query(
       'around_the_clock_throws',
@@ -1937,15 +2166,26 @@ class DbHelper {
   /// All Around the Clock games, newest first.
   Future<List<AroundTheClockGame>> getAroundTheClockGames() async {
     final d = await db;
-    final rows = await d.query('around_the_clock_games', orderBy: 'created_at DESC');
+    final rows = await d.query(
+      'around_the_clock_games',
+      orderBy: 'created_at DESC',
+    );
     return rows.map(AroundTheClockGame.fromMap).toList();
   }
 
   /// Permanently deletes an Around the Clock game and its darts.
   Future<void> deleteAroundTheClockGame(int gameId) async {
     final d = await db;
-    await d.delete('around_the_clock_throws', where: 'game_id = ?', whereArgs: [gameId]);
-    await d.delete('around_the_clock_games', where: 'id = ?', whereArgs: [gameId]);
+    await d.delete(
+      'around_the_clock_throws',
+      where: 'game_id = ?',
+      whereArgs: [gameId],
+    );
+    await d.delete(
+      'around_the_clock_games',
+      where: 'id = ?',
+      whereArgs: [gameId],
+    );
   }
 
   // ── Checkout Ladder ──────────────────────────────────────────────────────────
@@ -1960,8 +2200,12 @@ class DbHelper {
   /// Updates a Checkout Ladder game row (e.g. to mark it finished).
   Future<void> updateCheckoutLadderGame(CheckoutLadderGame g) async {
     final d = await db;
-    await d.update('checkout_ladder_games', g.toMap(),
-        where: 'id = ?', whereArgs: [g.id]);
+    await d.update(
+      'checkout_ladder_games',
+      g.toMap(),
+      where: 'id = ?',
+      whereArgs: [g.id],
+    );
   }
 
   /// Inserts a Checkout Ladder dart and returns its id.
@@ -1978,7 +2222,9 @@ class DbHelper {
   }
 
   /// All Checkout Ladder darts for a game in chronological order.
-  Future<List<CheckoutLadderThrow>> getCheckoutLadderThrowsForGame(int gameId) async {
+  Future<List<CheckoutLadderThrow>> getCheckoutLadderThrowsForGame(
+    int gameId,
+  ) async {
     final d = await db;
     final rows = await d.query(
       'checkout_ladder_throws',
@@ -1994,15 +2240,26 @@ class DbHelper {
   /// All Checkout Ladder games, newest first.
   Future<List<CheckoutLadderGame>> getCheckoutLadderGames() async {
     final d = await db;
-    final rows = await d.query('checkout_ladder_games', orderBy: 'created_at DESC');
+    final rows = await d.query(
+      'checkout_ladder_games',
+      orderBy: 'created_at DESC',
+    );
     return rows.map(CheckoutLadderGame.fromMap).toList();
   }
 
   /// Permanently deletes a Checkout Ladder game and its darts.
   Future<void> deleteCheckoutLadderGame(int gameId) async {
     final d = await db;
-    await d.delete('checkout_ladder_throws', where: 'game_id = ?', whereArgs: [gameId]);
-    await d.delete('checkout_ladder_games', where: 'id = ?', whereArgs: [gameId]);
+    await d.delete(
+      'checkout_ladder_throws',
+      where: 'game_id = ?',
+      whereArgs: [gameId],
+    );
+    await d.delete(
+      'checkout_ladder_games',
+      where: 'id = ?',
+      whereArgs: [gameId],
+    );
   }
 
   // ── Backup and restore ───────────────────────────────────────────────────────
@@ -2030,14 +2287,16 @@ class DbHelper {
   Future<String> prepareBackup(String deviceId, String deviceLabel) async {
     final d = await db;
     final meta = {
-      'format':       kBackupMarker,
-      'device_id':    deviceId,
+      'format': kBackupMarker,
+      'device_id': deviceId,
       'device_label': deviceLabel,
-      'created_at':   '${DateTime.now().millisecondsSinceEpoch}',
+      'created_at': '${DateTime.now().millisecondsSinceEpoch}',
     };
     for (final entry in meta.entries) {
-      await d.insert('app_meta', {'key': entry.key, 'value': entry.value},
-          conflictAlgorithm: ConflictAlgorithm.replace);
+      await d.insert('app_meta', {
+        'key': entry.key,
+        'value': entry.value,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
     }
     await d.rawQuery('PRAGMA wal_checkpoint(TRUNCATE)');
     return databasePath;
@@ -2053,10 +2312,11 @@ class DbHelper {
     try {
       file = await openReadOnlyDatabase(path);
 
-      final tables = (await file.query('sqlite_master',
-              columns: ['name'], where: "type = 'table'"))
-          .map((r) => r['name'] as String)
-          .toSet();
+      final tables = (await file.query(
+        'sqlite_master',
+        columns: ['name'],
+        where: "type = 'table'",
+      )).map((r) => r['name'] as String).toSet();
       if (!_kRequiredTables.every(tables.contains)) return null;
 
       final meta = <String, String>{};
@@ -2083,23 +2343,29 @@ class DbHelper {
         'checkout_ladder_games',
       ]) {
         if (!tables.contains(table)) continue;
-        games += Sqflite.firstIntValue(
-                await file.rawQuery('SELECT COUNT(*) FROM $table')) ??
+        games +=
+            Sqflite.firstIntValue(
+              await file.rawQuery('SELECT COUNT(*) FROM $table'),
+            ) ??
             0;
       }
 
       return BackupInfo(
         schemaVersion: await file.getVersion(),
-        deviceId:      meta['device_id'],
-        deviceLabel:   meta['device_label'],
-        createdAt:     createdAt == null
+        deviceId: meta['device_id'],
+        deviceLabel: meta['device_label'],
+        createdAt: createdAt == null
             ? null
             : DateTime.fromMillisecondsSinceEpoch(createdAt),
-        playerCount: Sqflite.firstIntValue(await file.rawQuery(
-                'SELECT COUNT(*) FROM players WHERE is_deleted = 0 AND bot_level IS NULL')) ??
+        playerCount:
+            Sqflite.firstIntValue(
+              await file.rawQuery(
+                'SELECT COUNT(*) FROM players WHERE is_deleted = 0 AND bot_level IS NULL',
+              ),
+            ) ??
             0,
-        gameCount:  games,
-        sizeBytes:  await File(path).length(),
+        gameCount: games,
+        sizeBytes: await File(path).length(),
       );
     } catch (_) {
       return null;
@@ -2129,25 +2395,30 @@ class DbHelper {
   Future<void> attributeRestoredHistory(String source) async {
     final d = await db;
 
-    await d.update('games', {'origin_device': source},
-        where: 'origin_device IS NULL');
+    await d.update('games', {
+      'origin_device': source,
+    }, where: 'origin_device IS NULL');
 
     // The snapshot on the player row means "this device's own cleared games",
     // so it has to move into the source's bucket with everything else. Merged
     // rather than overwritten: a backup can already hold a snapshot for the
     // source device if it once received data back from it.
-    final players = await d.query('players',
-        columns: ['id', 'local_stats_json'],
-        where: "local_stats_json IS NOT NULL AND local_stats_json != ''");
+    final players = await d.query(
+      'players',
+      columns: ['id', 'local_stats_json'],
+      where: "local_stats_json IS NOT NULL AND local_stats_json != ''",
+    );
 
     for (final row in players) {
       final playerId = row['id'] as int;
       final own = row['local_stats_json'] as String;
 
-      final existing = await d.query('player_origin_stats',
-          columns: ['snapshot_json'],
-          where: 'player_id = ? AND origin_device = ?',
-          whereArgs: [playerId, source]);
+      final existing = await d.query(
+        'player_origin_stats',
+        columns: ['snapshot_json'],
+        where: 'player_id = ? AND origin_device = ?',
+        whereArgs: [playerId, source],
+      );
 
       final merged = mergeSnapshots([
         own,
@@ -2155,18 +2426,18 @@ class DbHelper {
       ]);
 
       if (merged != null) {
-        await d.insert(
-          'player_origin_stats',
-          {
-            'player_id':     playerId,
-            'origin_device': source,
-            'snapshot_json': merged,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        await d.insert('player_origin_stats', {
+          'player_id': playerId,
+          'origin_device': source,
+          'snapshot_json': merged,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
-      await d.update('players', {'local_stats_json': null},
-          where: 'id = ?', whereArgs: [playerId]);
+      await d.update(
+        'players',
+        {'local_stats_json': null},
+        where: 'id = ?',
+        whereArgs: [playerId],
+      );
     }
   }
 
@@ -2179,9 +2450,9 @@ class DbHelper {
   /// the old database, and leaving them beside a new file is how a restore ends
   /// up as a mixture of both.
   Future<void> replaceDatabase(String sourcePath) async {
-    final path   = await databasePath;
+    final path = await databasePath;
     final target = File(path);
-    final aside  = File('$path.replaced');
+    final aside = File('$path.replaced');
 
     await _db?.close();
     _db = null;
@@ -2231,20 +2502,26 @@ extension LocalBackupSummary on DbHelper {
       'checkout_ladder_games',
     ]) {
       games +=
-          Sqflite.firstIntValue(await d.rawQuery('SELECT COUNT(*) FROM $table')) ??
-              0;
+          Sqflite.firstIntValue(
+            await d.rawQuery('SELECT COUNT(*) FROM $table'),
+          ) ??
+          0;
     }
 
     final createdAt = int.tryParse(meta['created_at'] ?? '');
     return BackupInfo(
       schemaVersion: DbHelper.schemaVersion,
-      deviceId:      meta['device_id'],
-      deviceLabel:   meta['device_label'],
-      createdAt:     createdAt == null
+      deviceId: meta['device_id'],
+      deviceLabel: meta['device_label'],
+      createdAt: createdAt == null
           ? null
           : DateTime.fromMillisecondsSinceEpoch(createdAt),
-      playerCount: Sqflite.firstIntValue(await d.rawQuery(
-              'SELECT COUNT(*) FROM players WHERE is_deleted = 0 AND bot_level IS NULL')) ??
+      playerCount:
+          Sqflite.firstIntValue(
+            await d.rawQuery(
+              'SELECT COUNT(*) FROM players WHERE is_deleted = 0 AND bot_level IS NULL',
+            ),
+          ) ??
           0,
       gameCount: games,
       sizeBytes: await File(await databasePath).length(),

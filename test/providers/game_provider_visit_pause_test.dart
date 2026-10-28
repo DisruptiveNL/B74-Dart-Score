@@ -11,15 +11,17 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/test_db.dart';
 
 /// Throws the given darts one after the other.
-Future<void> _visit(GameProvider p, List<(int field, int modifier)> darts) async {
+Future<void> _visit(
+  GameProvider p,
+  List<(int field, int modifier)> darts,
+) async {
   for (final d in darts) {
     await p.tapField(d.$1, d.$2);
   }
 }
 
 /// Waits a little longer than the pause under test.
-Future<void> _wait() =>
-    Future<void>.delayed(const Duration(milliseconds: 120));
+Future<void> _wait() => Future<void>.delayed(const Duration(milliseconds: 120));
 
 void main() {
   group('the pause after a completed visit', () {
@@ -39,11 +41,11 @@ void main() {
     tearDown(() => provider.dispose());
 
     Game game({int startScore = 501}) => Game(
-          startScore:    startScore,
-          legs:          1,
-          createdAt:     DateTime.now(),
-          startingOrder: StartingOrder.fixed,
-        );
+      startScore: startScore,
+      legs: 1,
+      createdAt: DateTime.now(),
+      startingOrder: StartingOrder.fixed,
+    );
 
     test('keeps the finished visit on the board, then records it', () async {
       await provider.startGame(game(), players);
@@ -93,8 +95,11 @@ void main() {
       expect(provider.dartsInVisit, 2);
       expect(provider.canRedoDart, isTrue);
       await _wait();
-      expect(provider.allThrows(), isEmpty,
-          reason: 'the cancelled pause never recorded anything');
+      expect(
+        provider.allThrows(),
+        isEmpty,
+        reason: 'the cancelled pause never recorded anything',
+      );
       expect(provider.currentPlayerIndex, 0);
 
       await provider.redoLastDart();
@@ -133,18 +138,25 @@ void main() {
 
       expect(provider.visitPending, isFalse);
       expect(provider.allThrows().single.score, 60);
-      expect((await DbHelper.instance.getThrowsForGame(provider.game!.id!))
-          .single.score, 60);
+      expect(
+        (await DbHelper.instance.getThrowsForGame(
+          provider.game!.id!,
+        )).single.score,
+        60,
+      );
     });
 
     test('applies to a bot\'s visit before the turn comes back', () async {
       provider
         ..botDartDelay = Duration.zero
-        ..botThrower   = BotThrower(rng: Random(5));
-      final botId = await DbHelper.instance.insertPlayer(Player(
+        ..botThrower = BotThrower(rng: Random(5));
+      final botId = await DbHelper.instance.insertPlayer(
+        Player(
           name: BotLevel.pro.storedName,
           uuid: BotLevel.pro.uuid,
-          botLevel: BotLevel.pro));
+          botLevel: BotLevel.pro,
+        ),
+      );
       final bot = (await DbHelper.instance.getPlayer(botId))!;
       await provider.startGame(game(), [players.first, bot]);
 
@@ -153,9 +165,11 @@ void main() {
       // Ada's pause runs out, the bot's three darts land at once, and then
       // its visit waits out the same pause. Polled, because the bot throws
       // on timers of its own and the moment is not worth guessing at.
-      for (var i = 0;
-          i < 500 && !(provider.isBotTurn && provider.visitPending);
-          i++) {
+      for (
+        var i = 0;
+        i < 500 && !(provider.isBotTurn && provider.visitPending);
+        i++
+      ) {
         await Future<void>.delayed(const Duration(milliseconds: 1));
       }
       expect(provider.visitPending, isTrue);

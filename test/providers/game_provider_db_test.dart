@@ -43,17 +43,16 @@ void main() {
       bool placementMode = false,
       StartingOrder startingOrder = StartingOrder.random,
       List<TeamConfig>? teams,
-    }) =>
-        Game(
-          startScore: startScore,
-          checkoutMode: checkoutMode,
-          legs: legs,
-          sets: sets,
-          createdAt: DateTime.now(),
-          placementMode: placementMode,
-          startingOrder: startingOrder,
-          teams: teams,
-        );
+    }) => Game(
+      startScore: startScore,
+      checkoutMode: checkoutMode,
+      legs: legs,
+      sets: sets,
+      createdAt: DateTime.now(),
+      placementMode: placementMode,
+      startingOrder: startingOrder,
+      teams: teams,
+    );
 
     test('records a visit and passes the turn on', () async {
       await provider.startGame(game(), players);
@@ -82,20 +81,29 @@ void main() {
       await _visit(provider, const [(17, 3), (25, 2)]);
 
       expect(provider.playerStates[0].legsWon, 1);
-      expect(provider.playerStates[0].perfectLegs, 1,
-          reason: 'the checkout visit must not be counted twice');
+      expect(
+        provider.playerStates[0].perfectLegs,
+        1,
+        reason: 'the checkout visit must not be counted twice',
+      );
     });
 
     test('does not call an ordinary leg perfect', () async {
       await provider.startGame(game(startScore: 101, legs: 2), players);
 
       await _visit(provider, const [(1, 1), (1, 1), (1, 1)]); // A: 3, leaves 98
-      await _sixty(provider);                                  // B
-      await _visit(provider, const [(20, 3), (19, 2)]); // A: 60 + 38 = 98 left 0
+      await _sixty(provider); // B
+      await _visit(provider, const [
+        (20, 3),
+        (19, 2),
+      ]); // A: 60 + 38 = 98 left 0
 
       expect(provider.playerStates[0].legsWon, 1);
-      expect(provider.playerStates[0].perfectLegs, 0,
-          reason: 'five darts is three more than 101 needs');
+      expect(
+        provider.playerStates[0].perfectLegs,
+        0,
+        reason: 'five darts is three more than 101 needs',
+      );
     });
 
     group('undo and redo', () {
@@ -121,8 +129,11 @@ void main() {
 
         await provider.undoLastDart();
 
-        expect(provider.currentPlayerIndex, 0,
-            reason: 'the turn goes back to whoever threw the undone dart');
+        expect(
+          provider.currentPlayerIndex,
+          0,
+          reason: 'the turn goes back to whoever threw the undone dart',
+        );
         expect(provider.playerStates[0].remaining, 501);
         // The two darts before the undone one are prefilled again.
         expect(provider.dartsInVisit, 2);
@@ -152,29 +163,37 @@ void main() {
         expect(provider.canRedoDart, isFalse);
       });
 
-      test('returns the turn inside a leg that another player opened',
-          () async {
-        // Leg 2 opens with B, so from B's second visit on the visit counts of
-        // the leg are level and no longer say whose turn it is.
-        final three = [...players, ...await insertPlayers(['C'])];
-        await provider.startGame(game(startScore: 101, legs: 3), three);
+      test(
+        'returns the turn inside a leg that another player opened',
+        () async {
+          // Leg 2 opens with B, so from B's second visit on the visit counts of
+          // the leg are level and no longer say whose turn it is.
+          final three = [
+            ...players,
+            ...await insertPlayers(['C']),
+          ];
+          await provider.startGame(game(startScore: 101, legs: 3), three);
 
-        await _visit(provider, const [(17, 3), (25, 2)]);  // A wins leg 1
-        expect(provider.currentLeg, 2);
-        expect(provider.currentPlayerState.player.name, 'B');
+          await _visit(provider, const [(17, 3), (25, 2)]); // A wins leg 1
+          expect(provider.currentLeg, 2);
+          expect(provider.currentPlayerState.player.name, 'B');
 
-        await _missedVisit(provider);   // B
-        await _missedVisit(provider);   // C
-        await _missedVisit(provider);   // A
-        await _missedVisit(provider);   // B again
-        expect(provider.currentPlayerState.player.name, 'C');
+          await _missedVisit(provider); // B
+          await _missedVisit(provider); // C
+          await _missedVisit(provider); // A
+          await _missedVisit(provider); // B again
+          expect(provider.currentPlayerState.player.name, 'C');
 
-        await provider.undoLastDart();
+          await provider.undoLastDart();
 
-        expect(provider.currentLeg, 2);
-        expect(provider.currentPlayerState.player.name, 'B',
-            reason: 'the turn goes back to whoever threw the undone dart');
-      });
+          expect(provider.currentLeg, 2);
+          expect(
+            provider.currentPlayerState.player.name,
+            'B',
+            reason: 'the turn goes back to whoever threw the undone dart',
+          );
+        },
+      );
 
       test('undoing the winning dart reopens the game', () async {
         await provider.startGame(game(startScore: 101, legs: 1), players);
@@ -182,22 +201,28 @@ void main() {
         await _visit(provider, const [(17, 3), (25, 2)]);
         expect(provider.gameOver, isTrue);
         final gameId = provider.game!.id!;
-        expect(await storedX01FinishedAt(gameId), isNotNull,
-            reason: 'checking out has to close the stored game');
+        expect(
+          await storedX01FinishedAt(gameId),
+          isNotNull,
+          reason: 'checking out has to close the stored game',
+        );
 
         await provider.undoLastDart();
 
         expect(provider.gameOver, isFalse);
         expect(provider.winnerId, isNull);
         expect(provider.playerStates[0].legsWon, 0);
-        expect(await storedX01FinishedAt(gameId), isNull,
-            reason: 'history has to list the game as open again');
+        expect(
+          await storedX01FinishedAt(gameId),
+          isNull,
+          reason: 'history has to list the game as open again',
+        );
       });
 
       test('takes the game back into the leg that was just won', () async {
         await provider.startGame(game(startScore: 101, legs: 3), players);
 
-        await _visit(provider, const [(17, 3), (25, 2)]);   // A wins leg 1
+        await _visit(provider, const [(17, 3), (25, 2)]); // A wins leg 1
         expect(provider.currentLeg, 2);
         expect(provider.playerStates[0].legsWon, 1);
 
@@ -208,8 +233,11 @@ void main() {
         expect(provider.playerStates[0].perfectLegs, 0);
         expect(provider.playerStates[0].remaining, 101);
         expect(provider.currentPlayerIndex, 0);
-        expect(provider.dartsInVisit, 1,
-            reason: 'the darts before the undone one are prefilled again');
+        expect(
+          provider.dartsInVisit,
+          1,
+          reason: 'the darts before the undone one are prefilled again',
+        );
         expect(provider.liveRunningRemaining, 50);
 
         await provider.redoLastDart();
@@ -222,8 +250,8 @@ void main() {
       test('stays in the new leg when its first visit is taken back', () async {
         await provider.startGame(game(startScore: 101, legs: 3), players);
 
-        await _visit(provider, const [(17, 3), (25, 2)]);   // A wins leg 1
-        await _sixty(provider);                             // B opens leg 2
+        await _visit(provider, const [(17, 3), (25, 2)]); // A wins leg 1
+        await _sixty(provider); // B opens leg 2
 
         await provider.undoLastDart();
 
@@ -237,9 +265,11 @@ void main() {
 
       test('takes the game back into the set that was just won', () async {
         await provider.startGame(
-            game(startScore: 101, legs: 1, sets: 3), players);
+          game(startScore: 101, legs: 1, sets: 3),
+          players,
+        );
 
-        await _visit(provider, const [(17, 3), (25, 2)]);   // A wins set 1
+        await _visit(provider, const [(17, 3), (25, 2)]); // A wins set 1
         expect(provider.currentSet, 2);
         expect(provider.currentLeg, 1);
         expect(provider.playerStates[0].setsWon, 1);
@@ -256,21 +286,30 @@ void main() {
     test('a leg won but not yet opened resumes on the next leg', () async {
       await provider.startGame(game(startScore: 101, legs: 3), players);
 
-      await _visit(provider, const [(17, 3), (25, 2)]);   // A wins leg 1
+      await _visit(provider, const [(17, 3), (25, 2)]); // A wins leg 1
       final stored = provider.game!;
 
       final fresh = GameProvider();
       await fresh.resumeGame(stored, players);
 
-      expect(fresh.currentLeg, 2,
-          reason: 'the leg the checkout decided is over');
+      expect(
+        fresh.currentLeg,
+        2,
+        reason: 'the leg the checkout decided is over',
+      );
       expect(fresh.playerStates[0].legsWon, 1);
-      expect(fresh.playerStates[0].perfectLegs, 1,
-          reason: '101 in two darts is the minimum the score allows');
+      expect(
+        fresh.playerStates[0].perfectLegs,
+        1,
+        reason: '101 in two darts is the minimum the score allows',
+      );
       expect(fresh.playerStates[0].remaining, 101);
       expect(fresh.playerStates[1].remaining, 101);
-      expect(fresh.currentPlayerIndex, 1,
-          reason: 'the leg opens with the slot after the winner');
+      expect(
+        fresh.currentPlayerIndex,
+        1,
+        reason: 'the leg opens with the slot after the winner',
+      );
     });
 
     test('undo in a later set keeps the leg numbering of that set', () async {
@@ -279,29 +318,33 @@ void main() {
       // highest set independently and landed on leg 2 of set 2, a leg without
       // a single throw.
       await provider.startGame(
-          game(startScore: 101, legs: 2, sets: 2), players);
+        game(startScore: 101, legs: 2, sets: 2),
+        players,
+      );
 
       Future<void> checkoutA() async {
         await _visit(provider, const [(17, 3), (25, 2)]);
       }
 
-      await checkoutA();                 // set 1, leg 1
-      await _sixty(provider);            // B
-      await checkoutA();                 // set 1, leg 2, set 1 won
+      await checkoutA(); // set 1, leg 1
+      await _sixty(provider); // B
+      await checkoutA(); // set 1, leg 2, set 1 won
       expect(provider.currentSet, 2);
       expect(provider.currentLeg, 1);
 
-      await _sixty(provider);            // B opens set 2
-      await _sixty(provider);            // A scores 60
+      await _sixty(provider); // B opens set 2
+      await _sixty(provider); // A scores 60
       expect(provider.playerStates[0].remaining, 41);
 
       await provider.undoLastDart();
 
       expect(provider.currentSet, 2);
-      expect(provider.currentLeg, 1,
-          reason: 'legs restart at 1 in every set');
-      expect(provider.playerStates[1].remaining, 41,
-          reason: 'the running leg of set 2 keeps the scores already thrown');
+      expect(provider.currentLeg, 1, reason: 'legs restart at 1 in every set');
+      expect(
+        provider.playerStates[1].remaining,
+        41,
+        reason: 'the running leg of set 2 keeps the scores already thrown',
+      );
       // A's committed visit was taken back, the darts before the removed one
       // are prefilled again.
       expect(provider.playerStates[0].remaining, 101);
@@ -343,12 +386,15 @@ void main() {
         expect(provider.playerStates, hasLength(2));
         expect(provider.currentPlayerState.player.name, 'A');
 
-        await _sixty(provider);                       // Team 1, member A
+        await _sixty(provider); // Team 1, member A
         expect(provider.currentPlayerState.player.name, 'B');
 
-        await _sixty(provider);                       // Team 2, member B
-        expect(provider.currentPlayerState.player.name, 'C',
-            reason: 'team 1 hands over to its second member');
+        await _sixty(provider); // Team 2, member B
+        expect(
+          provider.currentPlayerState.player.name,
+          'C',
+          reason: 'team 1 hands over to its second member',
+        );
       });
 
       test('undo keeps the rotation a new leg carried over', () async {
@@ -361,30 +407,38 @@ void main() {
           TeamConfig(name: 'Team 2', playerIds: [all[1].id!, all[3].id!]),
         ];
         await provider.startGame(
-            game(startScore: 101, legs: 3, teams: teams), all);
+          game(startScore: 101, legs: 3, teams: teams),
+          all,
+        );
 
-        await _sixty(provider);          // Team 1, A
-        await _sixty(provider);          // Team 2, B
-        await _missedVisit(provider);    // Team 1, C
-        await _missedVisit(provider);    // Team 2, D
-        await _missedVisit(provider);    // Team 1, A
-        await _visit(provider, const [(1, 1), (20, 2)]);  // Team 2, B wins 41
+        await _sixty(provider); // Team 1, A
+        await _sixty(provider); // Team 2, B
+        await _missedVisit(provider); // Team 1, C
+        await _missedVisit(provider); // Team 2, D
+        await _missedVisit(provider); // Team 1, A
+        await _visit(provider, const [(1, 1), (20, 2)]); // Team 2, B wins 41
 
         expect(provider.currentLeg, 2);
-        expect(provider.currentPlayerState.player.name, 'C',
-            reason: 'team 1 carries its rotation into the new leg');
+        expect(
+          provider.currentPlayerState.player.name,
+          'C',
+          reason: 'team 1 carries its rotation into the new leg',
+        );
 
-        await _sixty(provider);          // Team 1, C
-        await _sixty(provider);          // Team 2, D
-        await _missedVisit(provider);    // Team 1, A
+        await _sixty(provider); // Team 1, C
+        await _sixty(provider); // Team 2, D
+        await _missedVisit(provider); // Team 1, A
         expect(provider.currentPlayerState.player.name, 'B');
 
         await provider.undoLastDart();
 
         expect(provider.currentLeg, 2);
         expect(provider.currentPlayerIndex, 0);
-        expect(provider.currentPlayerState.player.name, 'A',
-            reason: 'the turn goes back to the member who threw');
+        expect(
+          provider.currentPlayerState.player.name,
+          'A',
+          reason: 'the turn goes back to the member who threw',
+        );
       });
 
       test('a resume restores the rotation of every team', () async {
@@ -395,9 +449,9 @@ void main() {
         ];
         await provider.startGame(game(teams: teams), all);
 
-        await _sixty(provider);   // Team 1, A
-        await _sixty(provider);   // Team 2, B
-        await _sixty(provider);   // Team 1, C
+        await _sixty(provider); // Team 1, A
+        await _sixty(provider); // Team 2, B
+        await _sixty(provider); // Team 1, C
         final stored = provider.game!;
 
         final fresh = GameProvider();
@@ -405,8 +459,11 @@ void main() {
 
         expect(fresh.currentPlayerIndex, 1);
         expect(fresh.currentPlayerState.player.name, 'D');
-        expect(fresh.playerStates[0].player.name, 'A',
-            reason: 'the idle team keeps the member who steps up next');
+        expect(
+          fresh.playerStates[0].player.name,
+          'A',
+          reason: 'the idle team keeps the member who steps up next',
+        );
       });
 
       test('shares one score across the team', () async {
@@ -417,9 +474,9 @@ void main() {
         ];
         await provider.startGame(game(teams: teams), all);
 
-        await _sixty(provider);   // A
-        await _sixty(provider);   // B
-        await _sixty(provider);   // C, same slot as A
+        await _sixty(provider); // A
+        await _sixty(provider); // B
+        await _sixty(provider); // C, same slot as A
 
         expect(provider.playerStates[0].remaining, 381);
       });
@@ -429,31 +486,42 @@ void main() {
       late List<Player> three;
 
       setUp(() async {
-        three = [...players, ...await insertPlayers(['C'])];
+        three = [
+          ...players,
+          ...await insertPlayers(['C']),
+        ];
       });
 
       test('ends the leg on the second to last checkout', () async {
         await provider.startGame(
-            game(startScore: 101, legs: 2, placementMode: true), three);
+          game(startScore: 101, legs: 2, placementMode: true),
+          three,
+        );
 
         // A finishes first, then B. C is left over and takes last place
         // without throwing its checkout.
-        await _visit(provider, const [(17, 3), (25, 2)]);   // A checks out
+        await _visit(provider, const [(17, 3), (25, 2)]); // A checks out
         expect(provider.playerStates[0].legPlacement, 1);
         expect(provider.playerStates[1].legPlacement, isNull);
-        expect(provider.currentPlayerIndex, 1,
-            reason: 'a slot that has finished the leg is skipped');
+        expect(
+          provider.currentPlayerIndex,
+          1,
+          reason: 'a slot that has finished the leg is skipped',
+        );
 
-        await _sixty(provider);                              // B, 41 left
-        await _sixty(provider);                              // C, 41 left
-        await _visit(provider, const [(1, 1), (20, 2)]);     // B checks out 41
+        await _sixty(provider); // B, 41 left
+        await _sixty(provider); // C, 41 left
+        await _visit(provider, const [(1, 1), (20, 2)]); // B checks out 41
 
         // The leg is over, so the per-leg positions are cleared for the next
         // one. The cumulative sum is what carries them.
         expect(provider.currentLeg, 2);
         expect(provider.playerStates[0].legsWon, 1);
-        expect(provider.playerStates.map((s) => s.placementSum), [1, 2, 3],
-            reason: 'the last slot is placed without checking out');
+        expect(provider.playerStates.map((s) => s.placementSum), [
+          1,
+          2,
+          3,
+        ], reason: 'the last slot is placed without checking out');
         // Three slots, so a leg pays 4 to the winner, 2 to the second and 1 to
         // the third. The points decide the final ranking, so the live game has
         // to keep them rather than work them out again at the end.
@@ -462,7 +530,9 @@ void main() {
 
       test('carries the placements through a resume', () async {
         await provider.startGame(
-            game(startScore: 101, legs: 2, placementMode: true), three);
+          game(startScore: 101, legs: 2, placementMode: true),
+          three,
+        );
 
         await _visit(provider, const [(17, 3), (25, 2)]);
         await _sixty(provider);
@@ -477,17 +547,24 @@ void main() {
         expect(fresh.playerStates[0].legsWon, 1);
         expect(fresh.playerStates[0].placementSum, 1);
         expect(fresh.playerStates[1].placementSum, 2);
-        expect(fresh.playerStates[2].placementSum, 3,
-            reason: 'the last place counts toward the tie breaker');
-        expect(fresh.playerStates.map((s) => s.placementPoints), [4, 2, 1],
-            reason: 'the points a resume rebuilds are the points it left with');
+        expect(
+          fresh.playerStates[2].placementSum,
+          3,
+          reason: 'the last place counts toward the tie breaker',
+        );
+        expect(fresh.playerStates.map((s) => s.placementPoints), [
+          4,
+          2,
+          1,
+        ], reason: 'the points a resume rebuilds are the points it left with');
       });
     });
 
     test('a fixed starting order survives a rematch', () async {
       await provider.startGame(
-          game(startScore: 101, legs: 1, startingOrder: StartingOrder.fixed),
-          players);
+        game(startScore: 101, legs: 1, startingOrder: StartingOrder.fixed),
+        players,
+      );
       await _visit(provider, const [(17, 3), (25, 2)]);
       final finished = provider.game!;
 
@@ -498,35 +575,46 @@ void main() {
       expect(provider.game!.startingOrder, StartingOrder.fixed);
     });
 
-    test('a visit only counts as a checkout attempt once a dart can finish',
-        () async {
-      // The leg from the bug report, played out dart by dart.
-      await provider.startGame(
+    test(
+      'a visit only counts as a checkout attempt once a dart can finish',
+      () async {
+        // The leg from the bug report, played out dart by dart.
+        await provider.startGame(
           game(startScore: 156, legs: 1, startingOrder: StartingOrder.fixed),
-          players);
+          players,
+        );
 
-      // 156 is shown as T20, T20, D18. The plain 20 takes the finish out of
-      // reach for the rest of the visit, and 136 and 76 are no closer.
-      await _visit(provider, const [(20, 1), (20, 3), (17, 3)]);
-      await _missedVisit(provider);
-      // 25 left: the S9 leaves 16 with two darts still in hand.
-      await _visit(provider, const [(9, 1), (0, 1), (0, 1)]);
-      await _missedVisit(provider);
-      // 16 left, an attempt before the first dart flies. The S3 busts from 2
-      // and ends the visit early.
-      await _visit(provider, const [(14, 1), (3, 1)]);
-      await _missedVisit(provider);
-      // 16 left again, checked out on D8.
-      await _visit(provider, const [(8, 2)]);
+        // 156 is shown as T20, T20, D18. The plain 20 takes the finish out of
+        // reach for the rest of the visit, and 136 and 76 are no closer.
+        await _visit(provider, const [(20, 1), (20, 3), (17, 3)]);
+        await _missedVisit(provider);
+        // 25 left: the S9 leaves 16 with two darts still in hand.
+        await _visit(provider, const [(9, 1), (0, 1), (0, 1)]);
+        await _missedVisit(provider);
+        // 16 left, an attempt before the first dart flies. The S3 busts from 2
+        // and ends the visit early.
+        await _visit(provider, const [(14, 1), (3, 1)]);
+        await _missedVisit(provider);
+        // 16 left again, checked out on D8.
+        await _visit(provider, const [(8, 2)]);
 
-      expect(provider.gameOver, isTrue);
+        expect(provider.gameOver, isTrue);
 
-      final visits = provider.playerStates[0].throws;
-      expect(visits.map((t) => t.checkoutAttempt), [false, true, true, true],
-          reason: 'the 156 visit was never one dart from the finish');
-      expect(visits.map((t) => t.checkoutDarts), [0, 2, 2, 1],
-          reason: 'the two misses from 16 and the S3 from 2 all flew at a '
-              'finish, so the attempts hold more darts than one each');
-    });
+        final visits = provider.playerStates[0].throws;
+        expect(visits.map((t) => t.checkoutAttempt), [
+          false,
+          true,
+          true,
+          true,
+        ], reason: 'the 156 visit was never one dart from the finish');
+        expect(
+          visits.map((t) => t.checkoutDarts),
+          [0, 2, 2, 1],
+          reason:
+              'the two misses from 16 and the S3 from 2 all flew at a '
+              'finish, so the attempts hold more darts than one each',
+        );
+      },
+    );
   });
 }

@@ -37,7 +37,8 @@ class CricketHistorySummaryScreen extends StatefulWidget {
       _CricketHistorySummaryScreenState();
 }
 
-class _CricketHistorySummaryScreenState extends State<CricketHistorySummaryScreen> {
+class _CricketHistorySummaryScreenState
+    extends State<CricketHistorySummaryScreen> {
   /// Started once and kept, not started again on every build.
   ///
   /// A read begun inside `build` is begun again by every rebuild, and a pane
@@ -70,9 +71,10 @@ class _CricketHistorySummaryScreenState extends State<CricketHistorySummaryScree
                 return Center(child: Text(context.l10n.noThrowData));
               }
               return _Body(
-                  game: widget.game,
-                  players: widget.players,
-                  provider: provider);
+                game: widget.game,
+                players: widget.players,
+                provider: provider,
+              );
             },
           ),
         ),
@@ -86,7 +88,9 @@ class _CricketHistorySummaryScreenState extends State<CricketHistorySummaryScree
       ? content
       : Scaffold(
           appBar: AppBar(
-            title: Text(DateFormat('dd.MM.yy  HH:mm').format(widget.game.createdAt)),
+            title: Text(
+              DateFormat('dd.MM.yy  HH:mm').format(widget.game.createdAt),
+            ),
           ),
           body: content,
         );
@@ -115,11 +119,11 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme    = Theme.of(context);
-    final cs       = theme.colorScheme;
-    final l        = context.l10n;
-    final isCT     = game.variant == CricketVariant.cutThroat;
-    final states   = provider.playerStates;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final l = context.l10n;
+    final isCT = game.variant == CricketVariant.cutThroat;
+    final states = provider.playerStates;
     final winnerId = provider.winnerId;
 
     // The winning slot, looked up once. Null when the game has no winner, and
@@ -131,9 +135,7 @@ class _Body extends StatelessWidget {
       ..sort((a, b) {
         if (a.isWonBy(winnerId)) return -1;
         if (b.isWonBy(winnerId)) return 1;
-        return isCT
-            ? a.score.compareTo(b.score)
-            : b.score.compareTo(a.score);
+        return isCT ? a.score.compareTo(b.score) : b.score.compareTo(a.score);
       });
 
     final rematch = RematchButton(
@@ -143,10 +145,16 @@ class _Body extends StatelessWidget {
         (l.cricketScoringMode, cricketScoringModeLabel(l, game.scoringMode)),
       ],
       slots: states
-          .map((s) => s.isTeamSlot
-              ? RematchSlot.team(s.label(l),
-                  s.players.map((p) => RematchSlot.player(p.label(l))).toList())
-              : RematchSlot.player(s.label(l)))
+          .map(
+            (s) => s.isTeamSlot
+                ? RematchSlot.team(
+                    s.label(l),
+                    s.players
+                        .map((p) => RematchSlot.player(p.label(l)))
+                        .toList(),
+                  )
+                : RematchSlot.player(s.label(l)),
+          )
           .toList(),
       onRematch: () =>
           context.read<CricketProvider>().startRematch(game, players),
@@ -170,7 +178,11 @@ class _Body extends StatelessWidget {
                     color: cs.primaryContainer,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.emoji_events_rounded, size: 52, color: cs.primary),
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    size: 52,
+                    color: cs.primary,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -188,12 +200,18 @@ class _Body extends StatelessWidget {
         ],
 
         // Game info
-        GameInfoCard(dense: true, rows: [
-          (l.gameLabel, l.modeCricketName),
-          (l.cricketVariant, cricketVariantLabel(l, game.variant)),
-          (l.cricketScoringMode, cricketScoringModeLabel(l, game.scoringMode)),
-          (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
-        ]),
+        GameInfoCard(
+          dense: true,
+          rows: [
+            (l.gameLabel, l.modeCricketName),
+            (l.cricketVariant, cricketVariantLabel(l, game.variant)),
+            (
+              l.cricketScoringMode,
+              cricketScoringModeLabel(l, game.scoringMode),
+            ),
+            (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
+          ],
+        ),
 
         // ── Rematch ────────────────────────────────────────────────────────
 
@@ -205,16 +223,20 @@ class _Body extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l.cricketSummaryTitle,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  l.cricketSummaryTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 const Divider(height: 1),
                 const SizedBox(height: 8),
                 ...sorted.map((slot) {
                   final isWinner = slot.isWonBy(winnerId);
-                  final closed   =
-                      cricketFields.where(slot.hasClosedField).length;
+                  final closed = cricketFields
+                      .where(slot.hasClosedField)
+                      .length;
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 10),
                     child: Row(
@@ -230,30 +252,40 @@ class _Body extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(slot.label(l),
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: isWinner
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isWinner ? cs.primary : null,
-                                  )),
+                              Text(
+                                slot.label(l),
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: isWinner
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isWinner ? cs.primary : null,
+                                ),
+                              ),
                               if (slot.isTeamSlot)
                                 Text(
-                                  slot.players.map((p) => p.label(l)).join(' & '),
+                                  slot.players
+                                      .map((p) => p.label(l))
+                                      .join(' & '),
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                      color: cs.onSurfaceVariant),
+                                    color: cs.onSurfaceVariant,
+                                  ),
                                 ),
-                              Text('$closed/7 ${l.cricketFieldsClosed}',
-                                  style: theme.textTheme.bodySmall?.copyWith(
-                                      color: cs.onSurfaceVariant)),
+                              Text(
+                                '$closed/7 ${l.cricketFieldsClosed}',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        Text('${slot.score}',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: isWinner ? cs.primary : null,
-                            )),
+                        Text(
+                          '${slot.score}',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isWinner ? cs.primary : null,
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -271,36 +303,43 @@ class _Body extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l.cricketMarks,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  l.cricketMarks,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 const Divider(height: 1),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     const SizedBox(width: 52),
-                    ...sorted.map((slot) => Expanded(
-                          child: Column(
-                            children: [
-                              Text(slot.label(l),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.labelSmall),
-                              if (slot.isTeamSlot)
-                                Text(
-                                  slot.players.map((p) => p.label(l)).join(' & '),
-                                  textAlign: TextAlign.center,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: cs.onSurfaceVariant,
-                                  ),
+                    ...sorted.map(
+                      (slot) => Expanded(
+                        child: Column(
+                          children: [
+                            Text(
+                              slot.label(l),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.textTheme.labelSmall,
+                            ),
+                            if (slot.isTeamSlot)
+                              Text(
+                                slot.players.map((p) => p.label(l)).join(' & '),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  color: cs.onSurfaceVariant,
                                 ),
-                            ],
-                          ),
-                        )),
+                              ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -312,15 +351,19 @@ class _Body extends StatelessWidget {
                       children: [
                         SizedBox(
                           width: 52,
-                          child: Text(label,
-                              textAlign: TextAlign.center,
-                              style: theme.textTheme.titleSmall
-                                  ?.copyWith(fontWeight: FontWeight.bold)),
+                          child: Text(
+                            label,
+                            textAlign: TextAlign.center,
+                            style: theme.textTheme.titleSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                         ...sorted.map((slot) {
                           final m = slot.marks[field] ?? 0;
                           return Expanded(
-                              child: Center(child: CricketMarksWidget(marks: m)));
+                            child: Center(child: CricketMarksWidget(marks: m)),
+                          );
                         }),
                       ],
                     ),
@@ -341,4 +384,3 @@ class _Body extends StatelessWidget {
     );
   }
 }
-

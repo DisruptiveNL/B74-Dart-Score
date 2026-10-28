@@ -69,8 +69,7 @@ class _PlayersScreenState extends State<PlayersScreen> {
         }
 
         final primary = provider.primaryPlayer;
-        final others =
-            provider.players.where((p) => !p.isPrimary).toList();
+        final others = provider.players.where((p) => !p.isPrimary).toList();
 
         return ListView(
           padding: EdgeInsets.fromLTRB(
@@ -97,15 +96,10 @@ class _PlayersScreenState extends State<PlayersScreen> {
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
                     l.players,
-                    style: Theme.of(context)
-                        .textTheme
-                        .labelMedium
-                        ?.copyWith(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onSurfaceVariant,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -113,12 +107,14 @@ class _PlayersScreenState extends State<PlayersScreen> {
             ],
 
             // ── Other players ──────────────────────────────────────────
-            ...others.map((p) => _OtherPlayerTile(
-                  player: p,
-                  onEdit: () => _editPlayer(context, p),
-                  onStats: () => _openStats(context, p),
-                  onShare: () => _openSync(context, p),
-                )),
+            ...others.map(
+              (p) => _OtherPlayerTile(
+                player: p,
+                onEdit: () => _editPlayer(context, p),
+                onStats: () => _openStats(context, p),
+                onShare: () => _openSync(context, p),
+              ),
+            ),
           ],
         );
       },
@@ -129,13 +125,19 @@ class _PlayersScreenState extends State<PlayersScreen> {
     final buttons = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.end,
-      children: [addFab, const SizedBox(height: fabSpacing), syncFab],
+      children: [
+        addFab,
+        const SizedBox(height: fabSpacing),
+        syncFab,
+      ],
     );
 
-    Widget list = Center(child: ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
-      child: listContent,
-    ));
+    Widget list = Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
+        child: listContent,
+      ),
+    );
 
     // Both buttons act on the list, so on a tablet they belong over the list
     // and not over the statistics in the pane beside it, which is where the
@@ -165,21 +167,26 @@ class _PlayersScreenState extends State<PlayersScreen> {
         .firstOrNull;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l.playersTitle),
-      ),
+      appBar: AppBar(title: Text(l.playersTitle)),
       body: !tablet
           ? list
           : SidePaneLayout(
               side: InputSide.left,
-              fraction: layout!.splitFraction(SplitPane.players, landscape: landscape),
+              fraction: layout!.splitFraction(
+                SplitPane.players,
+                landscape: landscape,
+              ),
               minPaneWidth: kMinListPaneWidth,
-              onFractionChanged: (f) =>
-                  layout.setSplitFraction(SplitPane.players, f,
-                    landscape: landscape),
+              onFractionChanged: (f) => layout.setSplitFraction(
+                SplitPane.players,
+                f,
+                landscape: landscape,
+              ),
               onFractionSettled: () {
-                layout.persistSplitFraction(SplitPane.players,
-                  landscape: landscape);
+                layout.persistSplitFraction(
+                  SplitPane.players,
+                  landscape: landscape,
+                );
               },
               primary: list,
               secondary: _view == _PaneView.sync
@@ -192,15 +199,19 @@ class _PlayersScreenState extends State<PlayersScreen> {
                           ? l.syncTitle
                           : l.syncOf(selected.name),
                       child: SyncScreen(
-                          initialPlayer: selected, embedded: true),
+                        initialPlayer: selected,
+                        embedded: true,
+                      ),
                     )
                   : selected == null
-                      ? _EmptyStatsPane(message: l.playersPickOne)
-                      : _StatsPane(
-                          title: l.statisticsOf(selected.name),
-                          child: PlayerStatsScreen(
-                              player: selected, embedded: true),
-                        ),
+                  ? _EmptyStatsPane(message: l.playersPickOne)
+                  : _StatsPane(
+                      title: l.statisticsOf(selected.name),
+                      child: PlayerStatsScreen(
+                        player: selected,
+                        embedded: true,
+                      ),
+                    ),
             ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       floatingActionButton: tablet ? null : buttons,
@@ -213,12 +224,14 @@ class _PlayersScreenState extends State<PlayersScreen> {
     if (isTabletLayout(context)) {
       setState(() {
         _selected = player;
-        _view     = _PaneView.stats;
+        _view = _PaneView.stats;
       });
       return;
     }
-    Navigator.push(context,
-        MaterialPageRoute(builder: (_) => PlayerStatsScreen(player: player)));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => PlayerStatsScreen(player: player)),
+    );
   }
 
   /// Opens the device-to-device sync in the pane beside the list where there is
@@ -232,12 +245,14 @@ class _PlayersScreenState extends State<PlayersScreen> {
     if (isTabletLayout(context)) {
       setState(() {
         _selected = player;
-        _view     = _PaneView.sync;
+        _view = _PaneView.sync;
       });
       return;
     }
-    Navigator.push(context,
-        MaterialPageRoute(builder: (_) => SyncScreen(initialPlayer: player)));
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => SyncScreen(initialPlayer: player)),
+    );
   }
 
   /// Opens the create-player dialog, rejecting names that already exist.
@@ -253,10 +268,13 @@ class _PlayersScreenState extends State<PlayersScreen> {
         existingNames: existing,
         onSave: (name, doubles) {
           final provider = context.read<PlayersProvider>();
-          provider.addPlayer(name).then(
-            (player) =>
-                provider.updatePlayer(player.copyWith(favoriteDoubles: doubles)),
-          );
+          provider
+              .addPlayer(name)
+              .then(
+                (player) => provider.updatePlayer(
+                  player.copyWith(favoriteDoubles: doubles),
+                ),
+              );
         },
       ),
     );
@@ -279,12 +297,12 @@ class _PlayersScreenState extends State<PlayersScreen> {
         isPrimary: player.isPrimary,
         existingNames: existing,
         onSave: (name, doubles) async {
-          await context
-              .read<PlayersProvider>()
-              .updatePlayer(player.copyWith(name: name, favoriteDoubles: doubles));
+          await context.read<PlayersProvider>().updatePlayer(
+            player.copyWith(name: name, favoriteDoubles: doubles),
+          );
         },
-        onDelete: () => _confirmDelete(
-            context, context.read<PlayersProvider>(), player),
+        onDelete: () =>
+            _confirmDelete(context, context.read<PlayersProvider>(), player),
         onSetPrimary: player.isPrimary
             ? null
             : () => context.read<PlayersProvider>().setPrimary(player),
@@ -294,29 +312,32 @@ class _PlayersScreenState extends State<PlayersScreen> {
 
   /// Confirms and deletes [player].
   void _confirmDelete(
-      BuildContext context, PlayersProvider provider, Player player) {
+    BuildContext context,
+    PlayersProvider provider,
+    Player player,
+  ) {
     showDialog(
       context: context,
       builder: (_) => Center(
         child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
-        child: AlertDialog(
-          title: Text(context.l10n.deletePlayerTitle),
-          content: Text(context.l10n.deletePlayerConfirm(player.name)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(context.l10n.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                provider.deletePlayer(player.id!);
-                Navigator.pop(context);
-              },
-              child: Text(context.l10n.delete),
-            ),
-          ],
-        ),
+          constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
+          child: AlertDialog(
+            title: Text(context.l10n.deletePlayerTitle),
+            content: Text(context.l10n.deletePlayerConfirm(player.name)),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(context.l10n.cancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  provider.deletePlayer(player.id!);
+                  Navigator.pop(context);
+                },
+                child: Text(context.l10n.delete),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -347,8 +368,9 @@ class _StatsPane extends StatelessWidget {
           child: Text(
             title,
             textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         Expanded(child: child),
@@ -440,7 +462,11 @@ class _PrimaryPlayerCard extends StatelessWidget {
                       shape: BoxShape.circle,
                       border: Border.all(color: cs.primaryContainer, width: 2),
                     ),
-                    child: Icon(Icons.star_rounded, size: 11, color: cs.onPrimary),
+                    child: Icon(
+                      Icons.star_rounded,
+                      size: 11,
+                      color: cs.onPrimary,
+                    ),
                   ),
                 ),
               ],
@@ -481,7 +507,10 @@ class _PrimaryPlayerCard extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
-                  icon: Icon(Icons.bar_chart_rounded, color: cs.onPrimaryContainer),
+                  icon: Icon(
+                    Icons.bar_chart_rounded,
+                    color: cs.onPrimaryContainer,
+                  ),
                   tooltip: context.l10n.statsTooltip,
                   onPressed: onStats,
                 ),
@@ -528,20 +557,18 @@ class _OtherPlayerTile extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.only(bottom: 6),
       child: ListTile(
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
         leading: CircleAvatar(
           backgroundColor: cs.surfaceContainerHighest,
           child: Text(
             player.name.isNotEmpty ? player.name[0].toUpperCase() : "?",
-            style: TextStyle(
-              color: cs.onSurface,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(color: cs.onSurface, fontWeight: FontWeight.bold),
           ),
         ),
-        title: Text(player.name,
-            style: const TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(
+          player.name,
+          style: const TextStyle(fontWeight: FontWeight.w600),
+        ),
         subtitle: player.favoriteDouble == null
             ? Text(l.noFavDoubles)
             : Text('${l.favDoublesPrefix}${player.favoriteDouble}'),

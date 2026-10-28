@@ -18,9 +18,9 @@ class CheckoutLadderSummaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.read<CheckoutLadderProvider>();
-    final game     = provider.game!;
-    final slots    = provider.slots;
-    final l        = context.l10n;
+    final game = provider.game!;
+    final slots = provider.slots;
+    final l = context.l10n;
 
     return Scaffold(
       appBar: AppBar(title: Text(l.ladderSummaryTitle)),
@@ -29,15 +29,19 @@ class CheckoutLadderSummaryScreen extends StatelessWidget {
         top: 24,
         bottom: 24,
         result: [
-          GameInfoCard(rows: [
-            (l.gameLabel, l.modeCheckoutLadderName),
-            ...checkoutLadderSettingRows(l, game),
-            (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
-          ]),
+          GameInfoCard(
+            rows: [
+              (l.gameLabel, l.modeCheckoutLadderName),
+              ...checkoutLadderSettingRows(l, game),
+              (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
+            ],
+          ),
         ],
         details: [
           CheckoutLadderResultCards(
-              slots: slots, winnerIndex: provider.winnerIndex),
+            slots: slots,
+            winnerIndex: provider.winnerIndex,
+          ),
         ],
         actions: [
           FilledButton.icon(
@@ -53,10 +57,16 @@ class CheckoutLadderSummaryScreen extends StatelessWidget {
             modeName: l.modeCheckoutLadderName,
             details: checkoutLadderSettingRows(l, game),
             slots: slots
-                .map((s) => s.isTeamSlot
-                    ? RematchSlot.team(s.label(l),
-                        s.players.map((p) => RematchSlot.player(p.label(l))).toList())
-                    : RematchSlot.player(s.label(l)))
+                .map(
+                  (s) => s.isTeamSlot
+                      ? RematchSlot.team(
+                          s.label(l),
+                          s.players
+                              .map((p) => RematchSlot.player(p.label(l)))
+                              .toList(),
+                        )
+                      : RematchSlot.player(s.label(l)),
+                )
                 .toList(),
             onRematch: () => provider.startRematch(
               game,

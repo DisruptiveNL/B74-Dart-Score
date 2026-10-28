@@ -7,19 +7,25 @@ import 'competition_sync_contract.dart';
 /// Resolves the frozen roster to locally linked player profiles.
 /// Never merges by name or alters a player's existing preferences.
 class CompetitionSingleLauncher {
-  CompetitionSingleLauncher({DbHelper? helper}) : _db = helper ?? DbHelper.instance;
+  CompetitionSingleLauncher({DbHelper? helper})
+    : _db = helper ?? DbHelper.instance;
   final DbHelper _db;
 
   Future<int?> existingGameId(String matchId, int slot) =>
       _db.competitionGameId(matchId, slot);
 
-  Future<List<Player>> players(CompetitionSingleSummary single,
-      {required bool homeStarts}) async {
+  Future<List<Player>> players(
+    CompetitionSingleSummary single, {
+    required bool homeStarts,
+  }) async {
     final db = await _db.db;
     Future<Player> find(String externalId) async {
-      final links = await db.query('competition_player_links',
-          columns: ['player_id'], where: 'external_player_id = ?',
-          whereArgs: [externalId]);
+      final links = await db.query(
+        'competition_player_links',
+        columns: ['player_id'],
+        where: 'external_player_id = ?',
+        whereArgs: [externalId],
+      );
       if (links.length != 1) {
         throw StateError('Speler $externalId is niet gekoppeld');
       }
@@ -29,16 +35,22 @@ class CompetitionSingleLauncher {
       }
       return player;
     }
+
     final home = await find(single.homeId);
     final away = await find(single.awayId);
-    if (home.id == away.id) throw StateError('Spelers verwijzen naar hetzelfde profiel');
+    if (home.id == away.id)
+      throw StateError('Spelers verwijzen naar hetzelfde profiel');
     return homeStarts ? [home, away] : [away, home];
   }
 
-  static bool? homeStarts(CompetitionMatchSummary match,
-      CompetitionSingleSummary single) {
+  static bool? homeStarts(
+    CompetitionMatchSummary match,
+    CompetitionSingleSummary single,
+  ) {
     final side = CompetitionX01Rules.startingTeam(
-        match.rules['startPolicy'] as String, single.slot - 1);
+      match.rules['startPolicy'] as String,
+      single.slot - 1,
+    );
     return side == null ? null : side == 'home';
   }
 

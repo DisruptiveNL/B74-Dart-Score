@@ -70,18 +70,21 @@ Future<int> seedThrows(int playerId, int count) async {
     final field = (i % 20) + 1;
     final score = field * ((i % 3) + 1);
     batch.insert('dart_throws', {
-      'game_id':          gameId,
-      'player_id':        playerId,
-      'score':            score,
-      'darts_used':       3,
-      'leg':              (i ~/ 15) + 1,
-      'set_':             1,
+      'game_id': gameId,
+      'player_id': playerId,
+      'score': score,
+      'darts_used': 3,
+      'leg': (i ~/ 15) + 1,
+      'set_': 1,
       'remaining_before': 501 - (i % 12) * 37,
-      'thrown_at':        DateTime(2026, 1, 1)
-          .add(Duration(minutes: i))
-          .millisecondsSinceEpoch,
-      'bust':             i % 17 == 0 ? 1 : 0,
-      'hits_json':        '[{"f":$field,"m":${(i % 3) + 1}},'
+      'thrown_at': DateTime(
+        2026,
+        1,
+        1,
+      ).add(Duration(minutes: i)).millisecondsSinceEpoch,
+      'bust': i % 17 == 0 ? 1 : 0,
+      'hits_json':
+          '[{"f":$field,"m":${(i % 3) + 1}},'
           '{"f":${(i % 20) + 1},"m":1},{"f":${(i % 7) + 1},"m":2}]',
     });
   }

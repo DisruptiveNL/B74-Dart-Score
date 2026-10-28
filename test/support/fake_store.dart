@@ -40,10 +40,14 @@ class FakeStore extends InAppPurchasePlatform with MockPlatformInterfaceMixin {
 
   @override
   Future<ProductDetailsResponse> queryProductDetails(
-      Set<String> identifiers) async {
+    Set<String> identifiers,
+  ) async {
     calls.add('queryProductDetails');
     return ProductDetailsResponse(
-        productDetails: products, notFoundIDs: notFoundIDs, error: queryError);
+      productDetails: products,
+      notFoundIDs: notFoundIDs,
+      error: queryError,
+    );
   }
 
   @override
@@ -90,22 +94,23 @@ FakeStore useFakeStore() {
 
 /// A donation tier as the store would describe it.
 ProductDetails fakeProduct(String id, double price) => ProductDetails(
-      id: id,
-      title: id,
-      description: id,
-      price: '$price',
-      rawPrice: price,
-      currencyCode: 'EUR',
-    );
+  id: id,
+  title: id,
+  description: id,
+  price: '$price',
+  rawPrice: price,
+  currencyCode: 'EUR',
+);
 
 /// A purchase the store reports back, paid for and still to be completed.
 PurchaseDetails fakePurchase({String productId = 'donation_coffee'}) =>
     PurchaseDetails(
       productID: productId,
       verificationData: PurchaseVerificationData(
-          localVerificationData: '',
-          serverVerificationData: '',
-          source: 'test'),
+        localVerificationData: '',
+        serverVerificationData: '',
+        source: 'test',
+      ),
       transactionDate: null,
       status: PurchaseStatus.purchased,
     )..pendingCompletePurchase = true;

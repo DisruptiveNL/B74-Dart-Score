@@ -66,8 +66,11 @@ void main() {
         iface('ap0', ['192.168.49.1']),
       ]);
 
-      expect(ranked.first, '192.168.49.1',
-          reason: 'nothing sits between two devices on a phone-raised network');
+      expect(
+        ranked.first,
+        '192.168.49.1',
+        reason: 'nothing sits between two devices on a phone-raised network',
+      );
       expect(ranked, ['192.168.49.1', '192.168.1.42']);
     });
 
@@ -101,7 +104,11 @@ void main() {
   test('a device on no network offers nothing rather than loopback', () {
     // The fallback that used to sit here produced `127.0.0.1`, which is a
     // connection code that looks entirely valid and reaches only itself.
-    expect(rankTransferAddresses([iface('lo', ['127.0.0.1'])]), isEmpty);
+    expect(
+      rankTransferAddresses([
+        iface('lo', ['127.0.0.1']),
+      ]),
+      isEmpty,
+    );
   });
 }
-

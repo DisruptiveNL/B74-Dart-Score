@@ -90,8 +90,9 @@ class GameModeInfoScreen extends StatelessWidget {
                   const SizedBox(height: 20),
                   Text(
                     l.modeBotTitle,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -114,17 +115,29 @@ class GameModeInfoScreen extends StatelessWidget {
       case GameModeOption.x01:
         return (l.modeX01Name, l.modeX01Tagline, l.modeX01Description);
       case GameModeOption.cricket:
-        return (l.modeCricketName, l.modeCricketTagline,
-            l.modeCricketDescription);
+        return (
+          l.modeCricketName,
+          l.modeCricketTagline,
+          l.modeCricketDescription,
+        );
       case GameModeOption.shanghai:
-        return (l.modeShanghaiName, l.modeShanghaiTagline,
-            l.modeShanghaiDescription);
+        return (
+          l.modeShanghaiName,
+          l.modeShanghaiTagline,
+          l.modeShanghaiDescription,
+        );
       case GameModeOption.aroundTheClock:
-        return (l.modeAroundClockName, l.modeAroundClockTagline,
-            l.modeAroundClockDescription);
+        return (
+          l.modeAroundClockName,
+          l.modeAroundClockTagline,
+          l.modeAroundClockDescription,
+        );
       case GameModeOption.checkoutLadder:
-        return (l.modeCheckoutLadderName, l.modeCheckoutLadderTagline,
-            l.modeCheckoutLadderDescription);
+        return (
+          l.modeCheckoutLadderName,
+          l.modeCheckoutLadderTagline,
+          l.modeCheckoutLadderDescription,
+        );
     }
   }
 }

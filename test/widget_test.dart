@@ -28,10 +28,14 @@ void main() {
     /// on a timer that has nothing to advance it.
     Future<void> pumpHome(WidgetTester tester) async {
       usePhoneSurface(tester);
-      await tester.pumpWidget(testApp(
-        ChangeNotifierProvider<DonationProvider>(
-            create: (_) => DonationProvider(), child: const HomeScreen()),
-      ));
+      await tester.pumpWidget(
+        testApp(
+          ChangeNotifierProvider<DonationProvider>(
+            create: (_) => DonationProvider(),
+            child: const HomeScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
     }
 

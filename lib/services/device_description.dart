@@ -21,8 +21,9 @@ import 'package:flutter/services.dart';
 /// would pull CocoaPods onto the iOS side, and the plus_plugins family that
 /// covers it is already held back in `pubspec.yaml` over the Kotlin plugin.
 class DeviceDescription {
-  static const MethodChannel _channel =
-      MethodChannel('dartscore/device_description');
+  static const MethodChannel _channel = MethodChannel(
+    'dartscore/device_description',
+  );
 
   /// Resolved once and kept: nothing it reads changes while the app runs.
   static String? _cached;
@@ -38,7 +39,7 @@ class DeviceDescription {
     try {
       final info = await _channel.invokeMapMethod<String, String>('describe');
       final name = info?['name'];
-      final os   = info?['os'];
+      final os = info?['os'];
       if (name != null && name.isNotEmpty) {
         return _cached = os == null || os.isEmpty ? name : '$name ($os)';
       }

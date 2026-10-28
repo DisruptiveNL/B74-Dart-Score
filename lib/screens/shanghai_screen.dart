@@ -25,7 +25,8 @@ class ShanghaiScreen extends StatelessWidget {
       builder: (context, provider, _) {
         if (provider.game == null) {
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (provider.gameOver) {
@@ -36,7 +37,8 @@ class ShanghaiScreen extends StatelessWidget {
             );
           });
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         return _ShanghaiGameView(provider: provider);
@@ -54,31 +56,28 @@ class _ShanghaiGameView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l       = context.l10n;
-    final theme   = Theme.of(context);
-    final cs      = theme.colorScheme;
-    final states  = provider.playerStates;
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final states = provider.playerStates;
     final current = provider.currentPlayerState;
 
-    final tablet    = isTabletLayout(context);
-    final landscape = MediaQuery.sizeOf(context).width >=
-        MediaQuery.sizeOf(context).height;
+    final tablet = isTabletLayout(context);
+    final landscape =
+        MediaQuery.sizeOf(context).width >= MediaQuery.sizeOf(context).height;
 
     final scoreboard = _ShanghaiBoard(
-      provider:     provider,
-      states:       states,
-      currentIdx:   provider.currentPlayerIndex,
+      provider: provider,
+      states: states,
+      currentIdx: provider.currentPlayerIndex,
       dartsInVisit: provider.dartsInVisit,
     );
 
     /// The player list on a tablet: standing in the middle of its box while it
     /// is short and scrolled once it is not.
     Widget listPane(EdgeInsets padding) => Center(
-          child: SingleChildScrollView(
-            padding: padding,
-            child: scoreboard,
-          ),
-        );
+      child: SingleChildScrollView(padding: padding, child: scoreboard),
+    );
 
     return PopScope(
       // A running game must not be lost to a stray back gesture; the system
@@ -169,7 +168,10 @@ class _ShanghaiGameView extends StatelessWidget {
               child: SafeArea(
                 top: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -239,23 +241,25 @@ class _ShanghaiGameView extends StatelessWidget {
       context: context,
       builder: (_) => Center(
         child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
-        child: AlertDialog(
-          title: Text(l.quitTitle),
-          content: Text(l.quitBody),
-          actions: [
-            TextButton(
-                onPressed: () => Navigator.pop(context), child: Text(l.cancel)),
-            FilledButton(
-              onPressed: () {
-                context.read<ShanghaiProvider>().leaveGame();
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: Text(l.leave),
-            ),
-          ],
-        ),
+          constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
+          child: AlertDialog(
+            title: Text(l.quitTitle),
+            content: Text(l.quitBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l.cancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  context.read<ShanghaiProvider>().leaveGame();
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: Text(l.leave),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -324,7 +328,8 @@ class _ShanghaiBoardState extends State<_ShanghaiBoard> {
     if (old.states.length != widget.states.length) {
       _keys = List.generate(widget.states.length, (_) => GlobalKey());
     }
-    if (old.currentIdx != widget.currentIdx || old.dartsInVisit != widget.dartsInVisit) {
+    if (old.currentIdx != widget.currentIdx ||
+        old.dartsInVisit != widget.dartsInVisit) {
       WidgetsBinding.instance.addPostFrameCallback((_) => _scrollToCurrent());
     }
   }
@@ -345,11 +350,12 @@ class _ShanghaiBoardState extends State<_ShanghaiBoard> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
-    final isSequential = widget.provider.game!.variant == ShanghaiVariant.sequential;
-    final currentIdx   = widget.currentIdx;
-    final pendingIdx   = widget.provider.pendingShanghaiIdx;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
+    final isSequential =
+        widget.provider.game!.variant == ShanghaiVariant.sequential;
+    final currentIdx = widget.currentIdx;
+    final pendingIdx = widget.provider.pendingShanghaiIdx;
 
     return Card(
       child: Padding(
@@ -363,84 +369,89 @@ class _ShanghaiBoardState extends State<_ShanghaiBoard> {
               key: _keys[i],
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: InkWell(
-              onTap: () => openShanghaiSlotInfo(context, i),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                s.label(l),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
-                                  color: isActive ? cs.primary : cs.onSurface,
-                                ),
-                              ),
-                              if (s.isTeamSlot)
+                onTap: () => openShanghaiSlotInfo(context, i),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
                                 Text(
-                                  s.player.label(l),
+                                  s.label(l),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  style: theme.textTheme.labelSmall?.copyWith(
-                                    color: isActive
-                                        ? cs.primary.withValues(alpha: 0.75)
-                                        : cs.onSurfaceVariant,
+                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                    fontWeight: isActive
+                                        ? FontWeight.bold
+                                        : FontWeight.normal,
+                                    color: isActive ? cs.primary : cs.onSurface,
                                   ),
                                 ),
-                            ],
+                                if (s.isTeamSlot)
+                                  Text(
+                                    s.player.label(l),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: theme.textTheme.labelSmall?.copyWith(
+                                      color: isActive
+                                          ? cs.primary.withValues(alpha: 0.75)
+                                          : cs.onSurfaceVariant,
+                                    ),
+                                  ),
+                              ],
+                            ),
                           ),
-                        ),
-                        if (i == pendingIdx) ...[
-                          const SizedBox(width: 6),
-                          Tooltip(
-                            message: l.shanghaiPending,
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFFB300),
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                              child: const Text(
-                                'S',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  height: 1,
+                          if (i == pendingIdx) ...[
+                            const SizedBox(width: 6),
+                            Tooltip(
+                              message: l.shanghaiPending,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 5,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFB300),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                                child: const Text(
+                                  'S',
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    height: 1,
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
+                          ],
                         ],
-                      ],
-                    ),
-                  ),
-                  if (isSequential)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Text(
-                        '→ ${s.progress > 20 ? '✓' : s.progress}',
-                        style: theme.textTheme.labelSmall?.copyWith(
-                          color: cs.onSurfaceVariant,
-                        ),
                       ),
                     ),
-                  Text(
-                    '${s.score}',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: isActive ? cs.primary : cs.onSurfaceVariant,
+                    if (isSequential)
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Text(
+                          '→ ${s.progress > 20 ? '✓' : s.progress}',
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    Text(
+                      '${s.score}',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: isActive ? cs.primary : cs.onSurfaceVariant,
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
               ),
             );
           }).toList(),
@@ -451,7 +462,6 @@ class _ShanghaiBoardState extends State<_ShanghaiBoard> {
 }
 
 // ── Dart dot indicator ────────────────────────────────────────────────────────
-
 
 // ── Shanghai hint ─────────────────────────────────────────────────────────────
 
@@ -483,11 +493,18 @@ class _ShanghaiHint extends StatelessWidget {
             if (i > 0)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 6),
-                child: Icon(Icons.arrow_forward_rounded, size: 13, color: fg.withValues(alpha: 0.7)),
+                child: Icon(
+                  Icons.arrow_forward_rounded,
+                  size: 13,
+                  color: fg.withValues(alpha: 0.7),
+                ),
               ),
             Text(
               '${_multiplierLabels[needed[i]]}$target',
-              style: theme.textTheme.bodySmall?.copyWith(color: fg, fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: fg,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ],
         ],
@@ -495,7 +512,10 @@ class _ShanghaiHint extends StatelessWidget {
     } else if (streakNeeded != null && streakNeeded > 0) {
       content = Text(
         l.shanghaiHintStreak(streakNeeded),
-        style: theme.textTheme.bodySmall?.copyWith(color: fg, fontWeight: FontWeight.bold),
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: fg,
+          fontWeight: FontWeight.bold,
+        ),
       );
     }
 
@@ -506,13 +526,18 @@ class _ShanghaiHint extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 10),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(10)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             l.shanghaiHintTitle,
-            style: theme.textTheme.labelSmall?.copyWith(color: fg.withValues(alpha: 0.8)),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: fg.withValues(alpha: 0.8),
+            ),
           ),
           const SizedBox(height: 4),
           content,
@@ -554,14 +579,32 @@ class _ShanghaiInput extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _MultBtn(label: l.single, sub: '×1', multiplier: 1, onTap: () => provider.recordDart(1)),
+            _MultBtn(
+              label: l.single,
+              sub: '×1',
+              multiplier: 1,
+              onTap: () => provider.recordDart(1),
+            ),
             const SizedBox(width: 10),
-            _MultBtn(label: l.double_, sub: '×2', multiplier: 2, onTap: () => provider.recordDart(2)),
+            _MultBtn(
+              label: l.double_,
+              sub: '×2',
+              multiplier: 2,
+              onTap: () => provider.recordDart(2),
+            ),
             const SizedBox(width: 10),
             if (target != 25)
-              _MultBtn(label: l.triple, sub: '×3', multiplier: 3, onTap: () => provider.recordDart(3)),
+              _MultBtn(
+                label: l.triple,
+                sub: '×3',
+                multiplier: 3,
+                onTap: () => provider.recordDart(3),
+              ),
             const SizedBox(width: 10),
-            _MissBtn(label: l.shanghaiMiss, onTap: () => provider.recordDart(0)),
+            _MissBtn(
+              label: l.shanghaiMiss,
+              onTap: () => provider.recordDart(0),
+            ),
           ],
         ),
       ),
@@ -612,15 +655,19 @@ class _MultBtn extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Text(label,
-                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: fg,
-                      )),
-              Text(sub,
-                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: fg.withValues(alpha: 0.7),
-                      )),
+              Text(
+                label,
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: fg,
+                ),
+              ),
+              Text(
+                sub,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: fg.withValues(alpha: 0.7),
+                ),
+              ),
             ],
           ),
         ),
@@ -651,9 +698,9 @@ class _MissBtn extends StatelessWidget {
             child: Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: cs.onErrorContainer,
-                  ),
+                fontWeight: FontWeight.bold,
+                color: cs.onErrorContainer,
+              ),
             ),
           ),
         ),
@@ -666,44 +713,50 @@ class _MissBtn extends StatelessWidget {
 /// visits and the numbers Shanghai is played by.
 void openShanghaiSlotInfo(BuildContext context, int slotIndex) {
   final provider = context.read<ShanghaiProvider>();
-  Navigator.of(context).push(MaterialPageRoute<void>(
-    builder: (_) => ModeLiveInfoScreen(
-      listenable: provider,
-      data: (context) {
-        final l       = context.l10n;
-        final s       = provider.playerStates[slotIndex];
-        final ids     = s.players.map((p) => p.id).toSet();
-        final throws  = provider.throwHistory
-            .where((t) => ids.contains(t.playerId))
-            .toList();
-        final variant = provider.game!.variant;
-        final limit   = provider.visitDartLimit;
-        final stats   = ShanghaiStats.of(throws, variant, limit);
-        final visits  = shanghaiVisits(throws, limit);
-        final recent  = visits.length <= 3 ? visits : visits.sublist(visits.length - 3);
-        return (
-          title:    s.label(l),
-          subtitle: s.isTeamSlot ? s.player.label(l) : null,
-          visitSlots: limit,
-          recentVisits: [
-            for (final v in recent.reversed)
-              (
-                darts: [for (final t in v) visitDartFrom(t.target, t.multiplier, l)],
-                yield: l.pointsN(shanghaiPointsOfVisit(v)),
-              ),
-          ],
-          stats: [
-            (l.points, '${s.score}'),
-            (l.pointsPerRound, stats.pointsPerRound.toStringAsFixed(1)),
-            (l.hitRate, '${(stats.hitRate * 100).round()} %'),
-            (l.bestVisit, l.pointsN(stats.bestVisitPoints)),
-            (l.shanghaisThrown, '${stats.shanghais}'),
-            if (variant == ShanghaiVariant.sequential)
-              (l.shanghaiTarget, '${s.progress}'),
-            (l.dartsThrown, '${stats.darts}'),
-          ],
-        );
-      },
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => ModeLiveInfoScreen(
+        listenable: provider,
+        data: (context) {
+          final l = context.l10n;
+          final s = provider.playerStates[slotIndex];
+          final ids = s.players.map((p) => p.id).toSet();
+          final throws = provider.throwHistory
+              .where((t) => ids.contains(t.playerId))
+              .toList();
+          final variant = provider.game!.variant;
+          final limit = provider.visitDartLimit;
+          final stats = ShanghaiStats.of(throws, variant, limit);
+          final visits = shanghaiVisits(throws, limit);
+          final recent = visits.length <= 3
+              ? visits
+              : visits.sublist(visits.length - 3);
+          return (
+            title: s.label(l),
+            subtitle: s.isTeamSlot ? s.player.label(l) : null,
+            visitSlots: limit,
+            recentVisits: [
+              for (final v in recent.reversed)
+                (
+                  darts: [
+                    for (final t in v) visitDartFrom(t.target, t.multiplier, l),
+                  ],
+                  yield: l.pointsN(shanghaiPointsOfVisit(v)),
+                ),
+            ],
+            stats: [
+              (l.points, '${s.score}'),
+              (l.pointsPerRound, stats.pointsPerRound.toStringAsFixed(1)),
+              (l.hitRate, '${(stats.hitRate * 100).round()} %'),
+              (l.bestVisit, l.pointsN(stats.bestVisitPoints)),
+              (l.shanghaisThrown, '${stats.shanghais}'),
+              if (variant == ShanghaiVariant.sequential)
+                (l.shanghaiTarget, '${s.progress}'),
+              (l.dartsThrown, '${stats.darts}'),
+            ],
+          );
+        },
+      ),
     ),
-  ));
+  );
 }

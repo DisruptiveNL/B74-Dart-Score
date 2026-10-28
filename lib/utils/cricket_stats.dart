@@ -3,9 +3,9 @@ import '../models/cricket_game.dart';
 /// The darts of one slot in Cricket, three to a visit, oldest first. The last
 /// group is the visit in progress when it holds fewer than three.
 List<List<CricketThrow>> cricketVisits(List<CricketThrow> throws) => [
-      for (var i = 0; i < throws.length; i += 3)
-        throws.sublist(i, i + 3 > throws.length ? throws.length : i + 3),
-    ];
+  for (var i = 0; i < throws.length; i += 3)
+    throws.sublist(i, i + 3 > throws.length ? throws.length : i + 3),
+];
 
 /// The marks one dart is worth: the ring on a Cricket field, one mark for any
 /// hit under simple scoring, nothing for a miss or a number off the seven.
@@ -46,7 +46,10 @@ class CricketStats {
   double get hitRate => darts == 0 ? 0 : hits / darts;
 
   /// Aggregates [throws] of one slot under [scoring].
-  factory CricketStats.of(List<CricketThrow> throws, CricketScoringMode scoring) {
+  factory CricketStats.of(
+    List<CricketThrow> throws,
+    CricketScoringMode scoring,
+  ) {
     final visits = cricketVisits(throws);
     var best = 0;
     for (final v in visits) {
@@ -54,10 +57,10 @@ class CricketStats {
       if (m > best) best = m;
     }
     return CricketStats(
-      darts:          throws.length,
-      hits:           throws.where((t) => cricketMarksOf(t, scoring) > 0).length,
-      marks:          cricketMarksOfVisit(throws, scoring),
-      visits:         visits.length,
+      darts: throws.length,
+      hits: throws.where((t) => cricketMarksOf(t, scoring) > 0).length,
+      marks: cricketMarksOfVisit(throws, scoring),
+      visits: visits.length,
       bestVisitMarks: best,
     );
   }

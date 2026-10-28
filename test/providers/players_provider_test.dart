@@ -21,26 +21,30 @@ void main() {
       expect(provider.primaryPlayer, isNull);
     });
 
-    test('puts the primary player first and the rest in alphabetical order',
-        () async {
-      await provider.addPlayer('Zoe');
-      await provider.addPlayer('Ada');
-      final nik = await provider.addPlayer('Nik');
-      await provider.setPrimary(nik);
+    test(
+      'puts the primary player first and the rest in alphabetical order',
+      () async {
+        await provider.addPlayer('Zoe');
+        await provider.addPlayer('Ada');
+        final nik = await provider.addPlayer('Nik');
+        await provider.setPrimary(nik);
 
-      expect(provider.players.map((p) => p.name), ['Nik', 'Ada', 'Zoe']);
-    });
+        expect(provider.players.map((p) => p.name), ['Nik', 'Ada', 'Zoe']);
+      },
+    );
 
-    test('ignores case, so a lower case name is not exiled to the end',
-        () async {
-      // Ordering by code unit puts every capital ahead of every lower case
-      // letter, which is how "anna" ends up behind "Zoe" in a list of names.
-      await provider.addPlayer('Zoe');
-      await provider.addPlayer('anna');
-      await provider.addPlayer('Bob');
+    test(
+      'ignores case, so a lower case name is not exiled to the end',
+      () async {
+        // Ordering by code unit puts every capital ahead of every lower case
+        // letter, which is how "anna" ends up behind "Zoe" in a list of names.
+        await provider.addPlayer('Zoe');
+        await provider.addPlayer('anna');
+        await provider.addPlayer('Bob');
 
-      expect(provider.players.map((p) => p.name), ['anna', 'Bob', 'Zoe']);
-    });
+        expect(provider.players.map((p) => p.name), ['anna', 'Bob', 'Zoe']);
+      },
+    );
 
     test('files the umlauts under their base letter', () async {
       // By code unit these all sort behind "Zoe", far up in the code space.
@@ -49,8 +53,12 @@ void main() {
       await provider.addPlayer('Über');
       await provider.addPlayer('Öl');
 
-      expect(provider.players.map((p) => p.name),
-          ['Ärger', 'Öl', 'Über', 'Zoe']);
+      expect(provider.players.map((p) => p.name), [
+        'Ärger',
+        'Öl',
+        'Über',
+        'Zoe',
+      ]);
     });
 
     test('treats ß as ss', () async {
@@ -58,8 +66,11 @@ void main() {
       await provider.addPlayer('Strauß');
       await provider.addPlayer('Straub');
 
-      expect(provider.players.map((p) => p.name),
-          ['Straub', 'Strauss', 'Strauß']);
+      expect(provider.players.map((p) => p.name), [
+        'Straub',
+        'Strauss',
+        'Strauß',
+      ]);
     });
 
     test('sorts the same way after reloading from the database', () async {
@@ -82,36 +93,42 @@ void main() {
 
       await provider.setPrimary(second);
 
-      expect(provider.players.where((p) => p.isPrimary).map((p) => p.name),
-          ['Zoe']);
+      expect(provider.players.where((p) => p.isPrimary).map((p) => p.name), [
+        'Zoe',
+      ]);
       expect((await DbHelper.instance.getPrimaryPlayer())?.name, 'Zoe');
     });
 
-    test('leaves only one player primary when a new one is added as primary',
-        () async {
-      final ada = await provider.addPlayer('Ada');
-      await provider.setPrimary(ada);
+    test(
+      'leaves only one player primary when a new one is added as primary',
+      () async {
+        final ada = await provider.addPlayer('Ada');
+        await provider.setPrimary(ada);
 
-      final zoe = await provider.addPlayer('Zoe', isPrimary: true);
+        final zoe = await provider.addPlayer('Zoe', isPrimary: true);
 
-      expect(provider.players.where((p) => p.isPrimary).map((p) => p.id),
-          [zoe.id]);
-      expect((await DbHelper.instance.getPrimaryPlayer())?.id, zoe.id);
-      expect(provider.primaryPlayer?.id, zoe.id);
-    });
+        expect(provider.players.where((p) => p.isPrimary).map((p) => p.id), [
+          zoe.id,
+        ]);
+        expect((await DbHelper.instance.getPrimaryPlayer())?.id, zoe.id);
+        expect(provider.primaryPlayer?.id, zoe.id);
+      },
+    );
 
-    test('keeps a deleted player out of the list without losing the row',
-        () async {
-      final ada = await provider.addPlayer('Ada');
-      await provider.addPlayer('Zoe');
+    test(
+      'keeps a deleted player out of the list without losing the row',
+      () async {
+        final ada = await provider.addPlayer('Ada');
+        await provider.addPlayer('Zoe');
 
-      await provider.deletePlayer(ada.id!);
+        await provider.deletePlayer(ada.id!);
 
-      expect(provider.players.map((p) => p.name), ['Zoe']);
-      // Soft delete: the row survives so the games that reference it still
-      // resolve, it is only kept out of every list.
-      expect(await DbHelper.instance.getPlayer(ada.id!), isNotNull);
-    });
+        expect(provider.players.map((p) => p.name), ['Zoe']);
+        // Soft delete: the row survives so the games that reference it still
+        // resolve, it is only kept out of every list.
+        expect(await DbHelper.instance.getPlayer(ada.id!), isNotNull);
+      },
+    );
 
     test('notifies on every change so the screens follow along', () async {
       var notifications = 0;
@@ -151,29 +168,33 @@ void main() {
     });
 
     test('makes one row per tier and hands the same one out again', () async {
-      final first  = await provider.botFor(BotLevel.amateur);
+      final first = await provider.botFor(BotLevel.amateur);
       final second = await provider.botFor(BotLevel.amateur);
       await provider.botFor(BotLevel.rookie);
 
       expect(second.id, first.id);
-      expect(provider.bots.map((b) => b.botLevel),
-          [BotLevel.rookie, BotLevel.amateur],
-          reason: 'weakest tier first, whatever order they were made in');
+      expect(provider.bots.map((b) => b.botLevel), [
+        BotLevel.rookie,
+        BotLevel.amateur,
+      ], reason: 'weakest tier first, whatever order they were made in');
       expect((await DbHelper.instance.getBots()).length, 2);
       expect((await DbHelper.instance.getPlayers()), isEmpty);
     });
 
-    test('numbers a second bot of the same tier and keeps them apart', () async {
-      final first  = await provider.botFor(BotLevel.pro);
-      final second = await provider.botFor(BotLevel.pro, ordinal: 2);
-      final again  = await provider.botFor(BotLevel.pro, ordinal: 2);
+    test(
+      'numbers a second bot of the same tier and keeps them apart',
+      () async {
+        final first = await provider.botFor(BotLevel.pro);
+        final second = await provider.botFor(BotLevel.pro, ordinal: 2);
+        final again = await provider.botFor(BotLevel.pro, ordinal: 2);
 
-      expect(second.id, isNot(first.id));
-      expect(again.id, second.id);
-      expect(second.botOrdinal, 2);
-      expect(second.uuid, BotLevel.pro.uuidFor(2));
-      expect(provider.bots.map((b) => b.botOrdinal), [1, 2]);
-    });
+        expect(second.id, isNot(first.id));
+        expect(again.id, second.id);
+        expect(second.botOrdinal, 2);
+        expect(second.uuid, BotLevel.pro.uuidFor(2));
+        expect(provider.bots.map((b) => b.botOrdinal), [1, 2]);
+      },
+    );
 
     test('finds the bots it made again after a reload', () async {
       final bot = await provider.botFor(BotLevel.legend);

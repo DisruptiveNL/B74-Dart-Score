@@ -34,26 +34,29 @@ void main() {
     }
 
     /// The square the target board is painted in.
-    Rect boardRect(WidgetTester tester) => tester.getRect(find.byWidgetPredicate(
-          (w) => w is CustomPaint && w.painter is DartboardTargetPainter,
-        ));
+    Rect boardRect(WidgetTester tester) => tester.getRect(
+      find.byWidgetPredicate(
+        (w) => w is CustomPaint && w.painter is DartboardTargetPainter,
+      ),
+    );
 
     /// Where a player's row sits. Scoped to the card, because the input bar
     /// names whoever is throwing as well.
     Rect rowRect(WidgetTester tester, String name) => tester.getRect(
-          find.descendant(of: find.byType(Card), matching: find.text(name)),
-        );
+      find.descendant(of: find.byType(Card), matching: find.text(name)),
+    );
 
     /// The same cases on both modes: the screens differ in what a row says, not
     /// in how the screen is divided.
     void sharedCases() {
-      testWidgets('stands the list beside the board on its side',
-          (tester) async {
+      testWidgets('stands the list beside the board on its side', (
+        tester,
+      ) async {
         await pumpLive(tester, const Size(1180, 820));
 
         expect(find.byKey(kPaneDividerKey), findsOneWidget);
         final board = boardRect(tester);
-        final list  = rowRect(tester, 'Ada');
+        final list = rowRect(tester, 'Ada');
         expect(list.left, greaterThan(board.right));
 
         // And the board is worth the screen: it used to be capped at 500
@@ -62,19 +65,21 @@ void main() {
         expect(board.width, closeTo(board.height, 1));
       });
 
-      testWidgets('keeps one column upright, with a board that grew anyway',
-          (tester) async {
+      testWidgets('keeps one column upright, with a board that grew anyway', (
+        tester,
+      ) async {
         await pumpLive(tester, const Size(820, 1180));
 
         expect(find.byKey(kPaneDividerKey), findsNothing);
         final board = boardRect(tester);
-        final list  = rowRect(tester, 'Ada');
+        final list = rowRect(tester, 'Ada');
         expect(list.top, greaterThan(board.bottom));
         expect(board.width, greaterThan(500));
       });
 
-      testWidgets('is the phone screen it has always been on a phone',
-          (tester) async {
+      testWidgets('is the phone screen it has always been on a phone', (
+        tester,
+      ) async {
         await pumpLive(tester, const Size(400, 900));
 
         expect(find.byKey(kPaneDividerKey), findsNothing);
@@ -91,16 +96,18 @@ void main() {
         final p = ShanghaiProvider();
         await p.startGame(
           ShanghaiGame(
-            variant:   ShanghaiVariant.classic,
-            legs:      1,
-            sets:      1,
+            variant: ShanghaiVariant.classic,
+            legs: 1,
+            sets: 1,
             createdAt: DateTime(2026, 4, 1),
             playerIds: players.map((pl) => pl.id!).toList(),
           ),
           players,
         );
         wrapped = ChangeNotifierProvider<ShanghaiProvider>.value(
-            value: p, child: const ShanghaiScreen());
+          value: p,
+          child: const ShanghaiScreen(),
+        );
       });
 
       sharedCases();
@@ -112,16 +119,18 @@ void main() {
         final p = AroundTheClockProvider();
         await p.startGame(
           AroundTheClockGame(
-            variant:   AroundTheClockVariant.basic,
-            legs:      1,
-            sets:      1,
+            variant: AroundTheClockVariant.basic,
+            legs: 1,
+            sets: 1,
             createdAt: DateTime(2026, 4, 1),
             playerIds: players.map((pl) => pl.id!).toList(),
           ),
           players,
         );
         wrapped = ChangeNotifierProvider<AroundTheClockProvider>.value(
-            value: p, child: const AroundTheClockScreen());
+          value: p,
+          child: const AroundTheClockScreen(),
+        );
       });
 
       sharedCases();

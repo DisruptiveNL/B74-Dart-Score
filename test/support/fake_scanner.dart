@@ -13,12 +13,15 @@ import 'package:flutter_test/flutter_test.dart';
 /// What a scan leads to is exercised through the codec and the transport,
 /// which take a payload as a string and need no camera at all.
 void useFakeScanner() {
-  const methodChannel =
-      MethodChannel('dev.steenbakker.mobile_scanner/scanner/method');
-  const eventChannel =
-      EventChannel('dev.steenbakker.mobile_scanner/scanner/event');
-  const orientationChannel =
-      EventChannel('dev.steenbakker.mobile_scanner/scanner/deviceOrientation');
+  const methodChannel = MethodChannel(
+    'dev.steenbakker.mobile_scanner/scanner/method',
+  );
+  const eventChannel = EventChannel(
+    'dev.steenbakker.mobile_scanner/scanner/event',
+  );
+  const orientationChannel = EventChannel(
+    'dev.steenbakker.mobile_scanner/scanner/deviceOrientation',
+  );
 
   // Read inside the callbacks, not here: this runs while the group is being
   // declared, and the binding does not exist yet at that point.

@@ -46,25 +46,26 @@ class DartboardTargetPainter extends CustomPainter {
   /// Whether the given [multiplier] ring should be highlighted (all rings when
   /// [highlightMultipliers] is null, otherwise only the listed ones).
   bool _highlighted(int multiplier) =>
-      highlightMultipliers == null || highlightMultipliers!.contains(multiplier);
+      highlightMultipliers == null ||
+      highlightMultipliers!.contains(multiplier);
 
   @override
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r  = min(cx, cy);
+    final r = min(cx, cy);
     final center = Offset(cx, cy);
 
     final rBullInner = r * dartboardBullInnerRadius;
-    final rBull      = r * dartboardBullOuterRadius;
-    final rTriple1   = r * 0.445;
-    final rTriple2   = r * dartboardOuterSingleRingInner;
-    final rDouble1   = r * dartboardDoubleRingInner;
-    final rDouble2   = r * dartboardDoubleRingOuter;
+    final rBull = r * dartboardBullOuterRadius;
+    final rTriple1 = r * 0.445;
+    final rTriple2 = r * dartboardOuterSingleRingInner;
+    final rDouble1 = r * dartboardDoubleRingInner;
+    final rDouble2 = r * dartboardDoubleRingOuter;
 
-    final segCount   = dartboardSegmentOrder.length;
-    final angleStep  = (2 * pi) / segCount;
-    final halfStep   = angleStep / 2;
+    final segCount = dartboardSegmentOrder.length;
+    final angleStep = (2 * pi) / segCount;
+    final halfStep = angleStep / 2;
     final startAngle = -pi / 2 - halfStep;
 
     final fillPaint = Paint()..style = PaintingStyle.fill;
@@ -77,7 +78,12 @@ class DartboardTargetPainter extends CustomPainter {
       final path = Path();
       path.moveTo(center.dx + r1 * cos(a0), center.dy + r1 * sin(a0));
       path.arcTo(Rect.fromCircle(center: center, radius: r2), a0, sweep, false);
-      path.arcTo(Rect.fromCircle(center: center, radius: r1), a0 + sweep, -sweep, false);
+      path.arcTo(
+        Rect.fromCircle(center: center, radius: r1),
+        a0 + sweep,
+        -sweep,
+        false,
+      );
       path.close();
       fillPaint.color = fill;
       canvas.drawPath(path, fillPaint);

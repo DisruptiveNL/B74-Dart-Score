@@ -36,14 +36,16 @@ class CompetitionSingleResultLifecycle {
         next == CompetitionSingleResultStatus.completed,
       CompetitionSingleResultStatus.completed =>
         next == CompetitionSingleResultStatus.sending ||
-        next == CompetitionSingleResultStatus.inProgress,
+            next == CompetitionSingleResultStatus.inProgress,
       CompetitionSingleResultStatus.sending =>
         next == CompetitionSingleResultStatus.archived ||
-        next == CompetitionSingleResultStatus.completed,
+            next == CompetitionSingleResultStatus.completed,
       CompetitionSingleResultStatus.archived => false,
     };
     if (!allowed) {
-      throw StateError('Ongeldige single-resultaattransitie: $current -> $next');
+      throw StateError(
+        'Ongeldige single-resultaattransitie: $current -> $next',
+      );
     }
     return next;
   }

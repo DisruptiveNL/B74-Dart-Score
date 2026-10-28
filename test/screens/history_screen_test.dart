@@ -39,20 +39,22 @@ void main() {
       await db.insertGame(
         Game(
           startScore: 301,
-          createdAt:  DateTime(2026, 2, 1),
+          createdAt: DateTime(2026, 2, 1),
           finishedAt: DateTime(2026, 2, 1, 1),
         ),
         ids,
       );
       // An unfinished Cricket game, to give the mode filter something to do.
-      await db.insertCricketGame(CricketGame(
-        variant:     CricketVariant.normal,
-        scoringMode: CricketScoringMode.standard,
-        legs:        1,
-        sets:        1,
-        createdAt:   DateTime(2026, 3, 2),
-        playerIds:   ids,
-      ));
+      await db.insertCricketGame(
+        CricketGame(
+          variant: CricketVariant.normal,
+          scoringMode: CricketScoringMode.standard,
+          legs: 1,
+          sets: 1,
+          createdAt: DateTime(2026, 3, 2),
+          playerIds: ids,
+        ),
+      );
     });
 
     /// Pumps the screen and lets the list load.
@@ -60,8 +62,10 @@ void main() {
     /// The body is a FutureBuilder over a database read, which is real I/O the
     /// fake clock never reaches, so it has to be let through before anything
     /// settles on the spinner standing in for it.
-    Future<void> pumpHistory(WidgetTester tester,
-        {Size size = const Size(400, 1200)}) async {
+    Future<void> pumpHistory(
+      WidgetTester tester, {
+      Size size = const Size(400, 1200),
+    }) async {
       usePhoneSurface(tester, size: size);
       await tester.pumpWidget(
         ChangeNotifierProvider<TabletLayoutProvider>.value(
@@ -87,8 +91,9 @@ void main() {
       expect(find.text('Ada vs Zoe'), findsWidgets);
     });
 
-    testWidgets('keeps unfinished games apart from finished ones',
-        (tester) async {
+    testWidgets('keeps unfinished games apart from finished ones', (
+      tester,
+    ) async {
       await pumpHistory(tester);
 
       // Open: the 501 game and the Cricket one. The finished 301 is elsewhere.
@@ -101,8 +106,9 @@ void main() {
       expect(find.textContaining('301'), findsOneWidget);
     });
 
-    testWidgets('offers a filter only for the modes actually present',
-        (tester) async {
+    testWidgets('offers a filter only for the modes actually present', (
+      tester,
+    ) async {
       await pumpHistory(tester);
 
       // The open tab holds an X01 and a Cricket game and nothing else, so
@@ -147,7 +153,8 @@ void main() {
 
       // Rendered bare, because the pane around it carries the title.
       final detail = tester.widget<HistoryGameSummaryScreen>(
-          find.byType(HistoryGameSummaryScreen));
+        find.byType(HistoryGameSummaryScreen),
+      );
       expect(detail.embedded, isTrue);
 
       final list = tester.getRect(find.byType(ListView).first);
@@ -165,12 +172,14 @@ void main() {
 
       // Pushed as its own screen, with the bars that belong to one.
       final detail = tester.widget<HistoryGameSummaryScreen>(
-          find.byType(HistoryGameSummaryScreen));
+        find.byType(HistoryGameSummaryScreen),
+      );
       expect(detail.embedded, isFalse);
     });
 
-    testWidgets('leaves the open tab the whole width on a tablet',
-        (tester) async {
+    testWidgets('leaves the open tab the whole width on a tablet', (
+      tester,
+    ) async {
       await pumpHistory(tester, size: const Size(1180, 820));
 
       // An open game is resumed, not read: there is nothing to put beside the
@@ -185,8 +194,7 @@ void main() {
       expect(find.textContaining('Pick a game'), findsOneWidget);
     });
 
-    testWidgets('keeps a divider position of its own',
-        (tester) async {
+    testWidgets('keeps a divider position of its own', (tester) async {
       // Its own key, so a divider dragged in the game does not move this one.
       layout.setSplitFraction(SplitPane.history, 0.62, landscape: true);
 
@@ -199,12 +207,17 @@ void main() {
       expect(divider.left, closeTo(1180 * 0.62, 4));
 
       // And a drag here writes back to that key.
-      await tester.drag(find.byKey(kPaneDividerKey), const Offset(-120, 0),
-          touchSlopX: 0);
+      await tester.drag(
+        find.byKey(kPaneDividerKey),
+        const Offset(-120, 0),
+        touchSlopX: 0,
+      );
       await tester.pumpAndSettle();
 
-      expect(layout.splitFraction(SplitPane.history, landscape: true),
-          lessThan(0.62));
+      expect(
+        layout.splitFraction(SplitPane.history, landscape: true),
+        lessThan(0.62),
+      );
     });
   });
 }

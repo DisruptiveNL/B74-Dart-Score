@@ -1042,7 +1042,9 @@ class GameProvider extends ChangeNotifier
 
   /// Starts a brand-new game: persists it, builds fresh per-slot state for the
   /// players or teams, resets leg/set/turn counters, and clears undo/redo.
-  Future<void> startGame(Game game, List<Player> players, {
+  Future<void> startGame(
+    Game game,
+    List<Player> players, {
     String? competitionMatchId,
     int? competitionSlot,
     String? starterExternalId,
@@ -1051,10 +1053,13 @@ class GameProvider extends ChangeNotifier
     _competitionSingle = competitionMatchId != null;
 
     final ids = players.map((p) => p.id!).toList();
-    final gameId = await _db.insertGame(game, ids,
-        competitionMatchId: competitionMatchId,
-        competitionSlot: competitionSlot,
-        starterExternalId: starterExternalId);
+    final gameId = await _db.insertGame(
+      game,
+      ids,
+      competitionMatchId: competitionMatchId,
+      competitionSlot: competitionSlot,
+      starterExternalId: starterExternalId,
+    );
     _game = Game(
       id: gameId,
       startScore: game.startScore,
@@ -1218,13 +1223,20 @@ class GameProvider extends ChangeNotifier
   /// The three most recent visits by this player in the active leg.
   /// Completed legs are intentionally not editable.
   List<DartThrow> correctableVisits(int slotIndex) {
-    if (_game == null || _gameOver || slotIndex < 0 || slotIndex >= _playerStates.length) {
+    if (_game == null ||
+        _gameOver ||
+        slotIndex < 0 ||
+        slotIndex >= _playerStates.length) {
       return const [];
     }
     final visits = _playerStates[slotIndex].throws
-        .where((t) => t.leg == _currentLeg && t.set == _currentSet &&
-            t.hitsJson == null &&
-            t.remainingAfter > 0)
+        .where(
+          (t) =>
+              t.leg == _currentLeg &&
+              t.set == _currentSet &&
+              t.hitsJson == null &&
+              t.remainingAfter > 0,
+        )
         .toList();
     return visits.reversed.take(3).toList();
   }
@@ -1233,19 +1245,39 @@ class GameProvider extends ChangeNotifier
   /// Recalculates subsequent visits for that player and rejects a correction
   /// if it would invalidate any later score, bust or checkout.
   Future<void> correctNumericVisit(
-      int slotIndex, int throwId, int newScore, int dartsUsed) =>
-      correctVisit(slotIndex, throwId, newScore, dartsUsed,
-          bust: correctableVisits(slotIndex).firstWhere((t) => t.id == throwId).bust);
+    int slotIndex,
+    int throwId,
+    int newScore,
+    int dartsUsed,
+  ) => correctVisit(
+    slotIndex,
+    throwId,
+    newScore,
+    dartsUsed,
+    bust: correctableVisits(slotIndex).firstWhere((t) => t.id == throwId).bust,
+  );
 
   /// Correct the score, BUST flag and dart count as one atomic visit update.
-  Future<void> correctVisit(int slotIndex, int throwId, int newScore,
-      int dartsUsed, {required bool bust}) async {
-    if (_game == null || _gameOver || _numericVisitSubmitting ||
-        _currentVisitDarts.isNotEmpty || isBotTurn || inputLocked) {
+  Future<void> correctVisit(
+    int slotIndex,
+    int throwId,
+    int newScore,
+    int dartsUsed, {
+    required bool bust,
+  }) async {
+    if (_game == null ||
+        _gameOver ||
+        _numericVisitSubmitting ||
+        _currentVisitDarts.isNotEmpty ||
+        isBotTurn ||
+        inputLocked) {
       throw StateError('Correctie is momenteel niet beschikbaar');
     }
-    if (newScore < 0 || newScore > 180 || dartsUsed < 1 ||
-        dartsUsed > 3 || newScore > dartsUsed * 60) {
+    if (newScore < 0 ||
+        newScore > 180 ||
+        dartsUsed < 1 ||
+        dartsUsed > 3 ||
+        newScore > dartsUsed * 60) {
       throw ArgumentError('Ongeldige score of aantal darts');
     }
     final candidates = correctableVisits(slotIndex);
@@ -1256,38 +1288,51 @@ class GameProvider extends ChangeNotifier
       throw ArgumentError('BUST heeft altijd 0 punten');
     }
     final state = _playerStates[slotIndex];
-    final visits = state.throws.where((t) =>
-        t.leg == _currentLeg && t.set == _currentSet).toList();
+    final visits = state.throws
+        .where((t) => t.leg == _currentLeg && t.set == _currentSet)
+        .toList();
     // A recorded first remainingBefore also supports games with a custom
     // starting score; never assume the configured default is the first visit.
-    var remaining = visits.isEmpty ? _game!.startScore : visits.first.remainingBefore;
+    var remaining = visits.isEmpty
+        ? _game!.startScore
+        : visits.first.remainingBefore;
     final changes = <int, int>{};
     for (final t in visits) {
       final score = t.id == throwId ? newScore : t.score;
       final isBust = t.id == throwId ? bust : t.bust;
       if (t.id != throwId) changes[t.id!] = remaining;
       if (t.bust && t.id != throwId && remaining != t.remainingBefore) {
-        throw StateError('Correctie verandert de uitgangspositie van een latere BUST');
+        throw StateError(
+          'Correctie verandert de uitgangspositie van een latere BUST',
+        );
       }
       if (isBust && score != 0) {
         throw StateError('BUST moet 0 punten behouden');
       }
       if (!isBust) {
-        if (score > remaining || (score == remaining &&
-            _game!.checkoutMode != CheckoutMode.straightOut)) {
+        if (score > remaining ||
+            (score == remaining &&
+                _game!.checkoutMode != CheckoutMode.straightOut)) {
           throw StateError('Correctie maakt een latere beurt ongeldig');
         }
         remaining -= score;
         if (remaining <= 0 ||
-            (remaining == 1 && _game!.checkoutMode != CheckoutMode.straightOut)) {
+            (remaining == 1 &&
+                _game!.checkoutMode != CheckoutMode.straightOut)) {
           throw StateError('Correctie maakt een latere beurt ongeldig');
         }
       }
     }
     _numericVisitSubmitting = true;
     try {
-      await _db.correctVisit(_game!.id!, throwId, newScore,
-          dartsUsed, bust, changes);
+      await _db.correctVisit(
+        _game!.id!,
+        throwId,
+        newScore,
+        dartsUsed,
+        bust,
+        changes,
+      );
       final players = _playerStates.expand((s) => s.players).toList();
       final activeSlotIndex = _currentPlayerIndex;
       final activePlayerId = currentPlayerState.player.id;
@@ -1298,8 +1343,9 @@ class GameProvider extends ChangeNotifier
         // Keep the active team slot, not an individual teammate's index.
         _currentPlayerIndex = activeSlotIndex;
       } else if (currentPlayerState.player.id != activePlayerId) {
-        final index = _playerStates.indexWhere((s) =>
-            s.player.id == activePlayerId);
+        final index = _playerStates.indexWhere(
+          (s) => s.player.id == activePlayerId,
+        );
         if (index >= 0) _currentPlayerIndex = index;
       }
       notifyListeners();

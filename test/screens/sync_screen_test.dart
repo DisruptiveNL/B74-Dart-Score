@@ -31,18 +31,23 @@ void main() {
   /// that fake async never gets to, so it is let through explicitly. Nothing
   /// here settles: an animated transfer shows an indeterminate progress bar,
   /// and `pumpAndSettle` would wait on an animation that never ends.
-  Future<void> pumpSync(WidgetTester tester,
-      {Player? initial, Size size = const Size(400, 1400)}) async {
+  Future<void> pumpSync(
+    WidgetTester tester, {
+    Player? initial,
+    Size size = const Size(400, 1400),
+  }) async {
     usePhoneSurface(tester, size: size);
     await tester.pumpWidget(
-        testApp(SyncScreen(initialPlayer: initial), players: players));
+      testApp(SyncScreen(initialPlayer: initial), players: players),
+    );
 
     // Preparing reads the throws and encodes them, and how long that takes
     // depends on how many there are, so wait for the code rather than for a
     // guessed duration. A fixed delay is either flaky or slow.
     for (var i = 0; i < 60; i++) {
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pump();
       if (initial == null || find.byType(QrImageView).evaluate().isNotEmpty) {
         break;
@@ -68,30 +73,39 @@ void main() {
       await players.load();
     });
 
-    testWidgets('opens on Receive when it was not given a player',
-        (tester) async {
+    testWidgets('opens on Receive when it was not given a player', (
+      tester,
+    ) async {
       await pumpSync(tester);
 
       expect(find.byType(QrScanner), findsOneWidget);
       expect(find.byType(QrImageView), findsNothing);
     });
 
-    testWidgets('is one column on every device, the scan as wide as the rest',
-        (tester) async {
+    testWidgets('is one column on every device, the scan as wide as the rest', (
+      tester,
+    ) async {
       for (final size in [const Size(400, 1400), const Size(1180, 820)]) {
         await pumpSync(tester, size: size);
-        expect(find.byKey(kPaneDividerKey), findsNothing,
-            reason: 'a picker over a code, never beside it, at $size');
+        expect(
+          find.byKey(kPaneDividerKey),
+          findsNothing,
+          reason: 'a picker over a code, never beside it, at $size',
+        );
 
         final scanner = tester.getRect(find.byType(QrScanner));
         final column = tester.getRect(find.textContaining('Scan the sender'));
-        expect(scanner.width, greaterThanOrEqualTo(column.width - 1),
-            reason: 'the scanner fills its column at $size');
+        expect(
+          scanner.width,
+          greaterThanOrEqualTo(column.width - 1),
+          reason: 'the scanner fills its column at $size',
+        );
       }
     });
 
-    testWidgets('the camera comes up with Receive and goes with it',
-        (tester) async {
+    testWidgets('the camera comes up with Receive and goes with it', (
+      tester,
+    ) async {
       // The camera comes up with the tab rather than behind a button: there is
       // nothing else on this tab to do. What it must not do is keep running
       // once the send tab is in front, which is the sort of thing nobody
@@ -107,13 +121,15 @@ void main() {
       expect(find.byType(QrScanner), findsNothing);
     });
 
-    testWidgets('opens on Send when it was handed one, showing one still code',
-        (tester) async {
-      await pumpSync(tester, initial: player);
+    testWidgets(
+      'opens on Send when it was handed one, showing one still code',
+      (tester) async {
+        await pumpSync(tester, initial: player);
 
-      expect(find.byType(QrImageView), findsOneWidget);
-      expect(find.text('Nik'), findsWidgets);
-    });
+        expect(find.byType(QrImageView), findsOneWidget);
+        expect(find.text('Nik'), findsWidgets);
+      },
+    );
 
     testWidgets('never offers a bot to send', (tester) async {
       await tester.runAsync(() => players.botFor(BotLevel.legend));
@@ -126,8 +142,9 @@ void main() {
       expect(find.textContaining('Bot'), findsNothing);
     });
 
-    testWidgets('offers every range to pick from, once unfolded',
-        (tester) async {
+    testWidgets('offers every range to pick from, once unfolded', (
+      tester,
+    ) async {
       // Folded away on arrival: the range is a rarity, and open it stood
       // between the reader and the code.
       await pumpSync(tester, initial: player);
@@ -139,8 +156,9 @@ void main() {
       expect(find.byType(ChoiceChip), findsNWidgets(SyncRange.values.length));
     });
 
-    testWidgets('says nothing about earlier syncs when there were none',
-        (tester) async {
+    testWidgets('says nothing about earlier syncs when there were none', (
+      tester,
+    ) async {
       await pumpSync(tester, initial: player);
 
       expect(find.textContaining('earlier syncs'), findsNothing);
@@ -155,9 +173,9 @@ void main() {
       await tester.pump(const Duration(milliseconds: 500));
 
       expect(
-          identical(
-              tester.widget<QrImageView>(find.byType(QrImageView)), before),
-          isTrue);
+        identical(tester.widget<QrImageView>(find.byType(QrImageView)), before),
+        isTrue,
+      );
     });
   });
 
@@ -201,8 +219,11 @@ void main() {
       final before = code(tester);
       await letFramesRun(tester);
 
-      expect(identical(code(tester), before), isTrue,
-          reason: 'nothing should be encoded until the code is started');
+      expect(
+        identical(code(tester), before),
+        isTrue,
+        reason: 'nothing should be encoded until the code is started',
+      );
       expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
     });
 
@@ -249,7 +270,8 @@ void main() {
       // never gets to on its own.
       for (var i = 0; i < 60; i++) {
         await tester.runAsync(
-            () => Future<void>.delayed(const Duration(milliseconds: 50)));
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
         await tester.pump();
         if (find.byType(QrImageView).evaluate().isNotEmpty) break;
       }
@@ -259,8 +281,9 @@ void main() {
       expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
     });
 
-    testWidgets('stops advancing once the app goes to the background',
-        (tester) async {
+    testWidgets('stops advancing once the app goes to the background', (
+      tester,
+    ) async {
       await pumpSync(tester, initial: player);
       await startStream(tester);
 
@@ -269,8 +292,11 @@ void main() {
       final atPause = code(tester);
       await letFramesRun(tester);
 
-      expect(identical(code(tester), atPause), isTrue,
-          reason: 'a sender nobody can see should not keep encoding');
+      expect(
+        identical(code(tester), atPause),
+        isTrue,
+        reason: 'a sender nobody can see should not keep encoding',
+      );
     });
 
     testWidgets('picks up again when the app comes back', (tester) async {
@@ -298,26 +324,37 @@ void main() {
       // What the migration leaves behind: throws under no particular device,
       // and a player that has been synced before.
       final d = await DbHelper.instance.db;
-      await d.update('games', {'is_synced': 1, 'origin_device': ''},
-          where: 'id = ?', whereArgs: [gameId]);
-      await d.update('players', {'last_synced_at': 1000},
-          where: 'id = ?', whereArgs: [player.id]);
+      await d.update(
+        'games',
+        {'is_synced': 1, 'origin_device': ''},
+        where: 'id = ?',
+        whereArgs: [gameId],
+      );
+      await d.update(
+        'players',
+        {'last_synced_at': 1000},
+        where: 'id = ?',
+        whereArgs: [player.id],
+      );
 
       players = PlayersProvider();
       await players.load();
       player = players.players.first;
     });
 
-    testWidgets('says how much of the payload the range has no say over',
-        (tester) async {
+    testWidgets('says how much of the payload the range has no say over', (
+      tester,
+    ) async {
       // A player that has synced before opens on a limited range, which is
       // where the count stops answering the picker.
       await pumpSync(tester, initial: player);
 
       // The count stays out whatever the range does: it is the answer to "is
       // this going to work", which is the question the screen raises.
-      expect(find.textContaining('5 of them from earlier syncs'),
-          findsOneWidget);
+      expect(
+        find.textContaining('5 of them from earlier syncs'),
+        findsOneWidget,
+      );
 
       await openRange(tester);
       expect(find.textContaining('always travel in full'), findsOneWidget);

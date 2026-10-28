@@ -18,7 +18,10 @@ void main() {
 
   /// Reaches the server on loopback, whatever address it reported.
   TransferInvite loopback(String token) => TransferInvite.forNow(
-      addresses: const ['127.0.0.1'], port: connection.port, token: token);
+    addresses: const ['127.0.0.1'],
+    port: connection.port,
+    token: token,
+  );
 
   /// Posts [bytes] zeros to the token path, in slices so the test never holds
   /// the whole body.
@@ -29,8 +32,9 @@ void main() {
   Future<void> postBytes(String token, int bytes) async {
     final client = HttpClient();
     try {
-      final req = await client
-          .postUrl(Uri.parse('http://127.0.0.1:${connection.port}/$token'));
+      final req = await client.postUrl(
+        Uri.parse('http://127.0.0.1:${connection.port}/$token'),
+      );
       const slice = 256 * 1024;
       for (var written = 0; written < bytes; written += slice) {
         req.add(Uint8List(min(slice, bytes - written)));
@@ -47,9 +51,9 @@ void main() {
   Future<(int, String)> get(String path) async {
     final client = HttpClient();
     try {
-      final res = await (await client
-              .getUrl(Uri.parse('http://127.0.0.1:${connection.port}$path')))
-          .close();
+      final res = await (await client.getUrl(
+        Uri.parse('http://127.0.0.1:${connection.port}$path'),
+      )).close();
       return (res.statusCode, await res.transform(utf8.decoder).join());
     } finally {
       client.close(force: true);
@@ -60,8 +64,10 @@ void main() {
     server = SyncServer();
     // Pinned rather than looked up: what the server reports is the machine's
     // own network, and these tests have to run on one that has none.
-    connection = await server.start(utf8.encode(payload),
-        addresses: const ['127.0.0.1']);
+    connection = await server.start(
+      utf8.encode(payload),
+      addresses: const ['127.0.0.1'],
+    );
   });
 
   tearDown(() async {
@@ -75,8 +81,11 @@ void main() {
 
       expect(status, HttpStatus.forbidden);
       expect(body, isEmpty);
-      expect(server.state.value, SyncServerState.waiting,
-          reason: 'a stranger must not even raise a prompt on the sender');
+      expect(
+        server.state.value,
+        SyncServerState.waiting,
+        reason: 'a stranger must not even raise a prompt on the sender',
+      );
     });
 
     test('a request with the wrong token is refused', () async {
@@ -97,8 +106,10 @@ void main() {
 
     test('every session gets its own token and number', () async {
       final other = SyncServer();
-      final second = await other.start(utf8.encode(payload),
-          addresses: const ['127.0.0.1']);
+      final second = await other.start(
+        utf8.encode(payload),
+        addresses: const ['127.0.0.1'],
+      );
 
       expect(second.token, isNot(connection.token));
       expect(second.token.length, 16);
@@ -119,25 +130,28 @@ void main() {
 
       expect(await fetch, payload);
 
-      await _until(
-        () => server.state.value == SyncServerState.served,
-      );
+      await _until(() => server.state.value == SyncServerState.served);
 
       expect(server.state.value, SyncServerState.served);
     });
 
     test('the receiver is told the number to compare', () async {
       String? seen;
-      final fetch = SyncClient()
-          .fetch(loopback(connection.token), onPin: (pin) => seen = pin);
+      final fetch = SyncClient().fetch(
+        loopback(connection.token),
+        onPin: (pin) => seen = pin,
+      );
 
       await _until(() => server.state.value == SyncServerState.pending);
       server.approve();
       await fetch;
 
       expect(seen, isNotNull);
-      expect(seen, server.pin,
-          reason: 'both screens have to show the same digits');
+      expect(
+        seen,
+        server.pin,
+        reason: 'both screens have to show the same digits',
+      );
     });
 
     test('a payload of a realistic size arrives whole', () async {
@@ -147,22 +161,28 @@ void main() {
       // that only shows up once the body no longer fits in one buffer.
       final big = 'DS2:${'W' * 250000}';
       final other = SyncServer();
-      final where = await other.start(utf8.encode(big),
-          addresses: const ['127.0.0.1']);
+      final where = await other.start(
+        utf8.encode(big),
+        addresses: const ['127.0.0.1'],
+      );
 
       // The screen stops the server the moment it reports the hand-over, so
       // that has to be the moment the last byte is out.
       final stopped = Completer<void>();
       other.state.addListener(() {
-        if (other.state.value == SyncServerState.served && !stopped.isCompleted) {
+        if (other.state.value == SyncServerState.served &&
+            !stopped.isCompleted) {
           stopped.complete(other.stop());
         }
       });
 
-      final fetch = SyncClient().fetch(TransferInvite.forNow(
+      final fetch = SyncClient().fetch(
+        TransferInvite.forNow(
           addresses: const ['127.0.0.1'],
           port: where.port,
-          token: where.token));
+          token: where.token,
+        ),
+      );
       await _until(() => other.state.value == SyncServerState.pending);
       other.approve();
 
@@ -192,13 +212,15 @@ void main() {
       await client.post(loopback(connection.token), reply);
     }
 
-    test('the peer answers with its own side, and that ends the session',
-        () async {
-      await exchange('DS2:THEIRS');
+    test(
+      'the peer answers with its own side, and that ends the session',
+      () async {
+        await exchange('DS2:THEIRS');
 
-      await _until(() => server.state.value == SyncServerState.returned);
-      expect(server.returnedPayload, 'DS2:THEIRS');
-    });
+        await _until(() => server.state.value == SyncServerState.returned);
+        expect(server.returnedPayload, 'DS2:THEIRS');
+      },
+    );
 
     test('an empty answer ends the wait with nothing to import', () async {
       // What a receiver sends when it does not know the player at all. It has
@@ -236,16 +258,18 @@ void main() {
       expect(server.returnedPayload, isNull);
     });
 
-    test('the payload is not handed out again once the exchange is over',
-        () async {
-      await exchange('DS2:THEIRS');
-      await _until(() => server.state.value == SyncServerState.returned);
+    test(
+      'the payload is not handed out again once the exchange is over',
+      () async {
+        await exchange('DS2:THEIRS');
+        await _until(() => server.state.value == SyncServerState.returned);
 
-      final (status, body) = await get('/${connection.token}');
+        final (status, body) = await get('/${connection.token}');
 
-      expect(status, HttpStatus.gone);
-      expect(body, isNot(contains(payload)));
-    });
+        expect(status, HttpStatus.gone);
+        expect(body, isNot(contains(payload)));
+      },
+    );
   });
 
   group('size limits', () {
@@ -256,8 +280,10 @@ void main() {
     /// written onto a raw socket rather than through `HttpServer`: a peer is
     /// free to name one length and send another, which is exactly what
     /// `HttpServer` refuses to let a test do.
-    Future<(ServerSocket, TransferInvite)> liar(
-        {required int announced, required int sends}) async {
+    Future<(ServerSocket, TransferInvite)> liar({
+      required int announced,
+      required int sends,
+    }) async {
       final listener = await ServerSocket.bind(InternetAddress.loopbackIPv4, 0);
       listener.listen((socket) async {
         socket.listen((_) {}, onError: (_) {}, cancelOnError: false);
@@ -283,40 +309,49 @@ void main() {
       return (
         listener,
         TransferInvite.forNow(
-            addresses: const ['127.0.0.1'], port: listener.port, token: 'TOKEN')
+          addresses: const ['127.0.0.1'],
+          port: listener.port,
+          token: 'TOKEN',
+        ),
       );
     }
 
-    test('an announced length above the ceiling is refused before it arrives',
-        () async {
-      final (peer, conn) = await liar(announced: 4096, sends: 0);
-      addTearDown(peer.close);
+    test(
+      'an announced length above the ceiling is refused before it arrives',
+      () async {
+        final (peer, conn) = await liar(announced: 4096, sends: 0);
+        addTearDown(peer.close);
 
-      await expectLater(
-        SyncClient().fetchBytes(conn, maxBytes: 1024),
-        throwsA(isA<SyncPayloadTooLargeException>()),
-      );
-    });
+        await expectLater(
+          SyncClient().fetchBytes(conn, maxBytes: 1024),
+          throwsA(isA<SyncPayloadTooLargeException>()),
+        );
+      },
+    );
 
-    test('a body that grows past the ceiling is refused as it arrives',
-        () async {
-      // No announced length at all, which is what a peer sends when it wants
-      // the receiver to keep reading. Only weighing the chunks catches it.
-      final (peer, conn) = await liar(announced: 0, sends: 512 * 1024);
-      addTearDown(peer.close);
+    test(
+      'a body that grows past the ceiling is refused as it arrives',
+      () async {
+        // No announced length at all, which is what a peer sends when it wants
+        // the receiver to keep reading. Only weighing the chunks catches it.
+        final (peer, conn) = await liar(announced: 0, sends: 512 * 1024);
+        addTearDown(peer.close);
 
-      await expectLater(
-        SyncClient().fetchBytes(conn, maxBytes: 1024),
-        throwsA(isA<SyncPayloadTooLargeException>()),
-      );
-    });
+        await expectLater(
+          SyncClient().fetchBytes(conn, maxBytes: 1024),
+          throwsA(isA<SyncPayloadTooLargeException>()),
+        );
+      },
+    );
 
     test('a body inside the ceiling still arrives whole', () async {
       final (peer, conn) = await liar(announced: 1024, sends: 1024);
       addTearDown(peer.close);
 
-      expect(await SyncClient().fetchBytes(conn, maxBytes: 1024),
-          hasLength(1024));
+      expect(
+        await SyncClient().fetchBytes(conn, maxBytes: 1024),
+        hasLength(1024),
+      );
     });
 
     test('an oversized answer on the return leg is refused', () async {
@@ -352,12 +387,16 @@ void main() {
     }
 
     /// A one-way server holding [bytes] of payload, already approved.
-    Future<(SyncServer, TransferInvite)> approvedServer([int bytes = 64 * 1024]) async {
+    Future<(SyncServer, TransferInvite)> approvedServer([
+      int bytes = 64 * 1024,
+    ]) async {
       final other = SyncServer();
-      final where = await other.start(List.filled(bytes, 7),
-          twoWay: false,
-          contentType: ContentType.binary,
-          addresses: const ['127.0.0.1']);
+      final where = await other.start(
+        List.filled(bytes, 7),
+        twoWay: false,
+        contentType: ContentType.binary,
+        addresses: const ['127.0.0.1'],
+      );
 
       await ask(where);
       await _until(() => other.state.value == SyncServerState.pending);
@@ -365,8 +404,7 @@ void main() {
       return (other, where);
     }
 
-    test('the sender is not done until the peer says it has the file',
-        () async {
+    test('the sender is not done until the peer says it has the file', () async {
       // The failure this pins. Writing the last byte is not delivering it:
       // `close` hands the payload to the kernel and the peer may still have
       // most of a database to pull out of the buffers. The sending screen took
@@ -387,12 +425,18 @@ void main() {
       socket.write('GET /${where.token} HTTP/1.1\r\nHost: t\r\n\r\n');
       await socket.flush();
       var received = 0;
-      socket.listen((chunk) => received += chunk.length,
-          onError: (_) {}, cancelOnError: false);
+      socket.listen(
+        (chunk) => received += chunk.length,
+        onError: (_) {},
+        cancelOnError: false,
+      );
 
       await _until(() => received >= 64 * 1024);
-      expect(other.state.value, SyncServerState.approved,
-          reason: 'every byte is written, and the sender still waits');
+      expect(
+        other.state.value,
+        SyncServerState.approved,
+        reason: 'every byte is written, and the sender still waits',
+      );
 
       // Only the peer vanishing ends it without a word, and then finishing is
       // the right answer: the payload is out and nothing is left to wait for.
@@ -411,8 +455,10 @@ void main() {
 
       expect(bytes, hasLength(64 * 1024));
       await _until(() => other.state.value == SyncServerState.served);
-      expect(DateTime.now().difference(started),
-          lessThan(const Duration(seconds: 5)));
+      expect(
+        DateTime.now().difference(started),
+        lessThan(const Duration(seconds: 5)),
+      );
     });
 
     test('a peer that never reads does not hold the sender forever', () async {
@@ -450,8 +496,11 @@ void main() {
       // Lower case or braces would push the code into the byte mode, which is
       // a third less dense for no reason.
       final payload = connection.qrPayload(kSyncWifiPrefix);
-      expect(RegExp(r'^[0-9A-Z $%*+\-./:]+$').hasMatch(payload), isTrue,
-          reason: payload);
+      expect(
+        RegExp(r'^[0-9A-Z $%*+\-./:]+$').hasMatch(payload),
+        isTrue,
+        reason: payload,
+      );
     });
   });
 
@@ -462,11 +511,19 @@ void main() {
 
       await expectLater(
         other.start(utf8.encode(payload), addresses: const []),
-        throwsA(isA<TransferStartException>().having(
-            (e) => e.reason, 'reason', TransferStartFailure.noLocalAddress)),
+        throwsA(
+          isA<TransferStartException>().having(
+            (e) => e.reason,
+            'reason',
+            TransferStartFailure.noLocalAddress,
+          ),
+        ),
       );
-      expect(other.isRunning, isFalse,
-          reason: 'a socket nobody can reach is one nobody has to stop');
+      expect(
+        other.isRunning,
+        isFalse,
+        reason: 'a socket nobody can reach is one nobody has to stop',
+      );
     });
   });
 
@@ -474,13 +531,15 @@ void main() {
     test('the one that answers is found past the ones that do not', () async {
       // What a phone offers when it is on Wi-Fi and has a hotspot up: only one
       // of the addresses is on the network the peer joined.
-      final fetch = SyncClient().fetch(TransferInvite.forNow(
-        // One address that goes nowhere is enough to prove the point, and
-        // each one costs the probe timeout before the next is tried.
-        addresses: ['10.255.255.1', '127.0.0.1'],
-        port: connection.port,
-        token: connection.token,
-      ));
+      final fetch = SyncClient().fetch(
+        TransferInvite.forNow(
+          // One address that goes nowhere is enough to prove the point, and
+          // each one costs the probe timeout before the next is tried.
+          addresses: ['10.255.255.1', '127.0.0.1'],
+          port: connection.port,
+          token: connection.token,
+        ),
+      );
 
       await _until(() => server.state.value == SyncServerState.pending);
       server.approve();
@@ -492,24 +551,33 @@ void main() {
       // Not a timeout: a timeout means the other device heard this one and the
       // user has not confirmed. Nothing here was ever heard.
       await expectLater(
-        SyncClient().fetch(TransferInvite.forNow(
-            addresses: const ['10.255.255.1'], port: 1, token: 'TOKEN')),
+        SyncClient().fetch(
+          TransferInvite.forNow(
+            addresses: const ['10.255.255.1'],
+            port: 1,
+            token: 'TOKEN',
+          ),
+        ),
         throwsA(isA<TransferUnreachableException>()),
       );
     }, timeout: const Timeout(Duration(seconds: 60)));
 
-    test('a code that has expired is refused before anything is asked',
-        () async {
-      await expectLater(
-        SyncClient().fetch(TransferInvite(
-            addresses: const ['127.0.0.1'],
-            port: connection.port,
-            token: connection.token,
-            expiresAt:
-                DateTime.now().subtract(const Duration(seconds: 1)))),
-        throwsA(isA<TransferInviteExpiredException>()),
-      );
-    });
+    test(
+      'a code that has expired is refused before anything is asked',
+      () async {
+        await expectLater(
+          SyncClient().fetch(
+            TransferInvite(
+              addresses: const ['127.0.0.1'],
+              port: connection.port,
+              token: connection.token,
+              expiresAt: DateTime.now().subtract(const Duration(seconds: 1)),
+            ),
+          ),
+          throwsA(isA<TransferInviteExpiredException>()),
+        );
+      },
+    );
   });
 }
 

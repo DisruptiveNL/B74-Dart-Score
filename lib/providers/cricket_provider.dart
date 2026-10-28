@@ -22,14 +22,18 @@ import 'bot_runner.dart';
 class CricketPlayerState implements LabelledSlot {
   @override
   final String displayName;
+
   /// All players in this slot: 1 for individual, N for team.
   @override
   final List<Player> players;
+
   /// Which player in [players] throws NEXT (rotates after each team visit).
   final int currentPlayerIdx;
+
   /// Whether this slot represents a team rather than a single player.
   @override
   final bool isTeamSlot;
+
   /// Marks per field, capped at 3 because that closes it. Anything a Double or
   /// Triple adds beyond the third mark turns into points instead, so the excess
   /// is deliberately not kept here.
@@ -69,15 +73,14 @@ class CricketPlayerState implements LabelledSlot {
     Map<int, int>? marks,
     int? score,
     int? currentPlayerIdx,
-  }) =>
-      CricketPlayerState(
-        displayName:      displayName,
-        players:          players,
-        currentPlayerIdx: currentPlayerIdx ?? this.currentPlayerIdx,
-        isTeamSlot:       isTeamSlot,
-        marks:            marks ?? Map.of(this.marks),
-        score:            score ?? this.score,
-      );
+  }) => CricketPlayerState(
+    displayName: displayName,
+    players: players,
+    currentPlayerIdx: currentPlayerIdx ?? this.currentPlayerIdx,
+    isTeamSlot: isTeamSlot,
+    marks: marks ?? Map.of(this.marks),
+    score: score ?? this.score,
+  );
 }
 
 /// The index in [members] of the member a slot has at the board: whoever threw
@@ -107,39 +110,46 @@ class CricketProvider extends ChangeNotifier
     with WidgetsBindingObserver, BotRunner {
   final DbHelper _db = DbHelper.instance;
 
-  CricketGame?              _game;
-  List<CricketPlayerState>  _playerStates = [];
-  int                       _currentPlayerIndex = 0;
-  bool                      _gameOver    = false;
-  int?                      _winnerId;
+  CricketGame? _game;
+  List<CricketPlayerState> _playerStates = [];
+  int _currentPlayerIndex = 0;
+  bool _gameOver = false;
+  int? _winnerId;
 
   /// Darts thrown so far in the current visit (max 3).
-  final List<CricketThrow>  _visitBuffer = [];
-  /// All persisted throws for undo (newest last).
-  final List<CricketThrow>  _throwHistory = [];
+  final List<CricketThrow> _visitBuffer = [];
 
-  CricketGame?             get game               => _game;
-  List<CricketPlayerState> get playerStates       => _playerStates;
-  int                      get currentPlayerIndex => _currentPlayerIndex;
-  CricketPlayerState       get currentPlayerState => _playerStates[_currentPlayerIndex];
-  bool                     get gameOver           => _gameOver;
-  int?                     get winnerId           => _winnerId;
-  List<CricketThrow>       get visitBuffer        => List.unmodifiable(_visitBuffer);
-  int                      get dartsInVisit       => _visitBuffer.length;
-  int                      get throwCount         => _throwHistory.length;
+  /// All persisted throws for undo (newest last).
+  final List<CricketThrow> _throwHistory = [];
+
+  CricketGame? get game => _game;
+  List<CricketPlayerState> get playerStates => _playerStates;
+  int get currentPlayerIndex => _currentPlayerIndex;
+  CricketPlayerState get currentPlayerState =>
+      _playerStates[_currentPlayerIndex];
+  bool get gameOver => _gameOver;
+  int? get winnerId => _winnerId;
+  List<CricketThrow> get visitBuffer => List.unmodifiable(_visitBuffer);
+  int get dartsInVisit => _visitBuffer.length;
+  int get throwCount => _throwHistory.length;
+
   /// Every persisted dart of the game, oldest first.
-  List<CricketThrow>       get throwHistory       => List.unmodifiable(_throwHistory);
+  List<CricketThrow> get throwHistory => List.unmodifiable(_throwHistory);
+
   /// Whether there is a dart to undo. Not while a bot is throwing, and not
   /// when every recorded dart is a bot's: those are never undone on their
   /// own, see [undoLastDart].
-  bool                     get canUndo            =>
+  bool get canUndo =>
       !isBotTurn && _throwHistory.any((t) => !_isBotId(t.playerId));
 
   // ── Slot construction ────────────────────────────────────────────────────
 
   /// Builds one scoreboard slot per team (if [teams] is set) or one slot per
   /// player (individual game), each with empty marks and zero score.
-  List<CricketPlayerState> _buildSlots(List<Player> players, List<TeamConfig>? teams) {
+  List<CricketPlayerState> _buildSlots(
+    List<Player> players,
+    List<TeamConfig>? teams,
+  ) {
     if (teams != null && teams.isNotEmpty) {
       return teams.map((team) {
         final teamPlayers = team.playerIds
@@ -147,19 +157,23 @@ class CricketProvider extends ChangeNotifier
             .toList();
         return CricketPlayerState(
           displayName: team.name,
-          players:     teamPlayers,
-          isTeamSlot:  true,
-          marks:       {},
-          score:       0,
+          players: teamPlayers,
+          isTeamSlot: true,
+          marks: {},
+          score: 0,
         );
       }).toList();
     }
-    return players.map((p) => CricketPlayerState(
-      displayName: p.name,
-      players:     [p],
-      marks:       {},
-      score:       0,
-    )).toList();
+    return players
+        .map(
+          (p) => CricketPlayerState(
+            displayName: p.name,
+            players: [p],
+            marks: {},
+            score: 0,
+          ),
+        )
+        .toList();
   }
 
   // ── Resume ────────────────────────────────────────────────────────────────
@@ -170,8 +184,8 @@ class CricketProvider extends ChangeNotifier
     _game = game;
     _playerStates = _buildSlots(players, game.teams);
     _currentPlayerIndex = 0;
-    _gameOver           = false;
-    _winnerId           = null;
+    _gameOver = false;
+    _winnerId = null;
     _visitBuffer.clear();
     _throwHistory.clear();
     dropHeldVisit();
@@ -189,22 +203,22 @@ class CricketProvider extends ChangeNotifier
     final gameId = await _db.insertCricketGame(game);
     // Re-read to get the auto-generated id
     _game = CricketGame(
-      id:          gameId,
-      variant:     game.variant,
+      id: gameId,
+      variant: game.variant,
       scoringMode: game.scoringMode,
-      legs:        game.legs,
-      sets:        game.sets,
-      createdAt:   game.createdAt,
-      playerIds:   game.playerIds,
-      teams:       game.teams,
+      legs: game.legs,
+      sets: game.sets,
+      createdAt: game.createdAt,
+      playerIds: game.playerIds,
+      teams: game.teams,
       startingOrder: game.startingOrder,
     );
 
     _playerStates = _buildSlots(players, game.teams);
 
     _currentPlayerIndex = 0;
-    _gameOver           = false;
-    _winnerId           = null;
+    _gameOver = false;
+    _winnerId = null;
     _visitBuffer.clear();
     _throwHistory.clear();
     dropHeldVisit();
@@ -221,19 +235,20 @@ class CricketProvider extends ChangeNotifier
   /// as it is for a fixed order.
   Future<void> startRematch(CricketGame template, List<Player> players) async {
     final isRandom = template.startingOrder == StartingOrder.random;
-    final ordered  = isRandom ? (List.of(players)..shuffle(Random()))
-                              : List.of(players);
-    final teams    = isRandom && template.teams != null
+    final ordered = isRandom
+        ? (List.of(players)..shuffle(Random()))
+        : List.of(players);
+    final teams = isRandom && template.teams != null
         ? (List.of(template.teams!)..shuffle(Random()))
         : template.teams;
     final game = CricketGame(
-      variant:     template.variant,
+      variant: template.variant,
       scoringMode: template.scoringMode,
-      legs:        template.legs,
-      sets:        template.sets,
-      createdAt:   DateTime.now(),
-      playerIds:   ordered.map((p) => p.id!).toList(),
-      teams:       teams,
+      legs: template.legs,
+      sets: template.sets,
+      createdAt: DateTime.now(),
+      playerIds: ordered.map((p) => p.id!).toList(),
+      teams: teams,
       startingOrder: template.startingOrder,
     );
     await startGame(game, ordered);
@@ -263,13 +278,13 @@ class CricketProvider extends ChangeNotifier
         if (i != _currentPlayerIndex) _playerStates[i],
     ];
     final target = cricketTarget(
-      ownMarks:       own.marks,
-      opponentMarks:  others.map((s) => s.marks).toList(),
-      ownScore:       own.score,
+      ownMarks: own.marks,
+      opponentMarks: others.map((s) => s.marks).toList(),
+      ownScore: own.score,
       opponentScores: others.map((s) => s.score).toList(),
-      variant:        _game!.variant,
-      scoring:        _game!.scoringMode,
-      aimTriples:     aimsForTriples(own.player.botLevel!),
+      variant: _game!.variant,
+      scoring: _game!.scoringMode,
+      aimTriples: aimsForTriples(own.player.botLevel!),
     );
     final hit = botThrower.throwAt(target, own.player.botLevel!);
     // A number off the seven is a miss here: the board has no marks for it,
@@ -294,24 +309,24 @@ class CricketProvider extends ChangeNotifier
     if (_visitBuffer.length >= 3) return;
 
     final t = CricketThrow(
-      gameId:     _game!.id!,
-      playerId:   currentPlayerState.player.id!,
-      field:      field,
+      gameId: _game!.id!,
+      playerId: currentPlayerState.player.id!,
+      field: field,
       multiplier: multiplier,
-      leg:        1,
-      set_:       1,
-      thrownAt:   DateTime.now(),
+      leg: 1,
+      set_: 1,
+      thrownAt: DateTime.now(),
     );
-    final id  = await _db.insertCricketThrow(t);
+    final id = await _db.insertCricketThrow(t);
     final saved = CricketThrow(
-      id:         id,
-      gameId:     t.gameId,
-      playerId:   t.playerId,
-      field:      t.field,
+      id: id,
+      gameId: t.gameId,
+      playerId: t.playerId,
+      field: t.field,
       multiplier: t.multiplier,
-      leg:        t.leg,
-      set_:       t.set_,
-      thrownAt:   t.thrownAt,
+      leg: t.leg,
+      set_: t.set_,
+      thrownAt: t.thrownAt,
     );
 
     _visitBuffer.add(saved);
@@ -344,17 +359,17 @@ class CricketProvider extends ChangeNotifier
   /// slot (normal) or to opponent slots who have not closed the field
   /// (cut-throat).
   void _applyDart(int slotIdx, int field, int multiplier) {
-    final state  = _playerStates[slotIdx];
+    final state = _playerStates[slotIdx];
     final isCutThroat = _game!.variant == CricketVariant.cutThroat;
-    final isSimple    = _game!.scoringMode == CricketScoringMode.simple;
+    final isSimple = _game!.scoringMode == CricketScoringMode.simple;
 
     final effectiveMarks = isSimple ? 1 : multiplier;
-    final currentMarks   = state.marks[field] ?? 0;
-    final newTotalMarks  = currentMarks + effectiveMarks;
+    final currentMarks = state.marks[field] ?? 0;
+    final newTotalMarks = currentMarks + effectiveMarks;
 
     // How many marks go towards closing, how many score?
-    final marksToClose  = (3 - currentMarks).clamp(0, effectiveMarks);
-    final scoringMarks  = effectiveMarks - marksToClose;
+    final marksToClose = (3 - currentMarks).clamp(0, effectiveMarks);
+    final scoringMarks = effectiveMarks - marksToClose;
 
     // Update marks for this slot (cap at 3 for display, but track excess via score)
     final updatedMarks = Map<int, int>.of(state.marks);
@@ -366,7 +381,7 @@ class CricketProvider extends ChangeNotifier
 
     // The field is now open (or was already open): handle scoring
     final fieldValue = field == 25 ? 25 : field;
-    final points     = scoringMarks * fieldValue;
+    final points = scoringMarks * fieldValue;
 
     if (isCutThroat) {
       // Distribute points to opponent slots who haven't closed this field
@@ -380,9 +395,9 @@ class CricketProvider extends ChangeNotifier
       }
     } else {
       // Score for current slot: only if at least one opponent hasn't closed it
-      final fieldAlive = _playerStates
-          .indexed
-          .any((e) => e.$1 != slotIdx && !e.$2.hasClosedField(field));
+      final fieldAlive = _playerStates.indexed.any(
+        (e) => e.$1 != slotIdx && !e.$2.hasClosedField(field),
+      );
       if (fieldAlive) {
         _playerStates[slotIdx] = _playerStates[slotIdx].copyWith(
           score: _playerStates[slotIdx].score + points,
@@ -418,7 +433,9 @@ class CricketProvider extends ChangeNotifier
     final s = _playerStates[_currentPlayerIndex];
     if (s.isTeamSlot) {
       final nextIdx = (s.currentPlayerIdx + 1) % s.players.length;
-      _playerStates[_currentPlayerIndex] = s.copyWith(currentPlayerIdx: nextIdx);
+      _playerStates[_currentPlayerIndex] = s.copyWith(
+        currentPlayerIdx: nextIdx,
+      );
     }
     _currentPlayerIndex = (_currentPlayerIndex + 1) % _playerStates.length;
   }
@@ -433,7 +450,9 @@ class CricketProvider extends ChangeNotifier
     for (var i = 0; i < _playerStates.length; i++) {
       if (i == slotIdx) continue;
       final other = _playerStates[i];
-      final ahead = isCutThroat ? state.score <= other.score : state.score >= other.score;
+      final ahead = isCutThroat
+          ? state.score <= other.score
+          : state.score >= other.score;
       if (!ahead) return false;
     }
     return true;
@@ -445,7 +464,7 @@ class CricketProvider extends ChangeNotifier
     int best = 0;
     for (var i = 1; i < _playerStates.length; i++) {
       final challenger = _playerStates[i].score;
-      final current    = _playerStates[best].score;
+      final current = _playerStates[best].score;
       if (isCutThroat ? challenger < current : challenger > current) {
         best = i;
       }
@@ -483,8 +502,7 @@ class CricketProvider extends ChangeNotifier
     await _db.deleteCricketThrow(last.id!);
 
     // Remove from visit buffer if it's still in there
-    if (_visitBuffer.isNotEmpty &&
-        _visitBuffer.last.id == last.id) {
+    if (_visitBuffer.isNotEmpty && _visitBuffer.last.id == last.id) {
       _visitBuffer.removeLast();
     }
 
@@ -515,13 +533,15 @@ class CricketProvider extends ChangeNotifier
 
     // Reset marks and scores to zero, keep slot identity
     _playerStates = _playerStates
-        .map((s) => CricketPlayerState(
-              displayName: s.displayName,
-              players:     s.players,
-              isTeamSlot:  s.isTeamSlot,
-              marks:       {},
-              score:       0,
-            ))
+        .map(
+          (s) => CricketPlayerState(
+            displayName: s.displayName,
+            players: s.players,
+            isTeamSlot: s.isTeamSlot,
+            marks: {},
+            score: 0,
+          ),
+        )
         .toList();
 
     // Replay all darts in chronological order, each routed to the slot of the
@@ -534,8 +554,9 @@ class CricketProvider extends ChangeNotifier
     // the summary and the history would start naming different winners.
     for (final t in allThrows) {
       if (t.isMiss) continue;
-      final slotIdx = _playerStates
-          .indexWhere((s) => s.players.any((p) => p.id == t.playerId));
+      final slotIdx = _playerStates.indexWhere(
+        (s) => s.players.any((p) => p.id == t.playerId),
+      );
       if (slotIdx < 0) continue;
       _applyDart(slotIdx, t.field, t.multiplier);
 
@@ -588,10 +609,9 @@ class CricketProvider extends ChangeNotifier
     final dartsInCurrentVisit = currentThrows.length % 3;
     _visitBuffer
       ..clear()
-      ..addAll(currentThrows.reversed
-          .take(dartsInCurrentVisit)
-          .toList()
-          .reversed);
+      ..addAll(
+        currentThrows.reversed.take(dartsInCurrentVisit).toList().reversed,
+      );
 
     _throwHistory
       ..clear()

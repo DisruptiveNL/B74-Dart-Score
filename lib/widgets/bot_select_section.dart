@@ -42,11 +42,11 @@ class BotSelectSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
 
     final byTier = <BotLevel, List<Player>>{};
-    final slots  = <int>[];
+    final slots = <int>[];
     for (var i = 0; i < selectedPlayers.length; i++) {
       final level = selectedPlayers[i].botLevel;
       if (level == null) continue;
@@ -62,29 +62,38 @@ class BotSelectSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.smart_toy_outlined,
-                    size: 20, color: cs.onSurfaceVariant),
+                Icon(
+                  Icons.smart_toy_outlined,
+                  size: 20,
+                  color: cs.onSurfaceVariant,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(l.botOpponent,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    l.botOpponent,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 Switch(value: enabled, onChanged: onEnabledChanged),
               ],
             ),
             if (enabled) ...[
-            for (final level in BotLevel.values)
-              _tierRow(context, level, byTier[level] ?? const []),
-            if (slots.isEmpty)
-              const SizedBox(height: 8)
-            else
-              Padding(
-                padding: const EdgeInsets.only(top: 4, bottom: 8),
-                child: Text(l.botSlotsHint(slots),
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: cs.onSurfaceVariant)),
-              ),
+              for (final level in BotLevel.values)
+                _tierRow(context, level, byTier[level] ?? const []),
+              if (slots.isEmpty)
+                const SizedBox(height: 8)
+              else
+                Padding(
+                  padding: const EdgeInsets.only(top: 4, bottom: 8),
+                  child: Text(
+                    l.botSlotsHint(slots),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
+                ),
             ],
           ],
         ),
@@ -99,16 +108,18 @@ class BotSelectSection extends StatelessWidget {
   /// minus hands the last of them to [onRemove].
   Widget _tierRow(BuildContext context, BotLevel level, List<Player> bots) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
-    final none  = bots.isEmpty;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
+    final none = bots.isEmpty;
 
     return ListTile(
       contentPadding: EdgeInsets.zero,
       dense: true,
       visualDensity: VisualDensity.compact,
-      title: Text(l.botTier(level),
-          style: none ? TextStyle(color: cs.onSurfaceVariant) : null),
+      title: Text(
+        l.botTier(level),
+        style: none ? TextStyle(color: cs.onSurfaceVariant) : null,
+      ),
       subtitle: Text(l.botAverageHint(expectedAverageOf(level))),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
@@ -121,20 +132,23 @@ class BotSelectSection extends StatelessWidget {
           ),
           SizedBox(
             width: 24,
-            child: Text('${bots.length}',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  color: none ? cs.outlineVariant : cs.onSurface,
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                )),
+            child: Text(
+              '${bots.length}',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: none ? cs.outlineVariant : cs.onSurface,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
           ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline, size: 22),
             tooltip: l.addBot(level),
             color: cs.primary,
             visualDensity: VisualDensity.compact,
-            onPressed:
-                bots.length >= kMaxBotsPerTier ? null : () => onAdd(level),
+            onPressed: bots.length >= kMaxBotsPerTier
+                ? null
+                : () => onAdd(level),
           ),
         ],
       ),

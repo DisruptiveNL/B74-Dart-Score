@@ -27,11 +27,13 @@ void main() {
       expect(MatchFormat.pdcSets.sets, 3);
     });
 
-    test('carry no numbers for a custom match, which comes from the stepper',
-        () {
-      expect(MatchFormat.custom.legs, isNull);
-      expect(MatchFormat.custom.sets, isNull);
-    });
+    test(
+      'carry no numbers for a custom match, which comes from the stepper',
+      () {
+        expect(MatchFormat.custom.legs, isNull);
+        expect(MatchFormat.custom.sets, isNull);
+      },
+    );
 
     test('stay inside the range the custom stepper offers', () {
       for (final f in MatchFormat.values) {
@@ -45,18 +47,23 @@ void main() {
     test('finds the preset back for every one of them', () {
       for (final f in MatchFormat.values) {
         if (f == MatchFormat.custom) continue;
-        expect(MatchFormatLookup.fromValues(f.legs!, f.sets!), f,
-            reason: '$f should be recognised from its own legs and sets');
+        expect(
+          MatchFormatLookup.fromValues(f.legs!, f.sets!),
+          f,
+          reason: '$f should be recognised from its own legs and sets',
+        );
       }
     });
 
-    test('separates a leg race from the set format that shares its leg count',
-        () {
-      // Both are first to 3 legs. Only the set count tells them apart, so a
-      // lookup that ignored it would label every PDC match as best of 5.
-      expect(MatchFormatLookup.fromValues(3, 1), MatchFormat.bo5);
-      expect(MatchFormatLookup.fromValues(3, 3), MatchFormat.pdcSets);
-    });
+    test(
+      'separates a leg race from the set format that shares its leg count',
+      () {
+        // Both are first to 3 legs. Only the set count tells them apart, so a
+        // lookup that ignored it would label every PDC match as best of 5.
+        expect(MatchFormatLookup.fromValues(3, 1), MatchFormat.bo5);
+        expect(MatchFormatLookup.fromValues(3, 3), MatchFormat.pdcSets);
+      },
+    );
 
     test('falls back to custom for numbers no preset covers', () {
       expect(MatchFormatLookup.fromValues(7, 2), MatchFormat.custom);

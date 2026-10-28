@@ -32,9 +32,9 @@ class _LadderPainter extends CustomPainter {
   const _LadderPainter(this.color);
 
   /// Where the rails stand and how far they reach, in grid units.
-  static const _left   = 5.5;
-  static const _right  = 18.5;
-  static const _top    = 2.5;
+  static const _left = 5.5;
+  static const _right = 18.5;
+  static const _top = 2.5;
   static const _bottom = 21.5;
 
   /// The rungs, evenly spread between the ends of the rails.

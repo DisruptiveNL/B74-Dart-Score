@@ -19,7 +19,10 @@ class B74ScoreCorrection extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
         minimumSize: const Size(0, 36),
       ),
-      child: const Text('CORRECTIE', style: TextStyle(fontWeight: FontWeight.bold)),
+      child: const Text(
+        'CORRECTIE',
+        style: TextStyle(fontWeight: FontWeight.bold),
+      ),
     );
   }
 
@@ -38,16 +41,20 @@ class B74ScoreCorrection extends StatelessWidget {
             for (final visit in visits)
               ListTile(
                 title: Text(visit.bust ? 'BUST' : '${visit.score} punten'),
-                subtitle: Text('${visit.dartsUsed} darts · restant ${visit.remainingAfter}'),
+                subtitle: Text(
+                  '${visit.dartsUsed} darts · restant ${visit.remainingAfter}',
+                ),
                 trailing: const Icon(Icons.edit_outlined),
                 onTap: () => Navigator.pop(dialogContext, visit),
               ),
           ],
         ),
-        actions: [TextButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('ANNULEREN'),
-        )],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('ANNULEREN'),
+          ),
+        ],
       ),
     );
     if (selected != null && context.mounted) {
@@ -111,9 +118,7 @@ class _CorrectionEditDialogState extends State<_CorrectionEditDialog> {
 
   Future<void> _save() async {
     if (_saving) return;
-    final score = _bust
-        ? 0
-        : int.tryParse(_controller.text.trim());
+    final score = _bust ? 0 : int.tryParse(_controller.text.trim());
     if (score == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Voer een geldige score in')),
@@ -133,9 +138,7 @@ class _CorrectionEditDialogState extends State<_CorrectionEditDialog> {
       Navigator.of(context).pop();
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$e')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('$e')));
       setState(() => _saving = false);
     }
   }
@@ -153,9 +156,11 @@ class _CorrectionEditDialogState extends State<_CorrectionEditDialog> {
               ButtonSegment(value: true, label: Text('BUST')),
             ],
             selected: {_bust},
-            onSelectionChanged: _saving ? null : (selection) {
-              setState(() => _bust = selection.first);
-            },
+            onSelectionChanged: _saving
+                ? null
+                : (selection) {
+                    setState(() => _bust = selection.first);
+                  },
           ),
           if (!_bust)
             TextField(

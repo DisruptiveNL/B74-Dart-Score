@@ -9,8 +9,10 @@ import 'throw_row.dart';
 class ThrowLogCard extends StatelessWidget {
   /// Every visit of the game in throwing order.
   final List<DartThrow> throws;
+
   /// Resolves a visit's player id to the name shown in front of the row.
   final String Function(int playerId) playerName;
+
   /// Whether to name the set as well; pointless in a single-set game.
   final bool showSet;
 
@@ -36,15 +38,16 @@ class ThrowLogCard extends StatelessWidget {
           children: [
             Text(
               context.l10n.allThrows,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             for (final t in throws)
               ThrowRow(
-                t:          t,
+                t: t,
                 playerName: playerName(t.playerId),
-                showSet:    showSet,
+                showSet: showSet,
               ),
           ],
         ),

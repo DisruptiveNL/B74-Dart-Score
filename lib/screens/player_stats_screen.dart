@@ -30,23 +30,24 @@ import '../utils/segment_color.dart';
 class PlayerStats {
   final int gamesPlayed;
   final int gamesFinished;
+
   /// Games this player, or their team, took: the deciding leg was theirs.
   final int gamesWon;
   final int totalVisits;
   final int totalDarts;
-  final int totalScored;          // excludes busts
+  final int totalScored; // excludes busts
   final int busts;
   final int legsWon;
   final int highestVisit;
-  final int highestCheckout;      // highest score that reached 0
+  final int highestCheckout; // highest score that reached 0
   final double highestGameAverage; // best three-dart average in a single game
   final int count180;
   final int count140plus;
   final int count100plus;
-  final double checkoutPercent;   // successful checkouts / attempts
+  final double checkoutPercent; // successful checkouts / attempts
   /// Individual darts thrown at a finish, the denominator of [doublePercent].
   final int checkoutDarts;
-  final double doublePercent;     // successful checkouts / darts at a finish
+  final double doublePercent; // successful checkouts / darts at a finish
   final List<DartThrow> recentThrows;
   final Map<int, int> scoreDistribution;
   final int perfectLegs;
@@ -63,10 +64,14 @@ class PlayerStats {
   final int thisWeek180s;
   final int lastWeek180s;
   // Checkout breakdown by remaining-before bracket
-  final int coAttemptSub40;   final int coSuccessSub40;
-  final int coAttemptSub60;   final int coSuccessSub60;
-  final int coAttemptSub100;  final int coSuccessSub100;
-  final int coAttemptSub170;  final int coSuccessSub170;
+  final int coAttemptSub40;
+  final int coSuccessSub40;
+  final int coAttemptSub60;
+  final int coSuccessSub60;
+  final int coAttemptSub100;
+  final int coSuccessSub100;
+  final int coAttemptSub170;
+  final int coSuccessSub170;
 
   const PlayerStats({
     required this.gamesPlayed,
@@ -97,10 +102,14 @@ class PlayerStats {
     this.lastWeekVisits = 0,
     this.thisWeek180s = 0,
     this.lastWeek180s = 0,
-    this.coAttemptSub40 = 0,  this.coSuccessSub40 = 0,
-    this.coAttemptSub60 = 0,  this.coSuccessSub60 = 0,
-    this.coAttemptSub100 = 0, this.coSuccessSub100 = 0,
-    this.coAttemptSub170 = 0, this.coSuccessSub170 = 0,
+    this.coAttemptSub40 = 0,
+    this.coSuccessSub40 = 0,
+    this.coAttemptSub60 = 0,
+    this.coSuccessSub60 = 0,
+    this.coAttemptSub100 = 0,
+    this.coSuccessSub100 = 0,
+    this.coAttemptSub170 = 0,
+    this.coSuccessSub170 = 0,
   });
 
   /// Lifetime three-dart average (busts excluded from scored points).
@@ -108,8 +117,7 @@ class PlayerStats {
       totalDarts == 0 ? 0 : (totalScored / totalDarts) * 3;
 
   /// Percentage of visits that busted.
-  double get bustRate =>
-      totalVisits == 0 ? 0 : (busts / totalVisits) * 100;
+  double get bustRate => totalVisits == 0 ? 0 : (busts / totalVisits) * 100;
 }
 
 /// Everything [aggregatePlayerStats] needs, and nothing that would drag the
@@ -122,12 +130,15 @@ class PlayerStats {
 class PlayerStatsInput {
   final int playerId;
   final List<DartThrow> throws;
+
   /// Start score per game, for the dart count a perfect leg would take.
   final Map<int, int> startScoreByGame;
   final int gamesPlayed;
   final int gamesFinished;
+
   /// How many of them this player won, decided from the throws of each.
   final int gamesWon;
+
   /// The snapshot of games that were deleted, still counted in the lifetime
   /// numbers. See the sync notes in CLAUDE.md.
   final String? localStatsJson;
@@ -177,18 +188,18 @@ Future<PlayerStats> loadPlayerStats(Player player) async {
   return compute(
     aggregatePlayerStats,
     PlayerStatsInput(
-      playerId:         playerId,
-      throws:           throws,
+      playerId: playerId,
+      throws: throws,
       startScoreByGame: {
         for (final e in games.entries) e.key: e.value.startScore,
       },
-      gamesPlayed:      gameIds.length,
-      gamesFinished:    games.values.where((g) => g.finishedAt != null).length,
-      gamesWon:         wonGameIds.length,
+      gamesPlayed: gameIds.length,
+      gamesFinished: games.values.where((g) => g.finishedAt != null).length,
+      gamesWon: wonGameIds.length,
       // Every snapshot the player carries at once: this device's own cleared
       // games plus one per device that ever synced here. Which is which only
       // matters to the next sync, never to a lifetime number.
-      localStatsJson:   await db.combinedSnapshotJson(playerId),
+      localStatsJson: await db.combinedSnapshotJson(playerId),
     ),
   );
 }
@@ -199,39 +210,39 @@ Future<PlayerStats> loadPlayerStats(Player player) async {
 /// for the database, a binding or the widget tree.
 @visibleForTesting
 PlayerStats aggregatePlayerStats(PlayerStatsInput input) {
-  final playerId        = input.playerId;
-  final throws          = input.throws;
-  final localStatsJson  = input.localStatsJson;
+  final playerId = input.playerId;
+  final throws = input.throws;
+  final localStatsJson = input.localStatsJson;
 
   // ── Counters from the games still on the device ───────────────────────────
   // The snapshot of deleted games is added on top further down, so these start
   // at the live values instead of at zero and stay mutable.
   final live = ThrowStats.fromThrows(throws);
 
-  int totalScored      = live.totalScored;
-  int busts            = live.busts;
+  int totalScored = live.totalScored;
+  int busts = live.busts;
   // A leg is won by finishing it, so a successful checkout is a leg.
-  int legsWon          = live.checkoutSuccesses;
-  int highestVisit     = live.highestVisit;
-  int highestCheckout  = live.highestCheckout;
-  int count180         = live.count180;
-  int count140plus     = live.count140plus;
-  int count100plus     = live.count100plus;
+  int legsWon = live.checkoutSuccesses;
+  int highestVisit = live.highestVisit;
+  int highestCheckout = live.highestCheckout;
+  int count180 = live.count180;
+  int count140plus = live.count140plus;
+  int count100plus = live.count100plus;
   int checkoutAttempts = live.checkoutAttempts;
-  int checkoutSuccess  = live.checkoutSuccesses;
-  int checkoutDarts    = live.checkoutDarts;
-  int scoreSumSquares  = live.scoreSumSquares;
-  int coAtSub40  = live.coAttemptSub40,  coOkSub40  = live.coSuccessSub40;
-  int coAtSub60  = live.coAttemptSub60,  coOkSub60  = live.coSuccessSub60;
+  int checkoutSuccess = live.checkoutSuccesses;
+  int checkoutDarts = live.checkoutDarts;
+  int scoreSumSquares = live.scoreSumSquares;
+  int coAtSub40 = live.coAttemptSub40, coOkSub40 = live.coSuccessSub40;
+  int coAtSub60 = live.coAttemptSub60, coOkSub60 = live.coSuccessSub60;
   int coAtSub100 = live.coAttemptSub100, coOkSub100 = live.coSuccessSub100;
   int coAtSub170 = live.coAttemptSub170, coOkSub170 = live.coSuccessSub170;
 
   // ── Accumulators the shared record does not carry ─────────────────────────
   int perfectLegs = 0;
   final scoreDistribution = <int, int>{};
-  final segmentHits       = <int, Map<int, int>>{};
+  final segmentHits = <int, Map<int, int>>{};
   // daily_stats: date → {scored, darts, visits, s180}
-  final dailyStats        = <String, Map<String, int>>{};
+  final dailyStats = <String, Map<String, int>>{};
 
   for (final t in throws) {
     // Heatmap
@@ -240,7 +251,7 @@ PlayerStats aggregatePlayerStats(PlayerStatsInput input) {
         final hits = jsonDecode(t.hitsJson!) as List<dynamic>;
         for (final h in hits) {
           final field = h['f'] as int;
-          final mul   = h['m'] as int;
+          final mul = h['m'] as int;
           segmentHits.putIfAbsent(field, () => {});
           segmentHits[field]![mul] = (segmentHits[field]![mul] ?? 0) + 1;
         }
@@ -248,10 +259,14 @@ PlayerStats aggregatePlayerStats(PlayerStatsInput input) {
     }
 
     // Daily stats (all throws, for activity and week windows)
-    final day = '${t.thrownAt.year}-'
+    final day =
+        '${t.thrownAt.year}-'
         '${t.thrownAt.month.toString().padLeft(2, '0')}-'
         '${t.thrownAt.day.toString().padLeft(2, '0')}';
-    final ds = dailyStats.putIfAbsent(day, () => {'scored': 0, 'darts': 0, 'visits': 0, 's180': 0});
+    final ds = dailyStats.putIfAbsent(
+      day,
+      () => {'scored': 0, 'darts': 0, 'visits': 0, 's180': 0},
+    );
     ds['darts'] = (ds['darts'] ?? 0) + t.dartsUsed;
 
     if (!t.bust) {
@@ -271,68 +286,75 @@ PlayerStats aggregatePlayerStats(PlayerStatsInput input) {
     return startScore == null ? null : minimumDartsForScore[startScore];
   });
 
-  int gamesFinished      = input.gamesFinished;
-  int gamesWon           = input.gamesWon;
-  final liveTotalDarts    = live.totalDarts;
-  final liveTotalVisits   = live.totalVisits;
+  int gamesFinished = input.gamesFinished;
+  int gamesWon = input.gamesWon;
+  final liveTotalDarts = live.totalDarts;
+  final liveTotalVisits = live.totalVisits;
   final liveNonBustVisits = live.totalVisits - live.busts;
 
   double highestGameAvg = bestGameAverage(throws);
 
   // ── Merge persistent snapshot (deleted games) ─────────────────────────────
-  int persistentTotalDarts  = 0;
+  int persistentTotalDarts = 0;
   int persistentTotalVisits = 0;
   int persistentGamesPlayed = 0;
-  int persistentNonBusts    = 0;
+  int persistentNonBusts = 0;
   // Snapshot recent throws: compact maps from deleted games
   var snapRecentThrows = <Map<String, dynamic>>[];
 
   if (localStatsJson != null && localStatsJson.isNotEmpty) {
     try {
-      final p   = jsonDecode(localStatsJson) as Map<String, dynamic>;
+      final p = jsonDecode(localStatsJson) as Map<String, dynamic>;
       int pi(String k) => p[k] as int? ?? 0;
       double pd(String k) => (p[k] as num?)?.toDouble() ?? 0;
 
       highestGameAvg = max(highestGameAvg, pd('highest_game_avg'));
 
-      persistentTotalDarts  = pi('total_darts');
+      persistentTotalDarts = pi('total_darts');
       persistentTotalVisits = pi('total_visits');
       persistentGamesPlayed = pi('games_played');
-      persistentNonBusts    = persistentTotalVisits - pi('busts');
+      persistentNonBusts = persistentTotalVisits - pi('busts');
 
-      totalScored      += pi('total_scored');
-      busts            += pi('busts');
-      legsWon          += pi('legs_won');
-      highestVisit      = max(highestVisit,    pi('highest_visit'));
-      highestCheckout   = max(highestCheckout, pi('highest_checkout'));
-      count180         += pi('count_180');
-      count140plus     += pi('count_140_plus');
-      count100plus     += pi('count_100_plus');
+      totalScored += pi('total_scored');
+      busts += pi('busts');
+      legsWon += pi('legs_won');
+      highestVisit = max(highestVisit, pi('highest_visit'));
+      highestCheckout = max(highestCheckout, pi('highest_checkout'));
+      count180 += pi('count_180');
+      count140plus += pi('count_140_plus');
+      count100plus += pi('count_100_plus');
       checkoutAttempts += pi('checkout_attempts');
-      checkoutSuccess  += pi('checkout_successes');
-      checkoutDarts    += pi('checkout_darts');
-      scoreSumSquares  += pi('score_sum_squares');
-      perfectLegs      += pi('perfect_legs');
-      gamesFinished    += pi('games_finished');
+      checkoutSuccess += pi('checkout_successes');
+      checkoutDarts += pi('checkout_darts');
+      scoreSumSquares += pi('score_sum_squares');
+      perfectLegs += pi('perfect_legs');
+      gamesFinished += pi('games_finished');
       // Snapshots written before games won was counted carry no such key, so
       // the deleted games behind them stay out of the count rather than being
       // guessed at.
-      gamesWon         += pi('games_won');
-      coAtSub40  += pi('co_at_sub40');  coOkSub40  += pi('co_ok_sub40');
-      coAtSub60  += pi('co_at_sub60');  coOkSub60  += pi('co_ok_sub60');
-      coAtSub100 += pi('co_at_sub100'); coOkSub100 += pi('co_ok_sub100');
-      coAtSub170 += pi('co_at_sub170'); coOkSub170 += pi('co_ok_sub170');
+      gamesWon += pi('games_won');
+      coAtSub40 += pi('co_at_sub40');
+      coOkSub40 += pi('co_ok_sub40');
+      coAtSub60 += pi('co_at_sub60');
+      coOkSub60 += pi('co_ok_sub60');
+      coAtSub100 += pi('co_at_sub100');
+      coOkSub100 += pi('co_ok_sub100');
+      coAtSub170 += pi('co_at_sub170');
+      coOkSub170 += pi('co_ok_sub170');
 
       // Heatmap
       final pHits = (p['segment_hits'] as Map?)?.cast<String, dynamic>();
       if (pHits != null) {
         for (final e in pHits.entries) {
-          final field = int.tryParse(e.key); if (field == null) continue;
-          final muls  = (e.value as Map?)?.cast<String, dynamic>() ?? {};
+          final field = int.tryParse(e.key);
+          if (field == null) continue;
+          final muls = (e.value as Map?)?.cast<String, dynamic>() ?? {};
           segmentHits.putIfAbsent(field, () => {});
           for (final m in muls.entries) {
-            final mul = int.tryParse(m.key); if (mul == null) continue;
-            segmentHits[field]![mul] = (segmentHits[field]![mul] ?? 0) + (m.value as int? ?? 0);
+            final mul = int.tryParse(m.key);
+            if (mul == null) continue;
+            segmentHits[field]![mul] =
+                (segmentHits[field]![mul] ?? 0) + (m.value as int? ?? 0);
           }
         }
       }
@@ -341,8 +363,10 @@ PlayerStats aggregatePlayerStats(PlayerStatsInput input) {
       final pDist = (p['score_distribution'] as Map?)?.cast<String, dynamic>();
       if (pDist != null) {
         for (final e in pDist.entries) {
-          final bucket = int.tryParse(e.key); if (bucket == null) continue;
-          scoreDistribution[bucket] = (scoreDistribution[bucket] ?? 0) + (e.value as int? ?? 0);
+          final bucket = int.tryParse(e.key);
+          if (bucket == null) continue;
+          scoreDistribution[bucket] =
+              (scoreDistribution[bucket] ?? 0) + (e.value as int? ?? 0);
         }
       }
 
@@ -352,11 +376,14 @@ PlayerStats aggregatePlayerStats(PlayerStatsInput input) {
         for (final e in pDs.entries) {
           final day = e.key;
           final src = (e.value as Map?)?.cast<String, dynamic>() ?? {};
-          final dst = dailyStats.putIfAbsent(day, () => {'scored': 0, 'darts': 0, 'visits': 0, 's180': 0});
+          final dst = dailyStats.putIfAbsent(
+            day,
+            () => {'scored': 0, 'darts': 0, 'visits': 0, 's180': 0},
+          );
           dst['scored'] = (dst['scored'] ?? 0) + (src['scored'] as int? ?? 0);
-          dst['darts']  = (dst['darts']  ?? 0) + (src['darts']  as int? ?? 0);
+          dst['darts'] = (dst['darts'] ?? 0) + (src['darts'] as int? ?? 0);
           dst['visits'] = (dst['visits'] ?? 0) + (src['visits'] as int? ?? 0);
-          dst['s180']   = (dst['s180']   ?? 0) + (src['s180']   as int? ?? 0);
+          dst['s180'] = (dst['s180'] ?? 0) + (src['s180'] as int? ?? 0);
         }
       }
 
@@ -368,39 +395,46 @@ PlayerStats aggregatePlayerStats(PlayerStatsInput input) {
             .map((m) => m.cast<String, dynamic>())
             .toList();
       }
-
     } catch (_) {}
-
   }
 
   // ── Week comparison from merged dailyStats ────────────────────────────────
-  final now          = DateTime.now();
-  final todayStart   = DateTime(now.year, now.month, now.day);
-  final thisWeekStart = todayStart.subtract(Duration(days: todayStart.weekday - 1));
+  final now = DateTime.now();
+  final todayStart = DateTime(now.year, now.month, now.day);
+  final thisWeekStart = todayStart.subtract(
+    Duration(days: todayStart.weekday - 1),
+  );
   final lastWeekStart = thisWeekStart.subtract(const Duration(days: 7));
-  double thisWeekScored = 0; int thisWeekDarts = 0;
-  double lastWeekScored = 0; int lastWeekDarts = 0;
+  double thisWeekScored = 0;
+  int thisWeekDarts = 0;
+  double lastWeekScored = 0;
+  int lastWeekDarts = 0;
   int thisWeekVisits = 0, lastWeekVisits = 0;
   int thisWeek180s = 0, lastWeek180s = 0;
 
   for (final entry in dailyStats.entries) {
     final parts = entry.key.split('-');
     if (parts.length != 3) continue;
-    final date = DateTime(int.parse(parts[0]), int.parse(parts[1]), int.parse(parts[2]));
-    final ds   = entry.value;
+    final date = DateTime(
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+      int.parse(parts[2]),
+    );
+    final ds = entry.value;
 
     final inThisWeek = !date.isBefore(thisWeekStart);
-    final inLastWeek = !date.isBefore(lastWeekStart) && date.isBefore(thisWeekStart);
+    final inLastWeek =
+        !date.isBefore(lastWeekStart) && date.isBefore(thisWeekStart);
     if (inThisWeek) {
       thisWeekScored += ds['scored'] ?? 0;
-      thisWeekDarts  += ds['darts']  ?? 0;
+      thisWeekDarts += ds['darts'] ?? 0;
       thisWeekVisits += ds['visits'] ?? 0;
-      thisWeek180s   += ds['s180']   ?? 0;
+      thisWeek180s += ds['s180'] ?? 0;
     } else if (inLastWeek) {
       lastWeekScored += ds['scored'] ?? 0;
-      lastWeekDarts  += ds['darts']  ?? 0;
+      lastWeekDarts += ds['darts'] ?? 0;
       lastWeekVisits += ds['visits'] ?? 0;
-      lastWeek180s   += ds['s180']   ?? 0;
+      lastWeek180s += ds['s180'] ?? 0;
     }
   }
 
@@ -408,84 +442,111 @@ PlayerStats aggregatePlayerStats(PlayerStatsInput input) {
   // The individual darts ride along where they were recorded, so the list can
   // name them. The snapshot of a deleted game carries no hits, and those rows
   // simply show none.
-  final liveRecent = throws.reversed.map((t) => {
-    'score':            t.score,
-    'darts_used':       t.dartsUsed,
-    'bust':             t.bust ? 1 : 0,
-    'remaining_before': t.remainingBefore,
-    'thrown_at':        t.thrownAt.millisecondsSinceEpoch,
-    'hits_json':        t.hitsJson,
-  }).toList();
+  final liveRecent = throws.reversed
+      .map(
+        (t) => {
+          'score': t.score,
+          'darts_used': t.dartsUsed,
+          'bust': t.bust ? 1 : 0,
+          'remaining_before': t.remainingBefore,
+          'thrown_at': t.thrownAt.millisecondsSinceEpoch,
+          'hits_json': t.hitsJson,
+        },
+      )
+      .toList();
   final liveTimestamps = liveRecent.map((m) => m['thrown_at'] as int).toSet();
-  final combined = [
-    ...liveRecent,
-    ...snapRecentThrows.where((m) => !liveTimestamps.contains(m['thrown_at'] as int? ?? -1)),
-  ]..sort((a, b) => ((b['thrown_at'] as int? ?? 0).compareTo(a['thrown_at'] as int? ?? 0)));
-  final recentThrows = combined.take(20).map((m) => DartThrow(
-    gameId:          -1,
-    playerId:        playerId,
-    score:           m['score'] as int? ?? 0,
-    dartsUsed:       m['darts_used'] as int? ?? 3,
-    leg:             1,
-    set:             1,
-    remainingBefore: m['remaining_before'] as int? ?? 0,
-    thrownAt:        DateTime.fromMillisecondsSinceEpoch(m['thrown_at'] as int? ?? 0),
-    bust:            (m['bust'] as int? ?? 0) == 1,
-    hitsJson:        m['hits_json'] as String?,
-  )).toList();
+  final combined =
+      [
+        ...liveRecent,
+        ...snapRecentThrows.where(
+          (m) => !liveTimestamps.contains(m['thrown_at'] as int? ?? -1),
+        ),
+      ]..sort(
+        (a, b) => ((b['thrown_at'] as int? ?? 0).compareTo(
+          a['thrown_at'] as int? ?? 0,
+        )),
+      );
+  final recentThrows = combined
+      .take(20)
+      .map(
+        (m) => DartThrow(
+          gameId: -1,
+          playerId: playerId,
+          score: m['score'] as int? ?? 0,
+          dartsUsed: m['darts_used'] as int? ?? 3,
+          leg: 1,
+          set: 1,
+          remainingBefore: m['remaining_before'] as int? ?? 0,
+          thrownAt: DateTime.fromMillisecondsSinceEpoch(
+            m['thrown_at'] as int? ?? 0,
+          ),
+          bust: (m['bust'] as int? ?? 0) == 1,
+          hitsJson: m['hits_json'] as String?,
+        ),
+      )
+      .toList();
 
   // ── Standard deviation via Var = E[x²] − E[x]² ───────────────────────────
   final totalNonBusts = liveNonBustVisits + persistentNonBusts;
   double stdDev = 0;
   if (totalNonBusts > 1 && scoreSumSquares > 0) {
-    final mean     = totalScored / totalNonBusts;
+    final mean = totalScored / totalNonBusts;
     final variance = (scoreSumSquares / totalNonBusts) - mean * mean;
     if (variance > 0) stdDev = sqrt(variance);
   }
 
-  final checkoutPercent =
-      checkoutAttempts == 0 ? 0.0 : (checkoutSuccess / checkoutAttempts) * 100;
-  final doublePercent =
-      checkoutDarts == 0 ? 0.0 : (checkoutSuccess / checkoutDarts) * 100;
-  final thisWeekAvg3 = thisWeekDarts == 0 ? 0.0 : (thisWeekScored / thisWeekDarts) * 3;
-  final lastWeekAvg3 = lastWeekDarts == 0 ? 0.0 : (lastWeekScored / lastWeekDarts) * 3;
+  final checkoutPercent = checkoutAttempts == 0
+      ? 0.0
+      : (checkoutSuccess / checkoutAttempts) * 100;
+  final doublePercent = checkoutDarts == 0
+      ? 0.0
+      : (checkoutSuccess / checkoutDarts) * 100;
+  final thisWeekAvg3 = thisWeekDarts == 0
+      ? 0.0
+      : (thisWeekScored / thisWeekDarts) * 3;
+  final lastWeekAvg3 = lastWeekDarts == 0
+      ? 0.0
+      : (lastWeekScored / lastWeekDarts) * 3;
 
   return PlayerStats(
-    gamesPlayed:    input.gamesPlayed + persistentGamesPlayed,
-    gamesFinished:  gamesFinished,
-    gamesWon:       gamesWon,
-    totalVisits:    liveTotalVisits + persistentTotalVisits,
-    totalDarts:     liveTotalDarts  + persistentTotalDarts,
-    totalScored:    totalScored,
-    busts:          busts,
-    legsWon:        legsWon,
-    highestVisit:   highestVisit,
+    gamesPlayed: input.gamesPlayed + persistentGamesPlayed,
+    gamesFinished: gamesFinished,
+    gamesWon: gamesWon,
+    totalVisits: liveTotalVisits + persistentTotalVisits,
+    totalDarts: liveTotalDarts + persistentTotalDarts,
+    totalScored: totalScored,
+    busts: busts,
+    legsWon: legsWon,
+    highestVisit: highestVisit,
     highestCheckout: highestCheckout,
     highestGameAverage: highestGameAvg,
-    count180:       count180,
-    count140plus:   count140plus,
-    count100plus:   count100plus,
+    count180: count180,
+    count140plus: count140plus,
+    count100plus: count100plus,
     checkoutPercent: checkoutPercent,
-    checkoutDarts:  checkoutDarts,
-    doublePercent:  doublePercent,
-    recentThrows:   recentThrows,
+    checkoutDarts: checkoutDarts,
+    doublePercent: doublePercent,
+    recentThrows: recentThrows,
     scoreDistribution: scoreDistribution,
-    perfectLegs:    perfectLegs,
-    segmentHits:    segmentHits,
-    scoreStdDev:    stdDev,
-    thisWeekAvg:    thisWeekAvg3,
-    lastWeekAvg:    lastWeekAvg3,
+    perfectLegs: perfectLegs,
+    segmentHits: segmentHits,
+    scoreStdDev: stdDev,
+    thisWeekAvg: thisWeekAvg3,
+    lastWeekAvg: lastWeekAvg3,
     thisWeekVisits: thisWeekVisits,
     lastWeekVisits: lastWeekVisits,
     thisWeek180s: thisWeek180s,
     lastWeek180s: lastWeek180s,
-    coAttemptSub40:  coAtSub40,  coSuccessSub40:  coOkSub40,
-    coAttemptSub60:  coAtSub60,  coSuccessSub60:  coOkSub60,
-    coAttemptSub100: coAtSub100, coSuccessSub100: coOkSub100,
-    coAttemptSub170: coAtSub170, coSuccessSub170: coOkSub170,
+    coAttemptSub40: coAtSub40,
+    coSuccessSub40: coOkSub40,
+    coAttemptSub60: coAtSub60,
+    coSuccessSub60: coOkSub60,
+    coAttemptSub100: coAtSub100,
+    coSuccessSub100: coOkSub100,
+    coAttemptSub170: coAtSub170,
+    coSuccessSub170: coOkSub170,
   );
 }
-
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -534,39 +595,43 @@ class _PlayerStatsScreenState extends State<PlayerStatsScreen> {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
           child: FutureBuilder<PlayerStats>(
-        future: _future,
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snap.hasError || snap.data == null) {
-            return Center(child: Text('${context.l10n.error}: ${snap.error}'));
-          }
-          final stats = snap.data!;
-          // No throws at all: show synced snapshot or empty state
-          if (stats.totalVisits == 0 && widget.player.syncedStats != null) {
-            return _SyncedStatsView(player: widget.player);
-          }
-          if (stats.totalVisits == 0) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.bar_chart,
-                      size: 56,
-                      color: Theme.of(context).colorScheme.outlineVariant),
-                  const SizedBox(height: 12),
-                  Text(
-                    context.l10n.noGamesFor(widget.player.name),
-                    style: Theme.of(context).textTheme.bodyLarge,
+            future: _future,
+            builder: (context, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              if (snap.hasError || snap.data == null) {
+                return Center(
+                  child: Text('${context.l10n.error}: ${snap.error}'),
+                );
+              }
+              final stats = snap.data!;
+              // No throws at all: show synced snapshot or empty state
+              if (stats.totalVisits == 0 && widget.player.syncedStats != null) {
+                return _SyncedStatsView(player: widget.player);
+              }
+              if (stats.totalVisits == 0) {
+                return Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.bar_chart,
+                        size: 56,
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        context.l10n.noGamesFor(widget.player.name),
+                        style: Theme.of(context).textTheme.bodyLarge,
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            );
-          }
-          return _StatsBody(player: widget.player, stats: stats);
-        },
-      ),
+                );
+              }
+              return _StatsBody(player: widget.player, stats: stats);
+            },
+          ),
         ),
       ),
     );
@@ -601,16 +666,18 @@ class _StatsBody extends StatelessWidget {
         // ── X01-only hint ───────────────────────────────────────────────
         Row(
           children: [
-            Icon(Icons.info_outline,
-                size: 14,
-                color: Theme.of(context).colorScheme.onSurfaceVariant),
+            Icon(
+              Icons.info_outline,
+              size: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(width: 6),
             Expanded(
               child: Text(
                 context.l10n.statsX01Only,
                 style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ),
           ],
@@ -704,11 +771,31 @@ class _StatsBody extends StatelessWidget {
         const SizedBox(height: 6),
         _StatCard(
           children: [
-            StatRow(label: context.l10n.gamesPlayed, value: '${stats.gamesPlayed}', spacious: true),
-            StatRow(label: context.l10n.gamesWon, value: '${stats.gamesWon}', spacious: true),
-            StatRow(label: context.l10n.legsWon, value: '${stats.legsWon}', spacious: true),
-            StatRow(label: context.l10n.totalVisits, value: '${stats.totalVisits}', spacious: true),
-            StatRow(label: context.l10n.totalDarts, value: '${stats.totalDarts}', spacious: true),
+            StatRow(
+              label: context.l10n.gamesPlayed,
+              value: '${stats.gamesPlayed}',
+              spacious: true,
+            ),
+            StatRow(
+              label: context.l10n.gamesWon,
+              value: '${stats.gamesWon}',
+              spacious: true,
+            ),
+            StatRow(
+              label: context.l10n.legsWon,
+              value: '${stats.legsWon}',
+              spacious: true,
+            ),
+            StatRow(
+              label: context.l10n.totalVisits,
+              value: '${stats.totalVisits}',
+              spacious: true,
+            ),
+            StatRow(
+              label: context.l10n.totalDarts,
+              value: '${stats.totalDarts}',
+              spacious: true,
+            ),
           ],
         ),
         const SizedBox(height: 14),
@@ -717,12 +804,36 @@ class _StatsBody extends StatelessWidget {
         const SizedBox(height: 6),
         _StatCard(
           children: [
-            StatRow(label: context.l10n.threeDartAvg, value: stats.average3Dart.toStringAsFixed(2), spacious: true),
-            StatRow(label: context.l10n.busts, value: '${stats.busts}', spacious: true),
-            StatRow(label: context.l10n.bustRate, value: '${stats.bustRate.toStringAsFixed(1)} %', spacious: true),
-            StatRow(label: context.l10n.checkoutRate, value: '${stats.checkoutPercent.toStringAsFixed(1)} %', spacious: true),
-            StatRow(label: context.l10n.doubleRate,   value: '${stats.doublePercent.toStringAsFixed(1)} %', spacious: true),
-            StatRow(label: context.l10n.dartsAtFinish, value: '${stats.checkoutDarts}', spacious: true),
+            StatRow(
+              label: context.l10n.threeDartAvg,
+              value: stats.average3Dart.toStringAsFixed(2),
+              spacious: true,
+            ),
+            StatRow(
+              label: context.l10n.busts,
+              value: '${stats.busts}',
+              spacious: true,
+            ),
+            StatRow(
+              label: context.l10n.bustRate,
+              value: '${stats.bustRate.toStringAsFixed(1)} %',
+              spacious: true,
+            ),
+            StatRow(
+              label: context.l10n.checkoutRate,
+              value: '${stats.checkoutPercent.toStringAsFixed(1)} %',
+              spacious: true,
+            ),
+            StatRow(
+              label: context.l10n.doubleRate,
+              value: '${stats.doublePercent.toStringAsFixed(1)} %',
+              spacious: true,
+            ),
+            StatRow(
+              label: context.l10n.dartsAtFinish,
+              value: '${stats.checkoutDarts}',
+              spacious: true,
+            ),
           ],
         ),
         const SizedBox(height: 14),
@@ -755,8 +866,11 @@ class _StatsBody extends StatelessWidget {
           const SizedBox(height: 14),
         ],
         // ── Checkout Breakdown ───────────────────────────────────────────
-        if (stats.coAttemptSub40 + stats.coAttemptSub60 +
-            stats.coAttemptSub100 + stats.coAttemptSub170 > 0) ...[
+        if (stats.coAttemptSub40 +
+                stats.coAttemptSub60 +
+                stats.coAttemptSub100 +
+                stats.coAttemptSub170 >
+            0) ...[
           _SectionTitle(context.l10n.checkoutBreakdown),
           const SizedBox(height: 6),
           _CheckoutBreakdownCard(stats: stats),
@@ -778,11 +892,10 @@ class _StatsBody extends StatelessWidget {
             // These visits come from different games, so their leg and set say
             // nothing; the date is what places them.
             children: stats.recentThrows
-                .map((t) => ThrowRow(
-                      t:            t,
-                      showPosition: false,
-                      thrownAt:     t.thrownAt,
-                    ))
+                .map(
+                  (t) =>
+                      ThrowRow(t: t, showPosition: false, thrownAt: t.thrownAt),
+                )
                 .toList(),
           ),
         ],
@@ -833,8 +946,8 @@ class _HeroCard extends StatelessWidget {
           _HeroStatTable(
             cs: cs,
             rows: [
-              (context.l10n.darts_,  '${stats.totalDarts}'),
-              (context.l10n.visits,  '${stats.totalVisits}'),
+              (context.l10n.darts_, '${stats.totalDarts}'),
+              (context.l10n.visits, '${stats.totalVisits}'),
               (context.l10n.legsWon, '${stats.legsWon}'),
             ],
           ),
@@ -884,8 +997,11 @@ class _HeroStatTable extends StatelessWidget {
                 ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 6),
-                  child: Text(value,
-                      textAlign: TextAlign.right, style: valueStyle),
+                  child: Text(
+                    value,
+                    textAlign: TextAlign.right,
+                    style: valueStyle,
+                  ),
                 ),
               ],
             ),
@@ -910,8 +1026,16 @@ class _ScoreChart extends StatelessWidget {
     // Build sorted buckets 0,20,40,…,180
     final buckets = List.generate(10, (i) => i * 20);
     final labels = [
-      '0–19', '20–39', '40–59', '60–79', '80–99',
-      '100–119', '120–139', '140–159', '160–179', '180',
+      '0–19',
+      '20–39',
+      '40–59',
+      '60–79',
+      '80–99',
+      '100–119',
+      '120–139',
+      '140–159',
+      '160–179',
+      '180',
     ];
     final counts = buckets.map((b) => distribution[b] ?? 0).toList();
     final maxCount = counts.reduce((a, b) => a > b ? a : b).clamp(1, 99999);
@@ -932,8 +1056,9 @@ class _ScoreChart extends StatelessWidget {
                     width: 62,
                     child: Text(
                       labels[i],
-                      style: theme.textTheme.labelSmall
-                          ?.copyWith(color: cs.onSurfaceVariant),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                   ),
                   Expanded(
@@ -966,7 +1091,9 @@ class _ScoreChart extends StatelessWidget {
                       '$count',
                       textAlign: TextAlign.right,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        fontWeight: count > 0 ? FontWeight.bold : FontWeight.normal,
+                        fontWeight: count > 0
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                         color: count > 0 ? cs.onSurface : cs.onSurfaceVariant,
                       ),
                     ),
@@ -993,9 +1120,9 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
+        fontWeight: FontWeight.bold,
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
+      ),
     );
   }
 }
@@ -1010,20 +1137,22 @@ class _StatCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       child: Padding(
-        padding: padding ?? const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        padding:
+            padding ?? const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         child: Column(
           children: children
-              .expand((w) => [
-                    w,
-                    if (w != children.last)
-                      Divider(
-                        height: 1,
-                        color: Theme.of(context)
-                            .colorScheme
-                            .outlineVariant
-                            .withValues(alpha: 0.5),
-                      ),
-                  ])
+              .expand(
+                (w) => [
+                  w,
+                  if (w != children.last)
+                    Divider(
+                      height: 1,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                ],
+              )
               .toList(),
         ),
       ),
@@ -1143,8 +1272,8 @@ class _DartboardHeatmap extends StatelessWidget {
                   Text(
                     '0',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: cs.onSurface.withValues(alpha: 0.6),
-                        ),
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                    ),
                   ),
                   const SizedBox(width: 6),
                   Expanded(
@@ -1160,8 +1289,8 @@ class _DartboardHeatmap extends StatelessWidget {
                   Text(
                     'max',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: cs.onSurface.withValues(alpha: 0.6),
-                        ),
+                      color: cs.onSurface.withValues(alpha: 0.6),
+                    ),
                   ),
                 ],
               ),
@@ -1175,7 +1304,10 @@ class _DartboardHeatmap extends StatelessWidget {
               children: topFields.map((e) {
                 final fieldName = e.key == 25 ? 'Bull' : '${e.key}';
                 return Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: cs.primaryContainer,
                     borderRadius: BorderRadius.circular(12),
@@ -1183,9 +1315,9 @@ class _DartboardHeatmap extends StatelessWidget {
                   child: Text(
                     '$fieldName · ${e.value}×',
                     style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                          color: cs.onPrimaryContainer,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      color: cs.onPrimaryContainer,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 );
               }).toList(),
@@ -1214,24 +1346,42 @@ class _SegmentBreakdown extends StatelessWidget {
 
   /// The numbered fields, highest first, each of which gets a row of its own.
   static const _numberedFields = [
-    20, 19, 18, 17, 16, 15, 14, 13, 12, 11,
-    10,  9,  8,  7,  6,  5,  4,  3,  2,  1,
+    20,
+    19,
+    18,
+    17,
+    16,
+    15,
+    14,
+    13,
+    12,
+    11,
+    10,
+    9,
+    8,
+    7,
+    6,
+    5,
+    4,
+    3,
+    2,
+    1,
   ];
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
 
     /// One cell: the segment and how often it was hit, zero included. A field
     /// the player never hit says so, because an empty place in the column is
     /// read as a gap in the table rather than as a count.
     Widget cell(int field, int mul) => _SegmentChip(
-          label:      segmentLabel(l, field, mul),
-          count:      segmentHits[field]?[mul] ?? 0,
-          multiplier: mul,
-        );
+      label: segmentLabel(l, field, mul),
+      count: segmentHits[field]?[mul] ?? 0,
+      multiplier: mul,
+    );
 
     if (segmentHits.isEmpty) return const SizedBox.shrink();
 
@@ -1243,7 +1393,9 @@ class _SegmentBreakdown extends StatelessWidget {
       child: ExpansionTile(
         title: Text(
           l.allSegments,
-          style: theme.textTheme.labelLarge?.copyWith(color: cs.onSurfaceVariant),
+          style: theme.textTheme.labelLarge?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
         ),
         tilePadding: EdgeInsets.zero,
         childrenPadding: const EdgeInsets.only(bottom: 8),
@@ -1253,18 +1405,16 @@ class _SegmentBreakdown extends StatelessWidget {
             defaultColumnWidth: const FlexColumnWidth(),
             children: [
               for (final field in _numberedFields)
-                TableRow(children: [
-                  for (final mul in const [1, 2, 3]) cell(field, mul),
-                ]),
+                TableRow(
+                  children: [
+                    for (final mul in const [1, 2, 3]) cell(field, mul),
+                  ],
+                ),
               // The bull and the misses close the table: the outer bull, the
               // bull's eye and the darts that hit nothing at all. None of the
               // three belongs under a single/double/triple column, and
               // together they fill exactly one row.
-              TableRow(children: [
-                cell(25, 1),
-                cell(25, 2),
-                cell(0, 1),
-              ]),
+              TableRow(children: [cell(25, 1), cell(25, 2), cell(0, 1)]),
             ],
           ),
         ],
@@ -1293,7 +1443,7 @@ class _SegmentChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     final (background, foreground) = switch (multiplier) {
       2 => (doubleContainerColor(context), onDoubleContainerColor(context)),
@@ -1381,8 +1531,26 @@ class _DartboardPainter extends CustomPainter {
 
   // Standard dartboard segment order (clockwise from top)
   static const _order = [
-    20, 1, 18, 4, 13, 6, 10, 15, 2, 17,
-    3, 19, 7, 16, 8, 11, 14, 9, 12, 5,
+    20,
+    1,
+    18,
+    4,
+    13,
+    6,
+    10,
+    15,
+    2,
+    17,
+    3,
+    19,
+    7,
+    16,
+    8,
+    11,
+    14,
+    9,
+    12,
+    5,
   ];
 
   _DartboardPainter({
@@ -1404,15 +1572,15 @@ class _DartboardPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r  = min(cx, cy);
+    final r = min(cx, cy);
 
     // Radii (as fraction of r)
-    final rBullInner  = r * 0.06;
-    final rBull       = r * 0.13;
-    final rTriple1    = r * 0.53;
-    final rTriple2    = r * 0.60;
-    final rDouble1    = r * 0.84;
-    final rDouble2    = r * 0.93;
+    final rBullInner = r * 0.06;
+    final rBull = r * 0.13;
+    final rTriple1 = r * 0.53;
+    final rTriple2 = r * 0.60;
+    final rDouble1 = r * 0.84;
+    final rDouble2 = r * 0.93;
 
     final outlinePaint = Paint()
       ..color = outlineColor
@@ -1421,22 +1589,40 @@ class _DartboardPainter extends CustomPainter {
 
     final segCount = _order.length;
     final angleStep = (2 * pi) / segCount;
-    final halfStep  = angleStep / 2;
+    final halfStep = angleStep / 2;
     final startAngle = -pi / 2 - halfStep;
 
-    void drawArc(Canvas c, Offset center, double r1, double r2,
-        double aStart, double aSweep, Color fill) {
+    void drawArc(
+      Canvas c,
+      Offset center,
+      double r1,
+      double r2,
+      double aStart,
+      double aSweep,
+      Color fill,
+    ) {
       final path = Path();
-      path.moveTo(center.dx + r1 * cos(aStart),
-                  center.dy + r1 * sin(aStart));
+      path.moveTo(center.dx + r1 * cos(aStart), center.dy + r1 * sin(aStart));
       path.arcTo(
-          Rect.fromCircle(center: center, radius: r2), aStart, aSweep, false);
+        Rect.fromCircle(center: center, radius: r2),
+        aStart,
+        aSweep,
+        false,
+      );
       path.arcTo(
-          Rect.fromCircle(center: center, radius: r1),
-          aStart + aSweep, -aSweep, false);
+        Rect.fromCircle(center: center, radius: r1),
+        aStart + aSweep,
+        -aSweep,
+        false,
+      );
       path.close();
 
-      canvas.drawPath(path, Paint()..color = fill..style = PaintingStyle.fill);
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = fill
+          ..style = PaintingStyle.fill,
+      );
       canvas.drawPath(path, outlinePaint);
     }
 
@@ -1444,7 +1630,7 @@ class _DartboardPainter extends CustomPainter {
 
     for (var i = 0; i < segCount; i++) {
       final field = _order[i];
-      final a0    = startAngle + i * angleStep;
+      final a0 = startAngle + i * angleStep;
       final sweep = angleStep;
 
       // Inner single (multiplier 1): extends from bull to triple ring
@@ -1469,8 +1655,8 @@ class _DartboardPainter extends CustomPainter {
     // Number labels
     final tp = TextPainter(textDirection: ui.TextDirection.ltr);
     for (var i = 0; i < segCount; i++) {
-      final field  = _order[i];
-      final angle  = startAngle + i * angleStep + halfStep;
+      final field = _order[i];
+      final angle = startAngle + i * angleStep + halfStep;
       final labelR = r * 0.975 + 4;
       final lx = cx + labelR * cos(angle);
       final ly = cy + labelR * sin(angle);
@@ -1535,10 +1721,10 @@ class _StabilityCard extends StatelessWidget {
     final std = stats.scoreStdDev;
 
     final (label, color) = switch (std) {
-      < 20  => (context.l10n.stabilityVeryHigh, cs.tertiary),
-      < 35  => (context.l10n.stabilityHigh,     cs.primary),
-      < 50  => (context.l10n.stabilityMedium,   cs.secondary),
-      _     => (context.l10n.stabilityLow,      cs.error),
+      < 20 => (context.l10n.stabilityVeryHigh, cs.tertiary),
+      < 35 => (context.l10n.stabilityHigh, cs.primary),
+      < 50 => (context.l10n.stabilityMedium, cs.secondary),
+      _ => (context.l10n.stabilityLow, cs.error),
     };
 
     // Normalize: stdDev 0 → max consistency, 70 → minimum display
@@ -1553,12 +1739,18 @@ class _StabilityCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(label, style: theme.textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.bold, color: color)),
+                Text(
+                  label,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: color,
+                  ),
+                ),
                 Text(
                   'σ ${std.toStringAsFixed(1)}',
-                  style: theme.textTheme.labelMedium
-                      ?.copyWith(color: cs.onSurfaceVariant),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
                 ),
               ],
             ),
@@ -1575,8 +1767,9 @@ class _StabilityCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               context.l10n.stabilityHint(std.toStringAsFixed(1)),
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
             ),
           ],
         ),
@@ -1607,17 +1800,22 @@ class _CheckoutBreakdownCard extends StatelessWidget {
         child: Column(
           children: rows
               .where((r) => r.$2 > 0)
-              .expand((r) => [
-                    _CheckoutBracketRow(
-                        label: r.$1, attempts: r.$2, successes: r.$3),
-                    if (r != rows.where((x) => x.$2 > 0).last)
-                      Divider(
-                          height: 1,
-                          color: Theme.of(context)
-                              .colorScheme
-                              .outlineVariant
-                              .withValues(alpha: 0.5)),
-                  ])
+              .expand(
+                (r) => [
+                  _CheckoutBracketRow(
+                    label: r.$1,
+                    attempts: r.$2,
+                    successes: r.$3,
+                  ),
+                  if (r != rows.where((x) => x.$2 > 0).last)
+                    Divider(
+                      height: 1,
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.outlineVariant.withValues(alpha: 0.5),
+                    ),
+                ],
+              )
               .toList(),
         ),
       ),
@@ -1630,8 +1828,11 @@ class _CheckoutBracketRow extends StatelessWidget {
   final String label;
   final int attempts;
   final int successes;
-  const _CheckoutBracketRow(
-      {required this.label, required this.attempts, required this.successes});
+  const _CheckoutBracketRow({
+    required this.label,
+    required this.attempts,
+    required this.successes,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -1678,7 +1879,8 @@ class _CheckoutBracketRow extends StatelessWidget {
               '$successes/$attempts  ${pct.toStringAsFixed(0)}%',
               textAlign: TextAlign.right,
               style: theme.textTheme.labelSmall?.copyWith(
-                  fontWeight: FontWeight.bold),
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],
@@ -1702,46 +1904,52 @@ class _WeekComparisonCard extends StatelessWidget {
 
     double delta(double current, double previous) => current - previous;
 
-    Widget col(String title, String thisVal, String lastVal,
-        {double? diff}) {
+    Widget col(String title, String thisVal, String lastVal, {double? diff}) {
       final up = diff != null && diff > 0;
       final down = diff != null && diff < 0;
       return Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(title,
-                style: theme.textTheme.labelSmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
-                textAlign: TextAlign.center),
+            Text(
+              title,
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
+              textAlign: TextAlign.center,
+            ),
             const SizedBox(height: 4),
             // This week
             Container(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
               decoration: BoxDecoration(
                 color: cs.primaryContainer,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(thisVal,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                      color: cs.onPrimaryContainer),
-                  textAlign: TextAlign.center),
+              child: Text(
+                thisVal,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.onPrimaryContainer,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
             const SizedBox(height: 4),
             // Last week
             Container(
-              padding:
-                  const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
+              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10),
               decoration: BoxDecoration(
                 color: cs.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Text(lastVal,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                      color: cs.onSurfaceVariant),
-                  textAlign: TextAlign.center),
+              child: Text(
+                lastVal,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
+                textAlign: TextAlign.center,
+              ),
             ),
             if (diff != null) ...[
               const SizedBox(height: 4),
@@ -1752,14 +1960,14 @@ class _WeekComparisonCard extends StatelessWidget {
                     up
                         ? Icons.arrow_upward
                         : down
-                            ? Icons.arrow_downward
-                            : Icons.remove,
+                        ? Icons.arrow_downward
+                        : Icons.remove,
                     size: 12,
                     color: up
                         ? cs.tertiary
                         : down
-                            ? cs.error
-                            : cs.onSurfaceVariant,
+                        ? cs.error
+                        : cs.onSurfaceVariant,
                   ),
                   Text(
                     diff == 0
@@ -1769,8 +1977,8 @@ class _WeekComparisonCard extends StatelessWidget {
                       color: up
                           ? cs.tertiary
                           : down
-                              ? cs.error
-                              : cs.onSurfaceVariant,
+                          ? cs.error
+                          : cs.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -1800,7 +2008,8 @@ class _WeekComparisonCard extends StatelessWidget {
                   l10n.visits,
                   '${stats.thisWeekVisits}',
                   '${stats.lastWeekVisits}',
-                  diff: (stats.thisWeekVisits - stats.lastWeekVisits).toDouble(),
+                  diff: (stats.thisWeekVisits - stats.lastWeekVisits)
+                      .toDouble(),
                 ),
                 const SizedBox(width: 8),
                 col(
@@ -1815,9 +2024,15 @@ class _WeekComparisonCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _WeekLegendItem(color: cs.primaryContainer, label: l10n.thisWeek),
+                _WeekLegendItem(
+                  color: cs.primaryContainer,
+                  label: l10n.thisWeek,
+                ),
                 const SizedBox(width: 16),
-                _WeekLegendItem(color: cs.surfaceContainerHighest, label: l10n.lastWeek),
+                _WeekLegendItem(
+                  color: cs.surfaceContainerHighest,
+                  label: l10n.lastWeek,
+                ),
               ],
             ),
           ],
@@ -1848,8 +2063,8 @@ class _WeekLegendItem extends StatelessWidget {
         Text(
           label,
           style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -1870,14 +2085,16 @@ class _SyncedStatsView extends StatelessWidget {
     final SyncStats s;
     try {
       s = SyncStats.fromJson(
-          jsonDecode(player.syncedStats!) as Map<String, dynamic>);
+        jsonDecode(player.syncedStats!) as Map<String, dynamic>,
+      );
     } catch (_) {
       return Center(child: Text(context.l10n.statsLoadError));
     }
 
     final fmt = player.lastSyncedAt != null
-        ? DateFormat('dd.MM.yy HH:mm')
-            .format(DateTime.fromMillisecondsSinceEpoch(player.lastSyncedAt!))
+        ? DateFormat(
+            'dd.MM.yy HH:mm',
+          ).format(DateTime.fromMillisecondsSinceEpoch(player.lastSyncedAt!))
         : null;
 
     return ListView(
@@ -1900,7 +2117,8 @@ class _SyncedStatsView extends StatelessWidget {
                       ? '${context.l10n.syncedStatsFrom} $fmt'
                       : context.l10n.syncedStats,
                   style: theme.textTheme.bodySmall?.copyWith(
-                      color: cs.onSecondaryContainer),
+                    color: cs.onSecondaryContainer,
+                  ),
                 ),
               ),
             ],
@@ -1920,13 +2138,18 @@ class _SyncedStatsView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(context.l10n.threeDartAvg,
-                        style: theme.textTheme.labelMedium?.copyWith(
-                            color: cs.onPrimary.withValues(alpha: 0.8))),
+                    Text(
+                      context.l10n.threeDartAvg,
+                      style: theme.textTheme.labelMedium?.copyWith(
+                        color: cs.onPrimary.withValues(alpha: 0.8),
+                      ),
+                    ),
                     Text(
                       s.average.toStringAsFixed(2),
                       style: theme.textTheme.displaySmall?.copyWith(
-                          color: cs.onPrimary, fontWeight: FontWeight.bold),
+                        color: cs.onPrimary,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -1934,8 +2157,8 @@ class _SyncedStatsView extends StatelessWidget {
               _HeroStatTable(
                 cs: cs,
                 rows: [
-                  (context.l10n.darts_,  '${s.totalDarts}'),
-                  (context.l10n.visits,  '${s.totalVisits}'),
+                  (context.l10n.darts_, '${s.totalDarts}'),
+                  (context.l10n.visits, '${s.totalVisits}'),
                   (context.l10n.legsWon, '${s.legsWon}'),
                 ],
               ),
@@ -1976,14 +2199,35 @@ class _SyncHighlights extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     return Row(
       children: [
-        Expanded(child: _SyncTile(context.l10n.count180, '${s.count180}',
-            Icons.star_rounded, s.count180 > 0, cs)),
+        Expanded(
+          child: _SyncTile(
+            context.l10n.count180,
+            '${s.count180}',
+            Icons.star_rounded,
+            s.count180 > 0,
+            cs,
+          ),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: _SyncTile(context.l10n.highestVisit, '${s.highestVisit}',
-            Icons.arrow_upward, false, cs)),
+        Expanded(
+          child: _SyncTile(
+            context.l10n.highestVisit,
+            '${s.highestVisit}',
+            Icons.arrow_upward,
+            false,
+            cs,
+          ),
+        ),
         const SizedBox(width: 8),
-        Expanded(child: _SyncTile(context.l10n.legsWon, '${s.legsWon}',
-            Icons.flag_rounded, s.legsWon > 0, cs)),
+        Expanded(
+          child: _SyncTile(
+            context.l10n.legsWon,
+            '${s.legsWon}',
+            Icons.flag_rounded,
+            s.legsWon > 0,
+            cs,
+          ),
+        ),
       ],
     );
   }
@@ -2009,16 +2253,27 @@ class _SyncTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 16,
-              color: highlight ? cs.onTertiaryContainer : cs.onSurfaceVariant),
+          Icon(
+            icon,
+            size: 16,
+            color: highlight ? cs.onTertiaryContainer : cs.onSurfaceVariant,
+          ),
           const SizedBox(height: 4),
-          Text(value, style: theme.textTheme.titleLarge?.copyWith(
+          Text(
+            value,
+            style: theme.textTheme.titleLarge?.copyWith(
               fontWeight: FontWeight.bold,
-              color: highlight ? cs.onTertiaryContainer : cs.onSurface)),
-          Text(label, style: theme.textTheme.labelSmall?.copyWith(
+              color: highlight ? cs.onTertiaryContainer : cs.onSurface,
+            ),
+          ),
+          Text(
+            label,
+            style: theme.textTheme.labelSmall?.copyWith(
               color: highlight
                   ? cs.onTertiaryContainer.withValues(alpha: 0.8)
-                  : cs.onSurfaceVariant)),
+                  : cs.onSurfaceVariant,
+            ),
+          ),
         ],
       ),
     );
@@ -2038,8 +2293,12 @@ class _SRow extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(l, style: Theme.of(context).textTheme.bodyMedium),
-          Text(v, style: Theme.of(context).textTheme.bodyMedium
-              ?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            v,
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );

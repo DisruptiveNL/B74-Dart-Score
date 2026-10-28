@@ -10,9 +10,9 @@ import '../support/test_app.dart';
 void main() {
   /// [count] players named A, B, C ... in the order a setup screen gets them.
   List<Player> roster(int count) => List.generate(
-        count,
-        (i) => Player(id: i + 1, name: String.fromCharCode(65 + i)),
-      );
+    count,
+    (i) => Player(id: i + 1, name: String.fromCharCode(65 + i)),
+  );
 
   Future<void> pumpSection(
     WidgetTester tester,
@@ -20,16 +20,20 @@ void main() {
     List<Player> selected = const [],
   }) async {
     usePhoneSurface(tester);
-    await tester.pumpWidget(testApp(Scaffold(
-      body: SingleChildScrollView(
-        child: PlayerSelectSection(
-          allPlayers: players,
-          selectedPlayers: selected,
-          onToggle: (_, _) {},
-          onAddPlayer: () {},
+    await tester.pumpWidget(
+      testApp(
+        Scaffold(
+          body: SingleChildScrollView(
+            child: PlayerSelectSection(
+              allPlayers: players,
+              selectedPlayers: selected,
+              onToggle: (_, _) {},
+              onAddPlayer: () {},
+            ),
+          ),
         ),
       ),
-    )));
+    );
     await tester.pumpAndSettle();
   }
 
@@ -38,8 +42,11 @@ void main() {
       await pumpSection(tester, roster(6));
 
       expect(find.byType(CheckboxListTile), findsNWidgets(6));
-      expect(find.textContaining('more'), findsNothing,
-          reason: 'nothing is hidden, so nothing offers to unhide it');
+      expect(
+        find.textContaining('more'),
+        findsNothing,
+        reason: 'nothing is hidden, so nothing offers to unhide it',
+      );
     });
 
     testWidgets('stops at six and offers the rest', (tester) async {
@@ -75,11 +82,12 @@ void main() {
       expect(find.byIcon(Icons.star_rounded), findsOneWidget);
       // The star belongs to the row it marks, not to the card.
       expect(
-          find.descendant(
-            of: find.widgetWithText(CheckboxListTile, 'Ann'),
-            matching: find.byIcon(Icons.star_rounded),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: find.widgetWithText(CheckboxListTile, 'Ann'),
+          matching: find.byIcon(Icons.star_rounded),
+        ),
+        findsOneWidget,
+      );
     });
 
     testWidgets('numbers a player once they are picked', (tester) async {
@@ -89,5 +97,4 @@ void main() {
       expect(find.text('Player 1'), findsOneWidget);
     });
   });
-
 }

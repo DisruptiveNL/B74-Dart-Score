@@ -90,9 +90,7 @@ class _RematchButtonState extends State<RematchButton> {
     setState(() => _starting = true);
     try {
       await widget.onRematch();
-      navigator.pushReplacement(
-        MaterialPageRoute(builder: widget.destination),
-      );
+      navigator.pushReplacement(MaterialPageRoute(builder: widget.destination));
     } catch (e) {
       if (mounted) {
         setState(() => _starting = false);
@@ -142,8 +140,7 @@ class _RematchConfirmDialog extends StatelessWidget {
   /// - individuals without handicaps: a single line of all names
   List<Widget> _participantRows(BuildContext context) {
     if (slots.any((s) => s.isTeam)) {
-      final withRules =
-          slots.any((s) => s.members.any((m) => m.rules != null));
+      final withRules = slots.any((s) => s.members.any((m) => m.rules != null));
       if (!withRules) {
         return [
           for (final s in slots)
@@ -165,8 +162,10 @@ class _RematchConfirmDialog extends StatelessWidget {
       return [for (final s in slots) _DialogRow(s.name, s.rules ?? '')];
     }
     return [
-      _DialogRow(context.l10n.playersTitle,
-          slots.map((s) => s.name).join(', ')),
+      _DialogRow(
+        context.l10n.playersTitle,
+        slots.map((s) => s.name).join(', '),
+      ),
     ];
   }
 
@@ -253,8 +252,9 @@ class _DialogRow extends StatelessWidget {
             flex: 2,
             child: Text(
               label,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           Expanded(
@@ -262,8 +262,9 @@ class _DialogRow extends StatelessWidget {
             child: Text(
               value,
               textAlign: TextAlign.end,
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],

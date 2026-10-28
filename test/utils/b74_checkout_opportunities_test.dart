@@ -27,7 +27,7 @@ void main() {
   test('counts theoretical chances even when no double is attempted', () {
     final stats = B74CheckoutStats.fromThrows([
       visit(501, 100), // outside checkout range
-      visit(156, 60),  // opportunity, even without dart-level data
+      visit(156, 60), // opportunity, even without dart-level data
       visit(96, 0, bust: true), // bust is still an opportunity
       visit(96, 96), // successful finish
       visit(159, 0), // bogey number

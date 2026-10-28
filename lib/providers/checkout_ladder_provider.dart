@@ -21,12 +21,15 @@ import 'bot_runner.dart';
 class CheckoutLadderSlotState implements LabelledSlot {
   @override
   final String displayName;
+
   /// All players in this slot: 1 for individual, N for team.
   @override
   final List<Player> players;
+
   /// Whether this slot represents a team rather than a single player.
   @override
   final bool isTeamSlot;
+
   /// Where this slot stands and what it has done so far. Owned by the engine;
   /// read it, never change it.
   final LadderSlot ladder;
@@ -61,27 +64,33 @@ class CheckoutLadderProvider extends ChangeNotifier
 
   CheckoutLadderGame? _game;
   CheckoutLadderEngine? _engine;
+
   /// The members of every slot in throwing order, kept so a replay can build
   /// a fresh engine for the same board.
   List<({String name, List<Player> players, bool isTeam})> _slotMembers = [];
   List<CheckoutLadderSlotState> _slots = [];
+
   /// Every persisted dart of the game, oldest first.
   final List<CheckoutLadderThrow> _throws = [];
+
   /// Darts of the person's taken back by undo, the latest last. Any new dart
   /// of theirs clears it.
   final List<LadderDart> _redo = [];
+
   /// Whether a training was ended by hand. A race ends on its own.
   bool _ended = false;
 
-  CheckoutLadderGame?            get game              => _game;
-  List<CheckoutLadderSlotState>  get slots             => _slots;
-  int                            get currentSlotIndex  => _engine?.currentSlot ?? 0;
-  CheckoutLadderSlotState        get currentSlot       => _slots[currentSlotIndex];
-  List<CheckoutLadderThrow>      get throwHistory      => List.unmodifiable(_throws);
+  CheckoutLadderGame? get game => _game;
+  List<CheckoutLadderSlotState> get slots => _slots;
+  int get currentSlotIndex => _engine?.currentSlot ?? 0;
+  CheckoutLadderSlotState get currentSlot => _slots[currentSlotIndex];
+  List<CheckoutLadderThrow> get throwHistory => List.unmodifiable(_throws);
+
   /// What the last dart did, for the board to say so. Null before the first.
-  LadderStep?                    get lastStep          => _engine?.lastStep;
+  LadderStep? get lastStep => _engine?.lastStep;
+
   /// The number a race's sudden death is played on, null outside one.
-  int?                           get suddenDeathNumber => _engine?.suddenDeathNumber;
+  int? get suddenDeathNumber => _engine?.suddenDeathNumber;
 
   /// Whether nobody throws any more: a race decided, every ladder of a
   /// training completed, or a training ended by hand.
@@ -94,17 +103,17 @@ class CheckoutLadderProvider extends ChangeNotifier
 
   @override
   List<DartEntry> get currentVisitDarts => [
-        for (final d in _engine?.currentVisit ?? const <LadderDart>[])
-          DartEntry(
-            field:    d.field,
-            modifier: d.field == 0 ? 1 : d.multiplier,
-            score:    d.field == 0
-                ? 0
-                : d.field == 25
-                    ? (d.multiplier == 2 ? 50 : 25)
-                    : d.field * d.multiplier,
-          ),
-      ];
+    for (final d in _engine?.currentVisit ?? const <LadderDart>[])
+      DartEntry(
+        field: d.field,
+        modifier: d.field == 0 ? 1 : d.multiplier,
+        score: d.field == 0
+            ? 0
+            : d.field == 25
+            ? (d.multiplier == 2 ? 50 : 25)
+            : d.field * d.multiplier,
+      ),
+  ];
 
   @override
   bool get liveBust =>
@@ -133,17 +142,19 @@ class CheckoutLadderProvider extends ChangeNotifier
   /// The members of one slot per team (if [teams] is set) or one slot per
   /// player (individual game), in throwing order.
   List<({String name, List<Player> players, bool isTeam})> _membersOf(
-      List<Player> players, List<TeamConfig>? teams) {
+    List<Player> players,
+    List<TeamConfig>? teams,
+  ) {
     if (teams != null && teams.isNotEmpty) {
       return [
         for (final team in teams)
           (
-            name:    team.name,
+            name: team.name,
             players: [
               for (final id in team.playerIds)
                 players.firstWhere((p) => p.id == id),
             ],
-            isTeam:  true,
+            isTeam: true,
           ),
       ];
     }
@@ -154,15 +165,16 @@ class CheckoutLadderProvider extends ChangeNotifier
 
   /// Puts a fresh engine on the board, every ladder at the start number.
   void _freshBoard() {
-    _engine = CheckoutLadderEngine(
-        _game!, [for (final s in _slotMembers) s.players.length]);
+    _engine = CheckoutLadderEngine(_game!, [
+      for (final s in _slotMembers) s.players.length,
+    ]);
     _slots = [
       for (var i = 0; i < _slotMembers.length; i++)
         CheckoutLadderSlotState(
           displayName: _slotMembers[i].name,
-          players:     _slotMembers[i].players,
-          isTeamSlot:  _slotMembers[i].isTeam,
-          ladder:      _engine!.slots[i],
+          players: _slotMembers[i].players,
+          isTeamSlot: _slotMembers[i].isTeam,
+          ladder: _engine!.slots[i],
         ),
     ];
   }
@@ -172,7 +184,7 @@ class CheckoutLadderProvider extends ChangeNotifier
   /// Starts a new game: persists it and puts every ladder on the start number.
   Future<void> startGame(CheckoutLadderGame game, List<Player> players) async {
     final gameId = await _db.insertCheckoutLadderGame(game);
-    _game        = game.copyWith(id: gameId);
+    _game = game.copyWith(id: gameId);
     _slotMembers = _membersOf(players, game.teams);
     _throws.clear();
     _redo.clear();
@@ -187,7 +199,7 @@ class CheckoutLadderProvider extends ChangeNotifier
   /// Restores an in-progress game and rebuilds the board by replaying all
   /// stored darts.
   Future<void> resumeGame(CheckoutLadderGame game, List<Player> players) async {
-    _game        = game;
+    _game = game;
     _slotMembers = _membersOf(players, game.teams);
     _redo.clear();
     dropHeldVisit();
@@ -203,25 +215,28 @@ class CheckoutLadderProvider extends ChangeNotifier
   /// follows the template's [StartingOrder]: drawn again for
   /// [StartingOrder.random], kept as it is for a fixed order.
   Future<void> startRematch(
-      CheckoutLadderGame template, List<Player> players) async {
+    CheckoutLadderGame template,
+    List<Player> players,
+  ) async {
     final isRandom = template.startingOrder == StartingOrder.random;
-    final ordered  = isRandom ? (List.of(players)..shuffle(Random()))
-                              : List.of(players);
-    final teams    = isRandom && template.teams != null
+    final ordered = isRandom
+        ? (List.of(players)..shuffle(Random()))
+        : List.of(players);
+    final teams = isRandom && template.teams != null
         ? (List.of(template.teams!)..shuffle(Random()))
         : template.teams;
     final game = CheckoutLadderGame(
-      variant:         template.variant,
-      startNumber:     template.startNumber,
-      targetNumber:    template.targetNumber,
+      variant: template.variant,
+      startNumber: template.startNumber,
+      targetNumber: template.targetNumber,
       dartsPerAttempt: template.dartsPerAttempt,
-      stepFrom:        template.stepFrom,
-      stepDarts:       template.stepDarts,
-      checkOut:        template.checkOut,
-      createdAt:       DateTime.now(),
-      playerIds:       ordered.map((p) => p.id!).toList(),
-      teams:           teams,
-      startingOrder:   template.startingOrder,
+      stepFrom: template.stepFrom,
+      stepDarts: template.stepDarts,
+      checkOut: template.checkOut,
+      createdAt: DateTime.now(),
+      playerIds: ordered.map((p) => p.id!).toList(),
+      teams: teams,
+      startingOrder: template.startingOrder,
     );
     await startGame(game, ordered);
   }
@@ -234,7 +249,7 @@ class CheckoutLadderProvider extends ChangeNotifier
     stopBot();
     await flushHeldVisit();
     _ended = true;
-    _game  = _game!.copyWith(finishedAt: DateTime.now());
+    _game = _game!.copyWith(finishedAt: DateTime.now());
     await _db.updateCheckoutLadderGame(_game!);
     notifyListeners();
   }
@@ -249,21 +264,20 @@ class CheckoutLadderProvider extends ChangeNotifier
       currentSlot.player.isBot;
 
   /// Whether [playerId] belongs to one of the bots in this game.
-  bool _isBotId(int playerId) => _slots
-      .expand((s) => s.players)
-      .any((p) => p.id == playerId && p.isBot);
+  bool _isBotId(int playerId) =>
+      _slots.expand((s) => s.players).any((p) => p.id == playerId && p.isBot);
 
   /// Aims like an X01 bot at the rest of the attempt with the darts the visit
   /// has left: the ladder is scored like X01, under the game's check-out rule.
   @override
   Future<void> throwBotDart() async {
-    final level    = currentSlot.player.botLevel!;
+    final level = currentSlot.player.botLevel!;
     final position = currentSlot.position;
     final aim = x01Target(
       remaining: position.rest,
       dartsLeft: 3 - position.dartsInVisit,
       checkedIn: true,
-      checkOut:  _game!.checkOut,
+      checkOut: _game!.checkOut,
     );
     final hit = botThrower.throwAt(aim, level);
     await _recordDart(hit.field, hit.multiplier);
@@ -282,15 +296,15 @@ class CheckoutLadderProvider extends ChangeNotifier
     final m = field == 0
         ? 0
         : field == 25 && multiplier == 3
-            ? 1
-            : multiplier;
+        ? 1
+        : multiplier;
 
     final t = CheckoutLadderThrow(
-      gameId:     _game!.id!,
-      playerId:   currentSlot.player.id!,
-      field:      field,
+      gameId: _game!.id!,
+      playerId: currentSlot.player.id!,
+      field: field,
       multiplier: m,
-      thrownAt:   DateTime.now(),
+      thrownAt: DateTime.now(),
     );
     final saved = t.withId(await _db.insertCheckoutLadderThrow(t));
     _throws.add(saved);

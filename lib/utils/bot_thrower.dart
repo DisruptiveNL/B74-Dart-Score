@@ -10,30 +10,29 @@ import 'dartboard_geometry.dart';
 /// against the three-dart averages the calibration test pins, so change it
 /// there and here together.
 double scatterOf(BotLevel level) => switch (level) {
-      BotLevel.rookie  => 25.0,
-      BotLevel.amateur => 16.5,
-      BotLevel.semiPro => 12.0,
-      BotLevel.pro     => 8.5,
-      BotLevel.legend  => 6.5,
-    };
+  BotLevel.rookie => 25.0,
+  BotLevel.amateur => 16.5,
+  BotLevel.semiPro => 12.0,
+  BotLevel.pro => 8.5,
+  BotLevel.legend => 6.5,
+};
 
 /// The three-dart average a tier plays to, which is what its name promises
 /// and what the setup shows next to it. The calibration test holds
 /// [scatterOf] to these numbers.
 int expectedAverageOf(BotLevel level) => switch (level) {
-      BotLevel.rookie  => 35,
-      BotLevel.amateur => 50,
-      BotLevel.semiPro => 65,
-      BotLevel.pro     => 85,
-      BotLevel.legend  => 100,
-    };
+  BotLevel.rookie => 35,
+  BotLevel.amateur => 50,
+  BotLevel.semiPro => 65,
+  BotLevel.pro => 85,
+  BotLevel.legend => 100,
+};
 
 /// Whether a bot of [level] goes for the triple when a plain hit on the
 /// number would do, as in Cricket, Shanghai and Around the Clock. The upper
 /// tiers land the triple often enough for it to pay; below them the fat
 /// single is the surer way onto the number at all.
-bool aimsForTriples(BotLevel level) =>
-    level.index >= BotLevel.semiPro.index;
+bool aimsForTriples(BotLevel level) => level.index >= BotLevel.semiPro.index;
 
 /// Throws darts for a computer opponent: takes the target the strategy picked,
 /// lands the dart somewhere around it, and reports the field it came down in.
@@ -52,7 +51,7 @@ class BotThrower {
 
   /// Throws one dart of a bot at [level] aimed at [target].
   BoardHit throwAt(BoardHit target, BotLevel level) {
-    final aim   = aimPointFor(target);
+    final aim = aimPointFor(target);
     final sigma = scatterOf(level);
     return hitAt((
       x: aim.x + _gaussian() * sigma,

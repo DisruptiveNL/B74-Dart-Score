@@ -17,17 +17,17 @@ enum GamePace {
 
   /// How long a finished visit stays on the board.
   Duration get visitPause => switch (this) {
-        GamePace.fast   => const Duration(seconds: 1),
-        GamePace.normal => const Duration(seconds: 2),
-        GamePace.slow   => const Duration(seconds: 3),
-      };
+    GamePace.fast => const Duration(seconds: 1),
+    GamePace.normal => const Duration(seconds: 2),
+    GamePace.slow => const Duration(seconds: 3),
+  };
 
   /// The pause before each bot dart.
   Duration get botDartDelay => switch (this) {
-        GamePace.fast   => const Duration(milliseconds: 400),
-        GamePace.normal => const Duration(milliseconds: 800),
-        GamePace.slow   => const Duration(milliseconds: 1400),
-      };
+    GamePace.fast => const Duration(milliseconds: 400),
+    GamePace.normal => const Duration(milliseconds: 800),
+    GamePace.slow => const Duration(milliseconds: 1400),
+  };
 }
 
 /// The pauses the game providers keep, and the test hooks over them.
@@ -70,9 +70,9 @@ mixin BotRunner on ChangeNotifier, WidgetsBindingObserver {
   Duration? botDartDelay;
 
   Timer? _botTimer;
-  bool   _botDartInFlight = false;
-  bool   _botSuspended    = false;
-  bool   _observing       = false;
+  bool _botDartInFlight = false;
+  bool _botSuspended = false;
+  bool _observing = false;
 
   Timer? _holdTimer;
   Future<void> Function()? _heldVisit;

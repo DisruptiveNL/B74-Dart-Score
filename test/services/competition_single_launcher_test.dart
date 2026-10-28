@@ -14,11 +14,14 @@ void main() {
       'away': {'id': 'a', 'name': 'Away'},
       'startingScore': rules['startingScore'],
       'x01Rules': rules,
-      'singles': List.generate(4, (i) => {
-        'slot': i + 1,
-        'homePlayer': {'id': 'h$i', 'name': 'H$i'},
-        'awayPlayer': {'id': 'a$i', 'name': 'A$i'},
-      }),
+      'singles': List.generate(
+        4,
+        (i) => {
+          'slot': i + 1,
+          'homePlayer': {'id': 'h$i', 'name': 'H$i'},
+          'awayPlayer': {'id': 'a$i', 'name': 'A$i'},
+        },
+      ),
     }, receivedAt: 1);
   }
 
@@ -36,12 +39,17 @@ void main() {
 
   test('fixed away start alternates across singles', () {
     final m = match(CompetitionX01Rules.defaults());
-    expect(m.singles.map((s) => CompetitionSingleLauncher.homeStarts(m, s)),
-        [false, true, false, true]);
+    expect(m.singles.map((s) => CompetitionSingleLauncher.homeStarts(m, s)), [
+      false,
+      true,
+      false,
+      true,
+    ]);
   });
 
   test('bull start requires manual selection', () {
-    final rules = CompetitionX01Rules.defaults()..['startPolicy'] = CompetitionX01Rules.bull;
+    final rules = CompetitionX01Rules.defaults()
+      ..['startPolicy'] = CompetitionX01Rules.bull;
     final m = match(rules);
     expect(CompetitionSingleLauncher.homeStarts(m, m.singles.first), isNull);
   });

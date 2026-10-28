@@ -14,19 +14,18 @@ DartThrow _visit(
   int playerId = 1,
   bool bust = false,
   int checkoutDarts = 0,
-}) =>
-    DartThrow(
-      gameId:          gameId,
-      playerId:        playerId,
-      score:           score,
-      dartsUsed:       dartsUsed,
-      leg:             leg,
-      set:             set,
-      remainingBefore: remainingBefore,
-      thrownAt:        DateTime.fromMillisecondsSinceEpoch(1700000000000),
-      bust:            bust,
-      checkoutDarts:   checkoutDarts,
-    );
+}) => DartThrow(
+  gameId: gameId,
+  playerId: playerId,
+  score: score,
+  dartsUsed: dartsUsed,
+  leg: leg,
+  set: set,
+  remainingBefore: remainingBefore,
+  thrownAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+  bust: bust,
+  checkoutDarts: checkoutDarts,
+);
 
 void main() {
   group('ThrowStats.fromThrows', () {
@@ -73,9 +72,7 @@ void main() {
     });
 
     test('being in checkout range is not by itself an attempt', () {
-      final s = ThrowStats.fromThrows([
-        _visit(60, remainingBefore: 156),
-      ]);
+      final s = ThrowStats.fromThrows([_visit(60, remainingBefore: 156)]);
 
       expect(s.checkoutAttempts, 0);
       expect(s.checkoutRate, 0);
@@ -96,10 +93,10 @@ void main() {
     test('checkout ranges split at 40, 60, 100 and 170 by the remaining the '
         'visit started on', () {
       final s = ThrowStats.fromThrows([
-        _visit(0, remainingBefore: 40,  checkoutDarts: 1),
-        _visit(0, remainingBefore: 41,  checkoutDarts: 1),
-        _visit(0, remainingBefore: 60,  checkoutDarts: 1),
-        _visit(0, remainingBefore: 61,  checkoutDarts: 1),
+        _visit(0, remainingBefore: 40, checkoutDarts: 1),
+        _visit(0, remainingBefore: 41, checkoutDarts: 1),
+        _visit(0, remainingBefore: 60, checkoutDarts: 1),
+        _visit(0, remainingBefore: 61, checkoutDarts: 1),
         _visit(0, remainingBefore: 100, checkoutDarts: 1),
         _visit(0, remainingBefore: 101, checkoutDarts: 1),
         _visit(0, remainingBefore: 170, checkoutDarts: 1),
@@ -119,17 +116,23 @@ void main() {
       // taken out with D10 on the first dart.
       final s = ThrowStats.fromThrows([
         _visit(40, remainingBefore: 60, checkoutDarts: 2),
-        _visit(0,  remainingBefore: 20, checkoutDarts: 3),
+        _visit(0, remainingBefore: 20, checkoutDarts: 3),
         _visit(20, remainingBefore: 20, checkoutDarts: 1),
       ]);
 
       expect(s.checkoutAttempts, 3);
       expect(s.checkoutDarts, 6);
       expect(s.checkoutSuccesses, 1);
-      expect(s.checkoutRate, closeTo(100 / 3, 0.001),
-          reason: 'one of three visits at the finish took it');
-      expect(s.doubleRate, closeTo(100 / 6, 0.001),
-          reason: 'one of six darts at the finish hit it');
+      expect(
+        s.checkoutRate,
+        closeTo(100 / 3, 0.001),
+        reason: 'one of three visits at the finish took it',
+      );
+      expect(
+        s.doubleRate,
+        closeTo(100 / 6, 0.001),
+        reason: 'one of six darts at the finish hit it',
+      );
     });
 
     test('score thresholds are inclusive', () {
@@ -214,16 +217,19 @@ void main() {
         expect(s.first9Average, closeTo(167, 0.001));
       });
 
-      test('a bust among the opening visits contributes darts but no score', () {
-        final s = ThrowStats.fromThrows([
-          _visit(60),
-          _visit(60, bust: true),
-          _visit(60),
-        ]);
+      test(
+        'a bust among the opening visits contributes darts but no score',
+        () {
+          final s = ThrowStats.fromThrows([
+            _visit(60),
+            _visit(60, bust: true),
+            _visit(60),
+          ]);
 
-        expect(s.first9Darts, 9);
-        expect(s.first9Scored, 120);
-      });
+          expect(s.first9Darts, 9);
+          expect(s.first9Scored, 120);
+        },
+      );
     });
 
     test('the squared sum the snapshot needs adds up over scored visits', () {
@@ -233,8 +239,11 @@ void main() {
         _visit(60, bust: true),
       ]);
 
-      expect(s.scoreSumSquares, 100 * 100 + 20 * 20,
-          reason: 'the busted visit contributes nothing');
+      expect(
+        s.scoreSumSquares,
+        100 * 100 + 20 * 20,
+        reason: 'the busted visit contributes nothing',
+      );
     });
   });
 
@@ -265,20 +274,31 @@ void main() {
   });
 
   group('checkoutDartsInVisit', () {
-    int darts(int remaining, List<int> thrown,
-            {CheckoutMode mode = CheckoutMode.doubleOut,
-             bool checkedOut = false}) =>
-        checkoutDartsInVisit(remaining, thrown, mode, checkedOut: checkedOut);
+    int darts(
+      int remaining,
+      List<int> thrown, {
+      CheckoutMode mode = CheckoutMode.doubleOut,
+      bool checkedOut = false,
+    }) => checkoutDartsInVisit(remaining, thrown, mode, checkedOut: checkedOut);
 
     // The leg from the bug report, visit by visit. 156 is shown as
     // T20, T20, D18, the player opens with a plain 20 and works down from there.
     test('the reported leg puts no dart on a finish before the 25', () {
-      expect(darts(156, [20, 60, 51]), 0,
-          reason: 'after the plain 20 no dart of this visit can finish');
-      expect(darts(25, [9, 0, 0]), 2,
-          reason: 'the S9 leaves 16, and the two misses fly at D8');
-      expect(darts(16, [14, 3, 0]), 2,
-          reason: '16 and the 2 the S14 leaves are both one-dart finishes');
+      expect(
+        darts(156, [20, 60, 51]),
+        0,
+        reason: 'after the plain 20 no dart of this visit can finish',
+      );
+      expect(
+        darts(25, [9, 0, 0]),
+        2,
+        reason: 'the S9 leaves 16, and the two misses fly at D8',
+      );
+      expect(
+        darts(16, [14, 3, 0]),
+        2,
+        reason: '16 and the 2 the S14 leaves are both one-dart finishes',
+      );
       expect(darts(8, [8], checkedOut: true), 1);
     });
 
@@ -286,15 +306,25 @@ void main() {
     // 20. Two darts at a finish and three, five in total across two visits,
     // which are two attempts.
     test('counts every dart of a visit that flies at a finish', () {
-      expect(darts(60, [20, 10, 10]), 2,
-          reason: 'the opening dart flew from 60, the two after it from 40 and 30');
-      expect(darts(20, [0, 0, 0]), 3,
-          reason: '20 stays a one-dart finish through three misses');
+      expect(
+        darts(60, [20, 10, 10]),
+        2,
+        reason:
+            'the opening dart flew from 60, the two after it from 40 and 30',
+      );
+      expect(
+        darts(20, [0, 0, 0]),
+        3,
+        reason: '20 stays a one-dart finish through three misses',
+      );
     });
 
     test('a finish reached on the last dart of a visit puts no dart on it', () {
-      expect(darts(65, [0, 0, 25]), 0,
-          reason: 'the 40 it leaves belongs to the next visit');
+      expect(
+        darts(65, [0, 0, 25]),
+        0,
+        reason: 'the 40 it leaves belongs to the next visit',
+      );
     });
 
     test('a bust does not undo the darts that already flew at the finish', () {
@@ -302,8 +332,11 @@ void main() {
     });
 
     test('a visit that busts before reaching the finish counts none', () {
-      expect(darts(60, [60]), 0,
-          reason: 'T20 busts double-out from 60 without ever being one away');
+      expect(
+        darts(60, [60]),
+        0,
+        reason: 'T20 busts double-out from 60 without ever being one away',
+      );
     });
 
     test('the check-out rule decides what counts as one dart away', () {

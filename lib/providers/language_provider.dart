@@ -13,8 +13,7 @@ class LanguageProvider extends ChangeNotifier {
   String? get languageCode => _languageCode;
 
   /// The selected [Locale], or null when following the system locale.
-  Locale? get locale =>
-      _languageCode != null ? Locale(_languageCode!) : null;
+  Locale? get locale => _languageCode != null ? Locale(_languageCode!) : null;
 
   /// Creates the provider and asynchronously loads the persisted language.
   LanguageProvider() {

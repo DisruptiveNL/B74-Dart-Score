@@ -9,10 +9,7 @@ import 'dartboard_geometry.dart';
 /// of them, so the points come first and the Shanghai stays open. Where no
 /// Shanghai is reachable, and in the variants that score on consecutive
 /// numbers, the triple is simply the ring worth most.
-BoardHit shanghaiTarget({
-  required int target,
-  List<int>? neededMultipliers,
-}) {
+BoardHit shanghaiTarget({required int target, List<int>? neededMultipliers}) {
   if (neededMultipliers != null && neededMultipliers.isNotEmpty) {
     final highest = neededMultipliers.reduce((a, b) => a > b ? a : b);
     return (field: target, multiplier: highest);

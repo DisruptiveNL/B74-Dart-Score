@@ -10,7 +10,10 @@ import 'package:flutter_test/flutter_test.dart';
 import '../support/test_db.dart';
 
 /// Throws a full visit of three darts, or fewer if the visit ends early.
-Future<void> _visit(GameProvider p, List<(int field, int modifier)> darts) async {
+Future<void> _visit(
+  GameProvider p,
+  List<(int field, int modifier)> darts,
+) async {
   for (final d in darts) {
     await p.tapField(d.$1, d.$2);
   }
@@ -47,12 +50,15 @@ void main() {
     setUp(() async {
       provider = GameProvider()
         ..botDartDelay = Duration.zero
-        ..botThrower   = BotThrower(rng: Random(3));
+        ..botThrower = BotThrower(rng: Random(3));
       human = (await insertPlayers(['Ada'])).single;
-      final botId = await DbHelper.instance.insertPlayer(Player(
+      final botId = await DbHelper.instance.insertPlayer(
+        Player(
           name: BotLevel.pro.storedName,
           uuid: BotLevel.pro.uuid,
-          botLevel: BotLevel.pro));
+          botLevel: BotLevel.pro,
+        ),
+      );
       bot = (await DbHelper.instance.getPlayer(botId))!;
     });
 
@@ -60,30 +66,35 @@ void main() {
 
     Game game({int startScore = 501, int legs = 3, List<TeamConfig>? teams}) =>
         Game(
-          startScore:    startScore,
-          legs:          legs,
-          createdAt:     DateTime.now(),
+          startScore: startScore,
+          legs: legs,
+          createdAt: DateTime.now(),
           startingOrder: StartingOrder.fixed,
-          teams:         teams,
+          teams: teams,
         );
 
-    test('throws its visit once the person has thrown and hands the turn back',
-        () async {
-      await provider.startGame(game(), [human, bot]);
-      await _sixty(provider);
-      expect(provider.isBotTurn, isTrue);
+    test(
+      'throws its visit once the person has thrown and hands the turn back',
+      () async {
+        await provider.startGame(game(), [human, bot]);
+        await _sixty(provider);
+        expect(provider.isBotTurn, isTrue);
 
-      await _settleBot(provider);
+        await _settleBot(provider);
 
-      final botThrows = provider.playerStates[1].throws;
-      expect(botThrows, hasLength(1));
-      expect(botThrows.single.playerId, bot.id);
-      expect(botThrows.single.dartsUsed, 3);
-      expect(botThrows.single.hitsJson, isNotNull,
-          reason: 'a bot visit records its darts like a person\'s');
-      expect(provider.currentPlayerIndex, 0);
-      expect(provider.playerStates[1].remaining, lessThan(501));
-    });
+        final botThrows = provider.playerStates[1].throws;
+        expect(botThrows, hasLength(1));
+        expect(botThrows.single.playerId, bot.id);
+        expect(botThrows.single.dartsUsed, 3);
+        expect(
+          botThrows.single.hitsJson,
+          isNotNull,
+          reason: 'a bot visit records its darts like a person\'s',
+        );
+        expect(provider.currentPlayerIndex, 0);
+        expect(provider.playerStates[1].remaining, lessThan(501));
+      },
+    );
 
     test('throws first when it opens the game', () async {
       await provider.startGame(game(), [bot, human]);
@@ -107,29 +118,40 @@ void main() {
 
       await _settleBot(provider);
 
-      expect(provider.playerStates[1].throws.single.dartsUsed, 3,
-          reason: 'three darts of its own, none of the person\'s');
+      expect(
+        provider.playerStates[1].throws.single.dartsUsed,
+        3,
+        reason: 'three darts of its own, none of the person\'s',
+      );
       expect(provider.playerStates[0].throws, hasLength(1));
     });
 
-    test('is undone as a whole together with the person\'s last dart',
-        () async {
-      await provider.startGame(game(), [human, bot]);
-      await _sixty(provider);
-      await _settleBot(provider);
-      expect(provider.allThrows(), hasLength(2));
+    test(
+      'is undone as a whole together with the person\'s last dart',
+      () async {
+        await provider.startGame(game(), [human, bot]);
+        await _sixty(provider);
+        await _settleBot(provider);
+        expect(provider.allThrows(), hasLength(2));
 
-      await provider.undoLastDart();
+        await provider.undoLastDart();
 
-      expect(provider.allThrows(), isEmpty,
-          reason: 'the bot visit and the visit before it are both gone');
-      expect(provider.currentPlayerIndex, 0);
-      expect(provider.dartsInVisit, 2,
-          reason: 'the person\'s first two darts are back on the board');
-      expect(provider.canRedoDart, isTrue);
-      expect(provider.isBotTurn, isFalse);
-      expect(provider.botThrowing, isFalse);
-    });
+        expect(
+          provider.allThrows(),
+          isEmpty,
+          reason: 'the bot visit and the visit before it are both gone',
+        );
+        expect(provider.currentPlayerIndex, 0);
+        expect(
+          provider.dartsInVisit,
+          2,
+          reason: 'the person\'s first two darts are back on the board',
+        );
+        expect(provider.canRedoDart, isTrue);
+        expect(provider.isBotTurn, isFalse);
+        expect(provider.botThrowing, isFalse);
+      },
+    );
 
     test('throws again once the undone dart is redone', () async {
       await provider.startGame(game(), [human, bot]);
@@ -155,12 +177,14 @@ void main() {
       expect(provider.canUndoDart, isFalse);
       await provider.undoLastDart();
 
-      expect(provider.playerStates[0].throws, hasLength(1),
-          reason: 'a bot visit is never undone on its own');
+      expect(
+        provider.playerStates[0].throws,
+        hasLength(1),
+        reason: 'a bot visit is never undone on its own',
+      );
     });
 
-    test('stops when the game is left and picks up again on resume',
-        () async {
+    test('stops when the game is left and picks up again on resume', () async {
       await provider.startGame(game(), [human, bot]);
       await _sixty(provider);
       provider.stopBot();
@@ -170,7 +194,7 @@ void main() {
 
       final resumed = GameProvider()
         ..botDartDelay = Duration.zero
-        ..botThrower   = BotThrower(rng: Random(3));
+        ..botThrower = BotThrower(rng: Random(3));
       addTearDown(resumed.dispose);
       await resumed.resumeGame(provider.game!, [human, bot]);
       await _settleBot(resumed);
@@ -187,10 +211,13 @@ void main() {
       ];
       await provider.startGame(game(teams: teams), [human, bot, other]);
 
-      await _sixty(provider);           // Ada for Us
-      await _missedVisit(provider);     // Zoe for Them
-      expect(provider.isBotTurn, isTrue,
-          reason: 'the bot is the next member of Us');
+      await _sixty(provider); // Ada for Us
+      await _missedVisit(provider); // Zoe for Them
+      expect(
+        provider.isBotTurn,
+        isTrue,
+        reason: 'the bot is the next member of Us',
+      );
       await _settleBot(provider);
 
       final us = provider.playerStates[0];
@@ -210,8 +237,11 @@ void main() {
       expect(provider.gameOver, isTrue);
       expect(provider.winnerId, bot.id);
       expect(provider.botThrowing, isFalse);
-      expect(provider.playerStates[0].throws.last.checkoutDarts, greaterThan(0),
-          reason: 'the finishing visit is recorded as a checkout attempt');
+      expect(
+        provider.playerStates[0].throws.last.checkoutDarts,
+        greaterThan(0),
+        reason: 'the finishing visit is recorded as a checkout attempt',
+      );
     });
   });
 }

@@ -2,8 +2,26 @@ import 'dart:math';
 
 /// The fields of a standard dartboard clockwise from the top.
 const dartboardSegmentOrder = [
-  20, 1, 18, 4, 13, 6, 10, 15, 2, 17,
-  3, 19, 7, 16, 8, 11, 14, 9, 12, 5,
+  20,
+  1,
+  18,
+  4,
+  13,
+  6,
+  10,
+  15,
+  2,
+  17,
+  3,
+  19,
+  7,
+  16,
+  8,
+  11,
+  14,
+  9,
+  12,
+  5,
 ];
 
 /// One field of the board with the ring it was hit in: [multiplier] 1, 2 or
@@ -23,17 +41,18 @@ typedef BoardPoint = ({double x, double y});
 /// throws at this board rather than at the painted one, whose rings are
 /// spaced for legibility on a phone, not to scale.
 abstract final class BoardMm {
-  static const double bullInner    = 6.35;
-  static const double bullOuter    = 15.9;
-  static const double tripleInner  = 99.0;
-  static const double tripleOuter  = 107.0;
-  static const double doubleInner  = 162.0;
-  static const double doubleOuter  = 170.0;
+  static const double bullInner = 6.35;
+  static const double bullOuter = 15.9;
+  static const double tripleInner = 99.0;
+  static const double tripleOuter = 107.0;
+  static const double doubleInner = 162.0;
+  static const double doubleOuter = 170.0;
 
   /// The middle of each ring, where a dart is aimed to land in it.
-  static const double tripleMiddle      = (tripleInner + tripleOuter) / 2;
-  static const double doubleMiddle      = (doubleInner + doubleOuter) / 2;
-  static const double outerBullMiddle   = (bullInner + bullOuter) / 2;
+  static const double tripleMiddle = (tripleInner + tripleOuter) / 2;
+  static const double doubleMiddle = (doubleInner + doubleOuter) / 2;
+  static const double outerBullMiddle = (bullInner + bullOuter) / 2;
+
   /// The single between the triple and the double ring, the larger of the two
   /// singles and the one a player aims at for a plain single.
   static const double outerSingleMiddle = (tripleOuter + doubleInner) / 2;

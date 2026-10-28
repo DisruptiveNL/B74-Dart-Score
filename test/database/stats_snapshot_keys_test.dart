@@ -33,10 +33,11 @@ void main() {
       return jsonDecode(stored!.localStatsJson!) as Map<String, dynamic>;
     }
 
-    test('every shared counter is stored under its key',
-        () async {
+    test('every shared counter is stored under its key', () async {
       await provider.startGame(
-          Game(startScore: 301, legs: 3, createdAt: DateTime.now()), players);
+        Game(startScore: 301, legs: 3, createdAt: DateTime.now()),
+        players,
+      );
 
       // A: 301 to 121 with a 180.
       await provider.tapField(20, 3);
@@ -67,39 +68,43 @@ void main() {
 
       final liveThrows = provider.playerStates[0].throws;
       expect(liveThrows.any((t) => t.bust), isTrue);
-      expect(liveThrows.any((t) => !t.bust && t.remainingBefore == t.score),
-          isTrue);
+      expect(
+        liveThrows.any((t) => !t.bust && t.remainingBefore == t.score),
+        isTrue,
+      );
 
       final live = ThrowStats.fromThrows(liveThrows);
       await DbHelper.instance.snapshotGameStats(provider.game!.id!);
       final stored = await statsFor(players.first);
 
-      expect(live.totalDarts,        stored['total_darts']);
-      expect(live.totalScored,       stored['total_scored']);
-      expect(live.totalVisits,       stored['total_visits']);
-      expect(live.busts,             stored['busts']);
-      expect(live.highestVisit,      stored['highest_visit']);
-      expect(live.highestCheckout,   stored['highest_checkout']);
-      expect(live.count180,          stored['count_180']);
-      expect(live.count140plus,      stored['count_140_plus']);
-      expect(live.count100plus,      stored['count_100_plus']);
-      expect(live.checkoutAttempts,  stored['checkout_attempts']);
+      expect(live.totalDarts, stored['total_darts']);
+      expect(live.totalScored, stored['total_scored']);
+      expect(live.totalVisits, stored['total_visits']);
+      expect(live.busts, stored['busts']);
+      expect(live.highestVisit, stored['highest_visit']);
+      expect(live.highestCheckout, stored['highest_checkout']);
+      expect(live.count180, stored['count_180']);
+      expect(live.count140plus, stored['count_140_plus']);
+      expect(live.count100plus, stored['count_100_plus']);
+      expect(live.checkoutAttempts, stored['checkout_attempts']);
       expect(live.checkoutSuccesses, stored['checkout_successes']);
-      expect(live.checkoutDarts,     stored['checkout_darts']);
-      expect(live.scoreSumSquares,   stored['score_sum_squares']);
-      expect(live.coAttemptSub40,    stored['co_at_sub40']);
-      expect(live.coSuccessSub40,    stored['co_ok_sub40']);
-      expect(live.coAttemptSub60,    stored['co_at_sub60']);
-      expect(live.coSuccessSub60,    stored['co_ok_sub60']);
-      expect(live.coAttemptSub100,   stored['co_at_sub100']);
-      expect(live.coSuccessSub100,   stored['co_ok_sub100']);
-      expect(live.coAttemptSub170,   stored['co_at_sub170']);
-      expect(live.coSuccessSub170,   stored['co_ok_sub170']);
+      expect(live.checkoutDarts, stored['checkout_darts']);
+      expect(live.scoreSumSquares, stored['score_sum_squares']);
+      expect(live.coAttemptSub40, stored['co_at_sub40']);
+      expect(live.coSuccessSub40, stored['co_ok_sub40']);
+      expect(live.coAttemptSub60, stored['co_at_sub60']);
+      expect(live.coSuccessSub60, stored['co_ok_sub60']);
+      expect(live.coAttemptSub100, stored['co_at_sub100']);
+      expect(live.coSuccessSub100, stored['co_ok_sub100']);
+      expect(live.coAttemptSub170, stored['co_at_sub170']);
+      expect(live.coSuccessSub170, stored['co_ok_sub170']);
     });
 
     test('a player without a single finish is stored too', () async {
       await provider.startGame(
-          Game(startScore: 501, legs: 1, createdAt: DateTime.now()), players);
+        Game(startScore: 501, legs: 1, createdAt: DateTime.now()),
+        players,
+      );
 
       await provider.tapField(20, 1);
       await provider.tapField(20, 1);
@@ -112,10 +117,10 @@ void main() {
       await DbHelper.instance.snapshotGameStats(provider.game!.id!);
       final stored = await statsFor(players[1]);
 
-      expect(live.totalDarts,       stored['total_darts']);
-      expect(live.totalScored,      stored['total_scored']);
+      expect(live.totalDarts, stored['total_darts']);
+      expect(live.totalScored, stored['total_scored']);
       expect(live.checkoutAttempts, stored['checkout_attempts']);
-      expect(live.highestCheckout,  stored['highest_checkout']);
+      expect(live.highestCheckout, stored['highest_checkout']);
     });
   });
 }

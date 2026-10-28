@@ -50,17 +50,19 @@ void main() {
       expect(store.calls, isNot(contains('isAvailable')));
     });
 
-    test('credits a purchase that arrives before the screen is ever opened',
-        () async {
-      final provider = await _created();
+    test(
+      'credits a purchase that arrives before the screen is ever opened',
+      () async {
+        final provider = await _created();
 
-      store.purchases.add([fakePurchase()]);
-      await Future<void>.delayed(Duration.zero);
+        store.purchases.add([fakePurchase()]);
+        await Future<void>.delayed(Duration.zero);
 
-      expect(provider.isSupporter, isTrue);
-      expect(provider.thankYouPending, isTrue);
-      expect(store.calls, contains('completePurchase'));
-    });
+        expect(provider.isSupporter, isTrue);
+        expect(provider.thankYouPending, isTrue);
+        expect(store.calls, contains('completePurchase'));
+      },
+    );
   });
 
   group('opening the donation screen', () {
@@ -86,8 +88,11 @@ void main() {
 
       await provider.connectToStore();
 
-      expect(provider.products.map((p) => p.id),
-          ['donation_coffee', 'donation_beer', 'donation_pizza']);
+      expect(provider.products.map((p) => p.id), [
+        'donation_coffee',
+        'donation_beer',
+        'donation_pizza',
+      ]);
     });
 
     test('asks the store once however often the screen is reopened', () async {
@@ -96,20 +101,25 @@ void main() {
       await provider.connectToStore();
       await provider.connectToStore();
 
-      expect(store.calls.where((c) => c == 'queryProductDetails'), hasLength(1));
+      expect(
+        store.calls.where((c) => c == 'queryProductDetails'),
+        hasLength(1),
+      );
     });
 
-    test('does not ask for prices a store that is not there can not give',
-        () async {
-      store.availability = false;
-      final provider = await _created();
+    test(
+      'does not ask for prices a store that is not there can not give',
+      () async {
+        store.availability = false;
+        final provider = await _created();
 
-      await provider.connectToStore();
+        await provider.connectToStore();
 
-      expect(provider.available, isFalse);
-      expect(provider.loading, isFalse);
-      expect(store.calls, isNot(contains('queryProductDetails')));
-    });
+        expect(provider.available, isFalse);
+        expect(provider.loading, isFalse);
+        expect(store.calls, isNot(contains('queryProductDetails')));
+      },
+    );
 
     test('leaves loading set before the first frame of the screen', () async {
       final provider = await _created();
@@ -130,26 +140,36 @@ void main() {
 
       await provider.connectToStore();
 
-      expect(provider.unavailableReason,
-          DonationUnavailableReason.storeUnavailable);
+      expect(
+        provider.unavailableReason,
+        DonationUnavailableReason.storeUnavailable,
+      );
     });
 
-    test('blames the listing when the store answers but knows no tier',
-        () async {
-      // What an app whose products were never approved for sale sees: the
-      // billing service is right there, it just has nothing under these ids.
-      store.notFoundIDs = DonationProvider.productIds.toList();
-      final provider = await _created();
+    test(
+      'blames the listing when the store answers but knows no tier',
+      () async {
+        // What an app whose products were never approved for sale sees: the
+        // billing service is right there, it just has nothing under these ids.
+        store.notFoundIDs = DonationProvider.productIds.toList();
+        final provider = await _created();
 
-      await provider.connectToStore();
+        await provider.connectToStore();
 
-      expect(provider.unavailableReason, DonationUnavailableReason.noProducts);
-      expect(provider.notFoundProductIds, hasLength(3));
-    });
+        expect(
+          provider.unavailableReason,
+          DonationUnavailableReason.noProducts,
+        );
+        expect(provider.notFoundProductIds, hasLength(3));
+      },
+    );
 
     test('keeps the words the store refused with', () async {
       store.queryError = IAPError(
-          source: 'test', code: 'query_failed', message: 'store said no');
+        source: 'test',
+        code: 'query_failed',
+        message: 'store said no',
+      );
       final provider = await _created();
 
       await provider.connectToStore();

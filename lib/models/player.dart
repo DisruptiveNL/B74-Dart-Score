@@ -21,10 +21,12 @@ class Player {
   final bool isPrimary;
   final String uuid;
   final int? lastSyncedAt;
-  final String? syncedStats;    // JSON snapshot from last sync (other device)
-  final String? localStatsJson; // Persistent local stats accumulated over cleared games
+  final String? syncedStats; // JSON snapshot from last sync (other device)
+  final String?
+  localStatsJson; // Persistent local stats accumulated over cleared games
   /// The skill tier when this player is a computer opponent, null for a human.
   final BotLevel? botLevel;
+
   /// Which bot of its tier this is, counted from one, so that a game can hold
   /// two of the same strength. Null for a human.
   final int? botOrdinal;
@@ -66,57 +68,56 @@ class Player {
     int? lastSyncedAt,
     String? syncedStats,
     String? localStatsJson,
-  }) =>
-      Player(
-        id: id ?? this.id,
-        name: name ?? this.name,
-        favoriteDoubles: favoriteDoubles ?? this.favoriteDoubles,
-        isDeleted: isDeleted ?? this.isDeleted,
-        isPrimary: isPrimary ?? this.isPrimary,
-        uuid: uuid,
-        lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
-        syncedStats: syncedStats ?? this.syncedStats,
-        localStatsJson: localStatsJson ?? this.localStatsJson,
-        botLevel: botLevel,
-        botOrdinal: botOrdinal,
-      );
+  }) => Player(
+    id: id ?? this.id,
+    name: name ?? this.name,
+    favoriteDoubles: favoriteDoubles ?? this.favoriteDoubles,
+    isDeleted: isDeleted ?? this.isDeleted,
+    isPrimary: isPrimary ?? this.isPrimary,
+    uuid: uuid,
+    lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,
+    syncedStats: syncedStats ?? this.syncedStats,
+    localStatsJson: localStatsJson ?? this.localStatsJson,
+    botLevel: botLevel,
+    botOrdinal: botOrdinal,
+  );
 
   /// Serializes this player to a row map for the SQLite `players` table.
   Map<String, dynamic> toMap() => {
-        'id': id,
-        'name': name,
-        'favorite_doubles': favoriteDoubles,
-        'is_deleted': isDeleted ? 1 : 0,
-        'is_primary': isPrimary ? 1 : 0,
-        'uuid': uuid,
-        'last_synced_at': lastSyncedAt,
-        'synced_stats': syncedStats,
-        'local_stats_json': localStatsJson,
-        'bot_level': botLevel?.index,
-        'bot_ordinal': botOrdinal,
-      };
+    'id': id,
+    'name': name,
+    'favorite_doubles': favoriteDoubles,
+    'is_deleted': isDeleted ? 1 : 0,
+    'is_primary': isPrimary ? 1 : 0,
+    'uuid': uuid,
+    'last_synced_at': lastSyncedAt,
+    'synced_stats': syncedStats,
+    'local_stats_json': localStatsJson,
+    'bot_level': botLevel?.index,
+    'bot_ordinal': botOrdinal,
+  };
 
   /// Reconstructs a player from a SQLite row map, applying defaults for any
   /// columns added in later schema migrations.
   factory Player.fromMap(Map<String, dynamic> map) => Player(
-        id: map['id'] as int?,
-        name: map['name'] as String,
-        favoriteDoubles: map['favorite_doubles'] as String? ?? '',
-        isDeleted: (map['is_deleted'] as int? ?? 0) == 1,
-        isPrimary: (map['is_primary'] as int? ?? 0) == 1,
-        uuid: map['uuid'] as String? ?? '',
-        lastSyncedAt: map['last_synced_at'] as int?,
-        syncedStats:    map['synced_stats'] as String?,
-        localStatsJson: map['local_stats_json'] as String?,
-        botLevel:       map['bot_level'] == null
-            ? null
-            : BotLevel.values[map['bot_level'] as int],
-        // Rows from before the numbering carry no ordinal and are the first
-        // of their tier.
-        botOrdinal:     map['bot_level'] == null
-            ? null
-            : map['bot_ordinal'] as int? ?? 1,
-      );
+    id: map['id'] as int?,
+    name: map['name'] as String,
+    favoriteDoubles: map['favorite_doubles'] as String? ?? '',
+    isDeleted: (map['is_deleted'] as int? ?? 0) == 1,
+    isPrimary: (map['is_primary'] as int? ?? 0) == 1,
+    uuid: map['uuid'] as String? ?? '',
+    lastSyncedAt: map['last_synced_at'] as int?,
+    syncedStats: map['synced_stats'] as String?,
+    localStatsJson: map['local_stats_json'] as String?,
+    botLevel: map['bot_level'] == null
+        ? null
+        : BotLevel.values[map['bot_level'] as int],
+    // Rows from before the numbering carry no ordinal and are the first
+    // of their tier.
+    botOrdinal: map['bot_level'] == null
+        ? null
+        : map['bot_ordinal'] as int? ?? 1,
+  );
 
   /// Generates a random RFC 4122 version-4 UUID using a secure RNG.
   static String _newUuid() {

@@ -42,14 +42,20 @@ class CompetitionSingleResultContract {
     }
     final homeId = value['homePlayerId'];
     final awayId = value['awayPlayerId'];
-    if (homeId is! String || homeId.trim().isEmpty ||
-        awayId is! String || awayId.trim().isEmpty || homeId == awayId) {
+    if (homeId is! String ||
+        homeId.trim().isEmpty ||
+        awayId is! String ||
+        awayId.trim().isEmpty ||
+        homeId == awayId) {
       throw const FormatException('Invalid players');
     }
     final homeLegs = value['homeLegs'];
     final awayLegs = value['awayLegs'];
-    if (homeLegs is! int || awayLegs is! int ||
-        homeLegs < 0 || awayLegs < 0 || homeLegs == awayLegs) {
+    if (homeLegs is! int ||
+        awayLegs is! int ||
+        homeLegs < 0 ||
+        awayLegs < 0 ||
+        homeLegs == awayLegs) {
       throw const FormatException('Invalid final leg score');
     }
     final winnerId = value['winnerPlayerId'];

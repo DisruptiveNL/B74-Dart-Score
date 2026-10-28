@@ -30,17 +30,21 @@ CompetitionSinglePerformance competitionSinglePerformance(
     grouped.putIfAbsent((visit.set, visit.leg), () => []).add(visit);
   }
   final keys = grouped.keys.toList()
-    ..sort((a, b) => a.$1 != b.$1
-        ? a.$1.compareTo(b.$1)
-        : a.$2.compareTo(b.$2));
+    ..sort(
+      (a, b) => a.$1 != b.$1 ? a.$1.compareTo(b.$1) : a.$2.compareTo(b.$2),
+    );
   return CompetitionSinglePerformance(
     playerId,
     ThrowStats.fromThrows(own),
-    List.unmodifiable(keys.map((key) => CompetitionLegPerformance(
-      key.$1,
-      key.$2,
-      ThrowStats.fromThrows(grouped[key]!),
-    ))),
+    List.unmodifiable(
+      keys.map(
+        (key) => CompetitionLegPerformance(
+          key.$1,
+          key.$2,
+          ThrowStats.fromThrows(grouped[key]!),
+        ),
+      ),
+    ),
   );
 }
 
@@ -89,14 +93,19 @@ List<CompetitionSeasonPoint> competitionSeasonTrend({
   required String bondsnummer,
   required Iterable<CompetitionPerformanceEntry> entries,
 }) {
-  final selected = entries.where((e) =>
-      e.competitionId == competitionId &&
-      e.seasonId == seasonId &&
-      e.bondsnummer == bondsnummer).toList()
-    ..sort((a, b) {
-      final date = a.playedAt.compareTo(b.playedAt);
-      return date != 0 ? date : a.singleId.compareTo(b.singleId);
-    });
+  final selected =
+      entries
+          .where(
+            (e) =>
+                e.competitionId == competitionId &&
+                e.seasonId == seasonId &&
+                e.bondsnummer == bondsnummer,
+          )
+          .toList()
+        ..sort((a, b) {
+          final date = a.playedAt.compareTo(b.playedAt);
+          return date != 0 ? date : a.singleId.compareTo(b.singleId);
+        });
   final seen = <String, CompetitionPerformanceEntry>{};
   var scored = 0, darts = 0, first9Scored = 0, first9Darts = 0;
   final result = <CompetitionSeasonPoint>[];
@@ -105,9 +114,13 @@ List<CompetitionSeasonPoint> competitionSeasonTrend({
     if (previous != null) {
       final a = previous.performance.overall;
       final b = e.performance.overall;
-      if (a.totalScored != b.totalScored || a.totalDarts != b.totalDarts ||
-          a.first9Scored != b.first9Scored || a.first9Darts != b.first9Darts) {
-        throw StateError('Conflicting results for competition single ${e.singleId}');
+      if (a.totalScored != b.totalScored ||
+          a.totalDarts != b.totalDarts ||
+          a.first9Scored != b.first9Scored ||
+          a.first9Darts != b.first9Darts) {
+        throw StateError(
+          'Conflicting results for competition single ${e.singleId}',
+        );
       }
       continue;
     }
@@ -117,14 +130,18 @@ List<CompetitionSeasonPoint> competitionSeasonTrend({
     darts += s.totalDarts;
     first9Scored += s.first9Scored;
     first9Darts += s.first9Darts;
-    result.add(CompetitionSeasonPoint(
-      singleId: e.singleId,
-      playedAt: e.playedAt,
-      matchAverage: s.average,
-      matchFirst9Average: s.first9Average,
-      seasonAverage: darts == 0 ? 0 : scored * 3 / darts,
-      seasonFirst9Average: first9Darts == 0 ? 0 : first9Scored * 3 / first9Darts,
-    ));
+    result.add(
+      CompetitionSeasonPoint(
+        singleId: e.singleId,
+        playedAt: e.playedAt,
+        matchAverage: s.average,
+        matchFirst9Average: s.first9Average,
+        seasonAverage: darts == 0 ? 0 : scored * 3 / darts,
+        seasonFirst9Average: first9Darts == 0
+            ? 0
+            : first9Scored * 3 / first9Darts,
+      ),
+    );
   }
   return List.unmodifiable(result);
 }

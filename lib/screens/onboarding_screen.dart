@@ -64,13 +64,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       final provider = context.read<PlayersProvider>();
       final player = await provider.addPlayer(name, isPrimary: true);
       await provider.updatePlayer(
-          player.copyWith(favoriteDoubles: _selectedDouble));
+        player.copyWith(favoriteDoubles: _selectedDouble),
+      );
       // PlayersProvider now has a primary player → _AppGate rebuilds to HomeScreen.
     } catch (_) {
       if (!mounted) return;
       setState(() => _saving = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(l.profileFailed)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l.profileFailed)));
     }
   }
 
@@ -161,7 +163,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     key: _doubleKey,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(l.favDoublesTitle, style: theme.textTheme.titleSmall),
+                      Text(
+                        l.favDoublesTitle,
+                        style: theme.textTheme.titleSmall,
+                      ),
                       if (_selectedDouble != null) ...[
                         Text(': ', style: theme.textTheme.titleSmall),
                         Text(
@@ -180,8 +185,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Center(
                         child: Text(
                           l.tapDoubleHint,
-                          style: theme.textTheme.labelSmall
-                              ?.copyWith(color: cs.onSurfaceVariant),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ),
@@ -204,8 +210,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Center(
                         child: Text(
                           l.favDoublesRequired,
-                          style: theme.textTheme.labelSmall
-                              ?.copyWith(color: cs.error),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.error,
+                          ),
                         ),
                       ),
                     ),
@@ -213,14 +220,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.info_outline,
-                          size: 14, color: cs.onSurfaceVariant),
+                      Icon(
+                        Icons.info_outline,
+                        size: 14,
+                        color: cs.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 6),
                       Expanded(
                         child: Text(
                           l.favDoubleHint,
-                          style: theme.textTheme.labelSmall
-                              ?.copyWith(color: cs.onSurfaceVariant),
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                       ),
                     ],
@@ -241,13 +252,18 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             width: 18,
                             height: 18,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white))
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
                         : const Icon(Icons.arrow_forward_rounded),
                     label: Text(l.letsGo),
                     style: FilledButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       textStyle: theme.textTheme.titleMedium,
-                      backgroundColor: canSubmit ? null : cs.surfaceContainerHighest,
+                      backgroundColor: canSubmit
+                          ? null
+                          : cs.surfaceContainerHighest,
                       foregroundColor: canSubmit ? null : cs.onSurfaceVariant,
                     ),
                   ),

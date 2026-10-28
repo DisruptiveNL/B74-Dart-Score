@@ -69,14 +69,15 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
       final bytes = await img.toByteData(format: ui.ImageByteFormat.png);
       await Gal.putImageBytes(bytes!.buffer.asUint8List());
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(context.l10n.savedToPhotos)),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(context.l10n.savedToPhotos)));
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('${context.l10n.error}: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${context.l10n.error}: $e')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -115,8 +116,9 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
       );
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('${context.l10n.error}: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('${context.l10n.error}: $e')));
       }
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -136,8 +138,9 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
     // What a leg checked out in the fewest darts the start score allows is
     // called, for the card of whoever managed one.
     final minDarts = minimumDartsForScore[provider.game!.startScore];
-    final perfectLabel =
-        minDarts == 9 ? l.nineDarter : l.perfectGameLabel(minDarts ?? 0);
+    final perfectLabel = minDarts == 9
+        ? l.nineDarter
+        : l.perfectGameLabel(minDarts ?? 0);
 
     // Name of every player in the game, keyed by id, for the throw log.
     final throwerNames = {
@@ -159,56 +162,65 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
               color: cs.primaryContainer,
               shape: BoxShape.circle,
             ),
-            child: Icon(Icons.emoji_events_rounded, size: 52, color: cs.primary),
+            child: Icon(
+              Icons.emoji_events_rounded,
+              size: 52,
+              color: cs.primary,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
             l.wins(winner.label(l)),
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: cs.primary,
-                ),
+              fontWeight: FontWeight.bold,
+              color: cs.primary,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
       ),
     );
 
-    final infoCard = GameInfoCard(rows: [
-      (l.gameLabel, l.modeX01Name),
-      (
-        l.matchFormat,
-        provider.game!.placementMode ? l.placementMode : l.standardMode
-      ),
-      (
-        l.gameMode_,
-        l.gameSummaryInfo(
-          provider.game!.startScore,
-          provider.game!.legs,
-          provider.game!.sets,
-          placementMode: provider.game!.placementMode,
-        )
-      ),
-      // A solo game has nobody to be ordered against.
-      if (states.length > 1)
-        (l.startingOrder, startingOrderLabel(l, provider.game!.startingOrder)),
-    ]);
+    final infoCard = GameInfoCard(
+      rows: [
+        (l.gameLabel, l.modeX01Name),
+        (
+          l.matchFormat,
+          provider.game!.placementMode ? l.placementMode : l.standardMode,
+        ),
+        (
+          l.gameMode_,
+          l.gameSummaryInfo(
+            provider.game!.startScore,
+            provider.game!.legs,
+            provider.game!.sets,
+            placementMode: provider.game!.placementMode,
+          ),
+        ),
+        // A solo game has nobody to be ordered against.
+        if (states.length > 1)
+          (
+            l.startingOrder,
+            startingOrderLabel(l, provider.game!.startingOrder),
+          ),
+      ],
+    );
 
     final rankingCard = provider.game!.placementMode
         ? FinalRankingCard(
-            throwsById:   {
+            throwsById: {
               for (var i = 0; i < states.length; i++) i: states[i].throws,
             },
-            namesById:    {
+            namesById: {
               for (var i = 0; i < states.length; i++) i: states[i].label(l),
             },
-            legsWon:      {
+            legsWon: {
               for (var i = 0; i < states.length; i++) i: states[i].legsWon,
             },
             placementSum: {
               for (var i = 0; i < states.length; i++) i: states[i].placementSum,
             },
-            points:       {
+            points: {
               for (var i = 0; i < states.length; i++)
                 i: states[i].placementPoints,
             },
@@ -218,8 +230,8 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
     final playerCards = [
       for (final s in states)
         SummaryPlayerCard(
-          name:    s.label(l),
-          throws:  s.throws,
+          name: s.label(l),
+          throws: s.throws,
           // In placement mode every slot checks out every leg, so legs won come
           // from the provider's tally instead of counting checkout visits.
           legsWon: provider.game!.placementMode
@@ -244,10 +256,7 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
 
     final summary = SummaryBody(
       header: winnerBanner,
-      result: [
-        if (!twoColumns) infoCard,
-        ...playerCards,
-      ],
+      result: [if (!twoColumns) infoCard, ...playerCards],
       details: [
         if (twoColumns) infoCard,
         ?rankingCard,
@@ -276,7 +285,7 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
           details: [
             (
               l.matchFormat,
-              provider.game!.placementMode ? l.placementMode : l.standardMode
+              provider.game!.placementMode ? l.placementMode : l.standardMode,
             ),
             (
               l.gameMode_,
@@ -285,7 +294,7 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
                 provider.game!.legs,
                 provider.game!.sets,
                 placementMode: provider.game!.placementMode,
-              )
+              ),
             ),
             // With handicaps the game defaults say little, so the per-player
             // rows of the summary carry the rules instead.
@@ -295,18 +304,32 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
             ],
           ],
           slots: states
-              .map((s) => s.isTeamSlot
-                  ? RematchSlot.team(
-                      s.label(l),
-                      s.players
-                          .map((p) => RematchSlot.player(p.label(l),
-                              rules: handicapRulesLabel(
-                                  l, provider.game!, p.id)))
-                          .toList())
-                  : RematchSlot.player(
-                      s.label(l),
-                      rules: handicapRulesLabel(l, provider.game!, s.player.id),
-                    ))
+              .map(
+                (s) => s.isTeamSlot
+                    ? RematchSlot.team(
+                        s.label(l),
+                        s.players
+                            .map(
+                              (p) => RematchSlot.player(
+                                p.label(l),
+                                rules: handicapRulesLabel(
+                                  l,
+                                  provider.game!,
+                                  p.id,
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      )
+                    : RematchSlot.player(
+                        s.label(l),
+                        rules: handicapRulesLabel(
+                          l,
+                          provider.game!,
+                          s.player.id,
+                        ),
+                      ),
+              )
               .toList(),
           onRematch: () => provider.startRematch(
             provider.game!,
@@ -326,9 +349,10 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
             const Padding(
               padding: EdgeInsets.all(14),
               child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(strokeWidth: 2)),
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             )
           else ...[
             IconButton(
@@ -373,8 +397,9 @@ class _GameSummaryScreenState extends State<GameSummaryScreen> {
                   // is drawn at one size: neither the text size the reader set
                   // nor the one the system asks for reaches into it, and a card
                   // of a fixed width cannot be overflowed by either.
-                  data: MediaQuery.of(context)
-                      .copyWith(textScaler: TextScaler.noScaling),
+                  data: MediaQuery.of(
+                    context,
+                  ).copyWith(textScaler: TextScaler.noScaling),
                   child: RepaintBoundary(
                     key: _cardKey,
                     child: Container(

@@ -130,6 +130,7 @@ class SyncThrow {
   final bool bust;
   final int leg;
   final int set;
+
   /// How many darts of the visit were thrown at a finish, 0 to 3. Travels
   /// because the receiving device cannot work it out: the individual darts stay
   /// behind, and every imported throw lands in one hidden game whose check-out
@@ -149,15 +150,15 @@ class SyncThrow {
 
   /// Builds a transport throw from a stored [DartThrow].
   factory SyncThrow.fromDartThrow(DartThrow t) => SyncThrow(
-        score: t.score,
-        dartsUsed: t.dartsUsed,
-        remainingBefore: t.remainingBefore,
-        thrownAt: t.thrownAt.millisecondsSinceEpoch,
-        bust: t.bust,
-        leg: t.leg,
-        set: t.set,
-        checkoutDarts: t.checkoutDarts,
-      );
+    score: t.score,
+    dartsUsed: t.dartsUsed,
+    remainingBefore: t.remainingBefore,
+    thrownAt: t.thrownAt.millisecondsSinceEpoch,
+    bust: t.bust,
+    leg: t.leg,
+    set: t.set,
+    checkoutDarts: t.checkoutDarts,
+  );
 
   /// Converts back to a storable [DartThrow] under the given game and player.
   DartThrow toDartThrow({required int gameId, required int playerId}) =>
@@ -176,27 +177,27 @@ class SyncThrow {
 
   /// Serializes this throw to its JSON wire representation.
   Map<String, dynamic> toJson() => {
-        'score': score,
-        'darts_used': dartsUsed,
-        'remaining_before': remainingBefore,
-        'thrown_at': thrownAt,
-        'bust': bust,
-        'leg': leg,
-        'set': set,
-        'checkout_darts': checkoutDarts,
-      };
+    'score': score,
+    'darts_used': dartsUsed,
+    'remaining_before': remainingBefore,
+    'thrown_at': thrownAt,
+    'bust': bust,
+    'leg': leg,
+    'set': set,
+    'checkout_darts': checkoutDarts,
+  };
 
   /// Parses a throw from JSON, tolerating bool-or-int `bust` encodings and
   /// rejecting out-of-range values to guard against corrupt or malicious data.
   factory SyncThrow.fromJson(Map<String, dynamic> j) {
-    final score          = j['score'] as int;
-    final dartsUsed      = j['darts_used'] as int;
+    final score = j['score'] as int;
+    final dartsUsed = j['darts_used'] as int;
     final remainingBefore = j['remaining_before'] as int;
-    final thrownAt       = j['thrown_at'] as int;
+    final thrownAt = j['thrown_at'] as int;
     // 'bust' may be serialised as bool OR as int 0/1 depending on platform
     final bust = j['bust'] == true || j['bust'] == 1;
-    final leg  = j['leg'] as int;
-    final set  = j['set'] as int;
+    final leg = j['leg'] as int;
+    final set = j['set'] as int;
     // Absent from packets an older app version wrote.
     final checkoutDarts = (j['checkout_darts'] as int? ?? 0).clamp(0, 3);
 
@@ -255,25 +256,25 @@ class SyncStats {
 
   /// Serializes these stats to their JSON wire representation.
   Map<String, dynamic> toJson() => {
-        'total_darts': totalDarts,
-        'total_visits': totalVisits,
-        'average': average,
-        'legs_won': legsWon,
-        'highest_visit': highestVisit,
-        'busts': busts,
-        'count_180': count180,
-      };
+    'total_darts': totalDarts,
+    'total_visits': totalVisits,
+    'average': average,
+    'legs_won': legsWon,
+    'highest_visit': highestVisit,
+    'busts': busts,
+    'count_180': count180,
+  };
 
   /// Parses stats from JSON, defaulting any missing field to zero.
   factory SyncStats.fromJson(Map<String, dynamic> j) => SyncStats(
-        totalDarts: j['total_darts'] as int? ?? 0,
-        totalVisits: j['total_visits'] as int? ?? 0,
-        average: (j['average'] as num?)?.toDouble() ?? 0,
-        legsWon: j['legs_won'] as int? ?? 0,
-        highestVisit: j['highest_visit'] as int? ?? 0,
-        busts: j['busts'] as int? ?? 0,
-        count180: j['count_180'] as int? ?? 0,
-      );
+    totalDarts: j['total_darts'] as int? ?? 0,
+    totalVisits: j['total_visits'] as int? ?? 0,
+    average: (j['average'] as num?)?.toDouble() ?? 0,
+    legsWon: j['legs_won'] as int? ?? 0,
+    highestVisit: j['highest_visit'] as int? ?? 0,
+    busts: j['busts'] as int? ?? 0,
+    count180: j['count_180'] as int? ?? 0,
+  );
 }
 
 // ── Sync origin ───────────────────────────────────────────────────────────────
@@ -301,16 +302,13 @@ class SyncOrigin {
   const SyncOrigin({required this.device, required this.snapshotJson});
 
   /// Serializes this origin to its JSON wire representation.
-  Map<String, dynamic> toJson() => {
-        'device':   device,
-        'snapshot': snapshotJson,
-      };
+  Map<String, dynamic> toJson() => {'device': device, 'snapshot': snapshotJson};
 
   /// Parses an origin from JSON.
   factory SyncOrigin.fromJson(Map<String, dynamic> j) => SyncOrigin(
-        device:       j['device'] as String? ?? kLegacyOrigin,
-        snapshotJson: j['snapshot'] as String? ?? '',
-      );
+    device: j['device'] as String? ?? kLegacyOrigin,
+    snapshotJson: j['snapshot'] as String? ?? '',
+  );
 }
 
 // ── Sync packet ───────────────────────────────────────────────────────────────
@@ -352,6 +350,7 @@ class SyncPacket {
   // does not know about origins reads this field and nothing else; a receiver
   // that does know ignores it in favour of the breakdown.
   final String? localStatsJson;
+
   /// How far back [throws] reaches, in days, or null when it holds every throw.
   ///
   /// Only the individual throws are cut off by this; the throws left out were
@@ -376,66 +375,63 @@ class SyncPacket {
 
   /// Which device the throw at [index] was played on, falling back to the
   /// sender for a packet that does not attribute its throws.
-  String originOfThrow(int index) => index < throwOrigins.length
-      ? throwOrigins[index]
-      : senderDeviceId;
+  String originOfThrow(int index) =>
+      index < throwOrigins.length ? throwOrigins[index] : senderDeviceId;
 
   /// Serializes this packet to its JSON wire representation.
   Map<String, dynamic> toJson() => {
-        'version': version,
-        'sender_device': senderDevice,
-        if (senderDeviceId.isNotEmpty) 'sender_device_id': senderDeviceId,
-        'player_uuid': playerUuid,
-        'player_name': playerName,
-        'favorite_doubles': favoriteDoubles,
-        'stats': stats.toJson(),
-        'throws': throws.map((t) => t.toJson()).toList(),
-        if (origins.isNotEmpty)
-          'origins': origins.map((o) => o.toJson()).toList(),
-        if (throwOrigins.isNotEmpty) 'throw_origins': throwOrigins,
-        if (localStatsJson != null) 'local_stats_json': localStatsJson,
-        if (rangeDays != null) 'range_days': rangeDays,
-      };
+    'version': version,
+    'sender_device': senderDevice,
+    if (senderDeviceId.isNotEmpty) 'sender_device_id': senderDeviceId,
+    'player_uuid': playerUuid,
+    'player_name': playerName,
+    'favorite_doubles': favoriteDoubles,
+    'stats': stats.toJson(),
+    'throws': throws.map((t) => t.toJson()).toList(),
+    if (origins.isNotEmpty) 'origins': origins.map((o) => o.toJson()).toList(),
+    if (throwOrigins.isNotEmpty) 'throw_origins': throwOrigins,
+    if (localStatsJson != null) 'local_stats_json': localStatsJson,
+    if (rangeDays != null) 'range_days': rangeDays,
+  };
 
   /// Parses a packet from JSON, applying defaults for optional fields.
   factory SyncPacket.fromJson(Map<String, dynamic> j) => SyncPacket(
-        version: j['version'] as int,
-        senderDevice: j['sender_device'] as String? ?? 'Unknown',
-        senderDeviceId: j['sender_device_id'] as String? ?? '',
-        playerUuid: j['player_uuid'] as String,
-        playerName: j['player_name'] as String,
-        favoriteDoubles: j['favorite_doubles'] as String? ?? '',
-        stats: SyncStats.fromJson(
-            j['stats'] as Map<String, dynamic>? ?? {}),
-        throws: (j['throws'] as List? ?? [])
-            .map((t) => SyncThrow.fromJson(t as Map<String, dynamic>))
-            .toList(),
-        origins: (j['origins'] as List? ?? [])
-            .map((o) => SyncOrigin.fromJson(o as Map<String, dynamic>))
-            .toList(),
-        throwOrigins: (j['throw_origins'] as List? ?? [])
-            .map((o) => o as String)
-            .toList(),
-        localStatsJson: j['local_stats_json'] as String?,
-        rangeDays: j['range_days'] as int?,
-      );
+    version: j['version'] as int,
+    senderDevice: j['sender_device'] as String? ?? 'Unknown',
+    senderDeviceId: j['sender_device_id'] as String? ?? '',
+    playerUuid: j['player_uuid'] as String,
+    playerName: j['player_name'] as String,
+    favoriteDoubles: j['favorite_doubles'] as String? ?? '',
+    stats: SyncStats.fromJson(j['stats'] as Map<String, dynamic>? ?? {}),
+    throws: (j['throws'] as List? ?? [])
+        .map((t) => SyncThrow.fromJson(t as Map<String, dynamic>))
+        .toList(),
+    origins: (j['origins'] as List? ?? [])
+        .map((o) => SyncOrigin.fromJson(o as Map<String, dynamic>))
+        .toList(),
+    throwOrigins: (j['throw_origins'] as List? ?? [])
+        .map((o) => o as String)
+        .toList(),
+    localStatsJson: j['local_stats_json'] as String?,
+    rangeDays: j['range_days'] as int?,
+  );
 
   /// A copy of this packet under a different [playerName], used when the
   /// receiver resolves a name clash by importing under an alternative name.
   SyncPacket withName(String name) => SyncPacket(
-        version: version,
-        senderDevice: senderDevice,
-        senderDeviceId: senderDeviceId,
-        playerUuid: playerUuid,
-        playerName: name,
-        favoriteDoubles: favoriteDoubles,
-        stats: stats,
-        throws: throws,
-        origins: origins,
-        throwOrigins: throwOrigins,
-        localStatsJson: localStatsJson,
-        rangeDays: rangeDays,
-      );
+    version: version,
+    senderDevice: senderDevice,
+    senderDeviceId: senderDeviceId,
+    playerUuid: playerUuid,
+    playerName: name,
+    favoriteDoubles: favoriteDoubles,
+    stats: stats,
+    throws: throws,
+    origins: origins,
+    throwOrigins: throwOrigins,
+    localStatsJson: localStatsJson,
+    rangeDays: rangeDays,
+  );
 }
 
 // ── Server ────────────────────────────────────────────────────────────────────
@@ -543,8 +539,9 @@ class SyncServer {
   String? get returnedPayload =>
       _returned == null || _returned!.isEmpty ? null : _returned;
 
-  final ValueNotifier<SyncServerState> _state =
-      ValueNotifier(SyncServerState.waiting);
+  final ValueNotifier<SyncServerState> _state = ValueNotifier(
+    SyncServerState.waiting,
+  );
 
   /// Follows the transfer for the sender's screen.
   ValueListenable<SyncServerState> get state => _state;
@@ -577,7 +574,8 @@ class SyncServer {
     HotspotCredentials? hotspot,
     @visibleForTesting List<String>? addresses,
   }) async {
-    if (_starting) throw const TransferStartException(TransferStartFailure.bindFailed);
+    if (_starting)
+      throw const TransferStartException(TransferStartFailure.bindFailed);
     _starting = true;
     try {
       final reachableOn = addresses ?? await localTransferAddresses();
@@ -593,13 +591,18 @@ class SyncServer {
       _returned = null;
       _progress.value = 0;
       _token = List.generate(
-          16, (_) => _kTokenAlphabet[random.nextInt(_kTokenAlphabet.length)]).join();
+        16,
+        (_) => _kTokenAlphabet[random.nextInt(_kTokenAlphabet.length)],
+      ).join();
       _pin = random.nextInt(10000).toString().padLeft(4, '0');
       _state.value = SyncServerState.waiting;
 
       _server = await _bind();
-      _server!.listen((req) => _handle(req).catchError((_) {}),
-          onError: (_) {}, cancelOnError: false);
+      _server!.listen(
+        (req) => _handle(req).catchError((_) {}),
+        onError: (_) {},
+        cancelOnError: false,
+      );
 
       return TransferInvite.forNow(
         addresses: reachableOn,
@@ -649,8 +652,7 @@ class SyncServer {
   /// The peer polls rather than holding the connection open, which keeps a
   /// request from timing out while the user is still looking at their screen.
   Future<void> _handle(HttpRequest req) async {
-    final response = req.response
-      ..headers.contentType = ContentType.json;
+    final response = req.response..headers.contentType = ContentType.json;
 
     // Anything without the token gets nothing, and does not disturb the user.
     if (req.uri.path != '/$_token') {
@@ -888,8 +890,11 @@ class SyncServer {
 /// [origin] anchors the sheet on an iPad, where a popover without one fails
 /// instead of opening. Returns whether the sheet was used rather than
 /// dismissed.
-Future<bool> shareSyncFile(String payload,
-    {required String playerName, Rect? origin}) async {
+Future<bool> shareSyncFile(
+  String payload, {
+  required String playerName,
+  Rect? origin,
+}) async {
   final dir = await getTemporaryDirectory();
 
   // Whatever an earlier share left, cleared before the next one is written
@@ -1002,10 +1007,12 @@ class SyncClient {
   /// Takes the sync ceiling rather than the backup one: this end of the wire
   /// only ever carries a packet, and letting it take a database sized body
   /// would leave the tighter limit unused on the one path that can hold it.
-  Future<String> fetch(TransferInvite invite,
-          {void Function(String pin)? onPin}) async =>
-      utf8.decode(await fetchBytes(invite,
-          onPin: onPin, maxBytes: kMaxSyncTransferBytes));
+  Future<String> fetch(
+    TransferInvite invite, {
+    void Function(String pin)? onPin,
+  }) async => utf8.decode(
+    await fetchBytes(invite, onPin: onPin, maxBytes: kMaxSyncTransferBytes),
+  );
 
   /// Connects to [invite] and returns the payload once the sending device has
   /// approved the transfer.
@@ -1023,10 +1030,12 @@ class SyncClient {
   ///
   /// Throws [TransferInviteExpiredException] on a code that has outlived its
   /// session, and [TransferUnreachableException] when no address ever answered.
-  Future<List<int>> fetchBytes(TransferInvite invite,
-      {void Function(String pin)? onPin,
-      void Function(int received, int total)? onProgress,
-      int maxBytes = kMaxBackupTransferBytes}) async {
+  Future<List<int>> fetchBytes(
+    TransferInvite invite, {
+    void Function(String pin)? onPin,
+    void Function(int received, int total)? onProgress,
+    int maxBytes = kMaxBackupTransferBytes,
+  }) async {
     if (invite.isExpired) throw const TransferInviteExpiredException();
 
     final client = HttpClient()
@@ -1058,8 +1067,9 @@ class SyncClient {
         // Everything that is not the payload is a short status answer, and
         // holding those to the payload's ceiling would leave a peer free to
         // spend it on a reply that should be a few dozen bytes.
-        final limit =
-            res.statusCode == HttpStatus.ok ? maxBytes : _kMaxStatusBytes;
+        final limit = res.statusCode == HttpStatus.ok
+            ? maxBytes
+            : _kMaxStatusBytes;
         if (total > limit) throw const SyncPayloadTooLargeException();
 
         // Collected as bytes, because the payload may be a database rather
@@ -1100,8 +1110,9 @@ class SyncClient {
             throw const SyncRejectedException();
           case HttpStatus.accepted:
             if (!announced) {
-              final pin = (jsonDecode(utf8.decode(body.takeBytes()))
-                  as Map<String, dynamic>)['pin'];
+              final pin =
+                  (jsonDecode(utf8.decode(body.takeBytes()))
+                      as Map<String, dynamic>)['pin'];
               if (pin is String) {
                 announced = true;
                 onPin?.call(pin);
@@ -1128,15 +1139,18 @@ class SyncClient {
   /// later would risk a second request reaching an approved server and taking
   /// the payload a second time; while nothing has answered, the server is still
   /// in `waiting` and a probe costs it nothing.
-  Future<HttpClientResponse?> _get(HttpClient client, TransferInvite invite) async {
+  Future<HttpClientResponse?> _get(
+    HttpClient client,
+    TransferInvite invite,
+  ) async {
     final chosen = _reached;
     final timeout = chosen == null ? _kProbeTimeout : _kRequestTimeout;
 
     for (final address in chosen != null ? [chosen] : invite.addresses) {
       try {
-        final res = await (await client.getUrl(invite.endpointAt(address)))
-            .close()
-            .timeout(timeout);
+        final res = await (await client.getUrl(
+          invite.endpointAt(address),
+        )).close().timeout(timeout);
         _reached = address;
         return res;
       } catch (_) {

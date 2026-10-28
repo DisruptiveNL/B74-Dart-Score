@@ -18,12 +18,12 @@ class ShanghaiSummaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.read<ShanghaiProvider>();
-    final game     = provider.game!;
-    final states   = provider.playerStates;
+    final game = provider.game!;
+    final states = provider.playerStates;
     final winnerId = provider.winnerId;
-    final l        = context.l10n;
-    final theme    = Theme.of(context);
-    final cs       = theme.colorScheme;
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     final isSequential = game.variant == ShanghaiVariant.sequential;
 
@@ -57,8 +57,11 @@ class ShanghaiSummaryScreen extends StatelessWidget {
                     color: cs.primaryContainer,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.emoji_events_rounded,
-                      size: 52, color: cs.primary),
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    size: 52,
+                    color: cs.primary,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -81,11 +84,13 @@ class ShanghaiSummaryScreen extends StatelessWidget {
         bottom: 24,
         result: [
           // ── Game info ────────────────────────────────────────────────────
-          GameInfoCard(rows: [
-            (l.gameLabel, l.modeShanghaiName),
-            (l.shanghaiVariant, shanghaiVariantLabel(l, game.variant)),
-            (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
-          ]),
+          GameInfoCard(
+            rows: [
+              (l.gameLabel, l.modeShanghaiName),
+              (l.shanghaiVariant, shanghaiVariantLabel(l, game.variant)),
+              (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
+            ],
+          ),
         ],
         details: [
           Card(
@@ -95,9 +100,12 @@ class ShanghaiSummaryScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l.shanghaiSummaryTitle,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    l.shanghaiSummaryTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   const Divider(height: 1),
                   const SizedBox(height: 8),
@@ -110,8 +118,7 @@ class ShanghaiSummaryScreen extends StatelessWidget {
                           if (isWinner)
                             const Padding(
                               padding: EdgeInsets.only(right: 6),
-                              child:
-                                  Icon(Icons.emoji_events_rounded, size: 18),
+                              child: Icon(Icons.emoji_events_rounded, size: 18),
                             )
                           else
                             const SizedBox(width: 24),
@@ -130,7 +137,9 @@ class ShanghaiSummaryScreen extends StatelessWidget {
                                 ),
                                 if (s.isTeamSlot)
                                   Text(
-                                    s.players.map((p) => p.label(l)).join(' & '),
+                                    s.players
+                                        .map((p) => p.label(l))
+                                        .join(' & '),
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: cs.onSurfaceVariant,
                                     ),
@@ -190,10 +199,16 @@ class ShanghaiSummaryScreen extends StatelessWidget {
               (l.shanghaiVariant, shanghaiVariantLabel(l, game.variant)),
             ],
             slots: states
-                .map((s) => s.isTeamSlot
-                    ? RematchSlot.team(s.label(l),
-                        s.players.map((p) => RematchSlot.player(p.label(l))).toList())
-                    : RematchSlot.player(s.label(l)))
+                .map(
+                  (s) => s.isTeamSlot
+                      ? RematchSlot.team(
+                          s.label(l),
+                          s.players
+                              .map((p) => RematchSlot.player(p.label(l)))
+                              .toList(),
+                        )
+                      : RematchSlot.player(s.label(l)),
+                )
                 .toList(),
             onRematch: () => provider.startRematch(
               game,

@@ -19,17 +19,25 @@ class CompetitionLegStartPolicy {
     int? decidingBullWinnerSlot,
   }) {
     if (legNumber < 1) throw ArgumentError.value(legNumber, 'legNumber');
-    if (bestOf < 1 || bestOf.isEven) throw ArgumentError.value(bestOf, 'bestOf');
+    if (bestOf < 1 || bestOf.isEven)
+      throw ArgumentError.value(bestOf, 'bestOf');
     if (homeLegs < 0 || awayLegs < 0) {
       throw ArgumentError('Won legs cannot be negative');
     }
     if (decidingBullWinnerSlot != null &&
-        decidingBullWinnerSlot != 0 && decidingBullWinnerSlot != 1) {
-      throw ArgumentError.value(decidingBullWinnerSlot, 'decidingBullWinnerSlot');
+        decidingBullWinnerSlot != 0 &&
+        decidingBullWinnerSlot != 1) {
+      throw ArgumentError.value(
+        decidingBullWinnerSlot,
+        'decidingBullWinnerSlot',
+      );
     }
     final threshold = bestOf ~/ 2;
-    final isDecider = bullDecidingLeg && bestOf >= 3 &&
-        homeLegs == threshold && awayLegs == threshold;
+    final isDecider =
+        bullDecidingLeg &&
+        bestOf >= 3 &&
+        homeLegs == threshold &&
+        awayLegs == threshold;
     if (isDecider) return decidingBullWinnerSlot;
     return (legNumber - 1) % 2;
   }

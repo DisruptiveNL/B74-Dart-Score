@@ -61,19 +61,19 @@ extension MatchFormatValues on MatchFormat {
   /// First-to legs (per set) for this preset, or `null` for [MatchFormat.custom]
   /// where the value comes from the stepper.
   int? get legs => switch (this) {
-        MatchFormat.bo3 => 2,
-        MatchFormat.bo5 => 3,
-        MatchFormat.bo7 => 4,
-        MatchFormat.bo9 => 5,
-        MatchFormat.pdcSets => 3,
-        MatchFormat.premierLeague => 6,
-        MatchFormat.custom => null,
-      };
+    MatchFormat.bo3 => 2,
+    MatchFormat.bo5 => 3,
+    MatchFormat.bo7 => 4,
+    MatchFormat.bo9 => 5,
+    MatchFormat.pdcSets => 3,
+    MatchFormat.premierLeague => 6,
+    MatchFormat.custom => null,
+  };
 
   /// First-to sets for this preset, or `null` for [MatchFormat.custom].
   int? get sets => switch (this) {
-        MatchFormat.pdcSets => 3,
-        MatchFormat.custom => null,
-        _ => 1,
-      };
+    MatchFormat.pdcSets => 3,
+    MatchFormat.custom => null,
+    _ => 1,
+  };
 }

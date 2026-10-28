@@ -54,7 +54,7 @@ class ThrowRow extends StatelessWidget {
   /// Width of the score pill plus the gap behind it, the offset the second
   /// line starts at so it lines up with the first line's text.
   static const _pillWidth = 48.0;
-  static const _pillGap   = 10.0;
+  static const _pillGap = 10.0;
 
   /// Names the individual darts of the visit, `T20 · T20 · S19`, or null when
   /// the visit was entered as a plain score and the darts were never recorded.
@@ -74,29 +74,32 @@ class ThrowRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
 
     final progression = '${t.remainingBefore} → ${t.remainingAfter}';
-    final darts       = l.dartsN(t.dartsUsed);
-    final position    = showPosition
-        ? (showSet ? '${l.setLabel(t.set)} · ${l.legLabel(t.leg)}' : l.legLabel(t.leg))
+    final darts = l.dartsN(t.dartsUsed);
+    final position = showPosition
+        ? (showSet
+              ? '${l.setLabel(t.set)} · ${l.legLabel(t.leg)}'
+              : l.legLabel(t.leg))
         : null;
-    final when  = thrownAt == null
+    final when = thrownAt == null
         ? null
         : DateFormat('dd.MM  HH:mm').format(thrownAt!);
-    final hits  = _dartsLabel(l, t.hitsJson);
+    final hits = _dartsLabel(l, t.hitsJson);
 
     // Slot assignment. A log names the thrower first and reads the score step
     // on the right; a single player's list has no name to show, so the step
     // moves up front and the right of the line goes to the date.
-    final main        = playerName ?? progression;
-    final trailing    = playerName != null ? progression : (when ?? darts);
-    final sub         = [?position, ?hits].join('  ·  ');
+    final main = playerName ?? progression;
+    final trailing = playerName != null ? progression : (when ?? darts);
+    final sub = [?position, ?hits].join('  ·  ');
     final subTrailing = playerName != null || when != null ? darts : null;
 
-    final subtitleStyle =
-        theme.textTheme.labelSmall?.copyWith(color: cs.onSurfaceVariant);
+    final subtitleStyle = theme.textTheme.labelSmall?.copyWith(
+      color: cs.onSurfaceVariant,
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -120,8 +123,9 @@ class ThrowRow extends StatelessWidget {
                 trailing,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: theme.textTheme.bodyMedium
-                    ?.copyWith(color: cs.onSurfaceVariant),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -167,15 +171,15 @@ class _ScorePill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     final (background, foreground) = t.bust
         ? (cs.errorContainer, cs.onErrorContainer)
         : t.score >= 140
-            ? (cs.tertiaryContainer, cs.onTertiaryContainer)
-            : t.score >= 100
-                ? (cs.secondaryContainer, cs.onSecondaryContainer)
-                : (cs.surfaceContainerHighest, cs.onSurface);
+        ? (cs.tertiaryContainer, cs.onTertiaryContainer)
+        : t.score >= 100
+        ? (cs.secondaryContainer, cs.onSecondaryContainer)
+        : (cs.surfaceContainerHighest, cs.onSurface);
 
     return Container(
       width: ThrowRow._pillWidth,

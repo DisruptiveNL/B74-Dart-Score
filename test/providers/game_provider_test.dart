@@ -10,18 +10,17 @@ DartThrow _t({
   required int set,
   int dartsUsed = 3,
   int score = 60,
-}) =>
-    DartThrow(
-      gameId: 1,
-      playerId: playerId,
-      score: score,
-      dartsUsed: dartsUsed,
-      leg: leg,
-      set: set,
-      remainingBefore: 501,
-      thrownAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
-      bust: false,
-    );
+}) => DartThrow(
+  gameId: 1,
+  playerId: playerId,
+  score: score,
+  dartsUsed: dartsUsed,
+  leg: leg,
+  set: set,
+  remainingBefore: 501,
+  thrownAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+  bust: false,
+);
 
 void main() {
   group('currentLegAndSet', () {
@@ -111,18 +110,19 @@ void main() {
 
   group('PlayerState.throwingOrder', () {
     /// A slot holding [names] with the turn on the member at [currentPlayerIdx].
-    PlayerState makeSlot(List<String> names, int currentPlayerIdx) => PlayerState(
-          displayName:      names.length > 1 ? 'Team' : names.first,
-          players:          [
+    PlayerState makeSlot(List<String> names, int currentPlayerIdx) =>
+        PlayerState(
+          displayName: names.length > 1 ? 'Team' : names.first,
+          players: [
             for (var i = 0; i < names.length; i++)
               Player(id: i + 1, name: names[i]),
           ],
           currentPlayerIdx: currentPlayerIdx,
-          legsWon:          0,
-          setsWon:          0,
-          remaining:        501,
-          throws:           const [],
-          isTeamSlot:       names.length > 1,
+          legsWon: 0,
+          setsWon: 0,
+          remaining: 501,
+          throws: const [],
+          isTeamSlot: names.length > 1,
         );
 
     test('returns the single player of an individual slot', () {
@@ -130,12 +130,21 @@ void main() {
     });
 
     test('starts at the member who throws next and wraps around', () {
-      expect(makeSlot(['A', 'B', 'C'], 0).throwingOrder.map((p) => p.name),
-          ['A', 'B', 'C']);
-      expect(makeSlot(['A', 'B', 'C'], 1).throwingOrder.map((p) => p.name),
-          ['B', 'C', 'A']);
-      expect(makeSlot(['A', 'B', 'C'], 2).throwingOrder.map((p) => p.name),
-          ['C', 'A', 'B']);
+      expect(makeSlot(['A', 'B', 'C'], 0).throwingOrder.map((p) => p.name), [
+        'A',
+        'B',
+        'C',
+      ]);
+      expect(makeSlot(['A', 'B', 'C'], 1).throwingOrder.map((p) => p.name), [
+        'B',
+        'C',
+        'A',
+      ]);
+      expect(makeSlot(['A', 'B', 'C'], 2).throwingOrder.map((p) => p.name), [
+        'C',
+        'A',
+        'B',
+      ]);
     });
 
     test('leaves the player list of the slot untouched', () {

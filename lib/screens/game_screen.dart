@@ -29,7 +29,9 @@ class _GameScreenState extends State<GameScreen> {
     return Consumer<GameProvider>(
       builder: (context, provider, _) {
         if (provider.game == null) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (provider.gameOver) {
@@ -39,53 +41,61 @@ class _GameScreenState extends State<GameScreen> {
               MaterialPageRoute(builder: (_) => const GameSummaryScreen()),
             );
           });
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
-        final game       = provider.game!;
-        final states     = provider.playerStates;
+        final game = provider.game!;
+        final states = provider.playerStates;
         final currentIdx = provider.currentPlayerIndex;
-        final current    = provider.currentPlayerState;
-        final isSolo     = states.length == 1;
+        final current = provider.currentPlayerState;
+        final isSolo = states.length == 1;
         final displayRemaining = provider.liveDisplayRemaining;
-        final liveBust   = provider.liveBust;
+        final liveBust = provider.liveBust;
         final liveDartsInVisit = provider.dartsInVisit;
-        final handicaps  = provider.handicaps;
+        final handicaps = provider.handicaps;
 
         // Check-In only applies in the very first leg of the game (leg 1, set 1).
-        final checkInActive = provider.currentLeg == 1 && provider.currentSet == 1;
+        final checkInActive =
+            provider.currentLeg == 1 && provider.currentSet == 1;
 
         // Per-player resolved modes (handicap overrides game defaults)
         List<GameMode> playerCheckIns = states
-            .map((s) => checkInActive
-                ? (handicaps[s.player.id]?.checkIn ?? game.gameMode)
-                : GameMode.straightIn)
+            .map(
+              (s) => checkInActive
+                  ? (handicaps[s.player.id]?.checkIn ?? game.gameMode)
+                  : GameMode.straightIn,
+            )
             .toList();
         List<CheckoutMode> playerCheckOuts = states
             .map((s) => handicaps[s.player.id]?.checkOut ?? game.checkoutMode)
             .toList();
         // hasCheckedIn: straight-in is always checked in; double-in/master-in require remaining < startScore
         List<bool> playerCheckedIn = states.asMap().entries.map((e) {
-          final alreadyIn = playerCheckIns[e.key] == GameMode.straightIn ||
+          final alreadyIn =
+              playerCheckIns[e.key] == GameMode.straightIn ||
               e.value.remaining < game.startScore;
           // Live override: if the qualifying dart was thrown this visit, show as checked in immediately
-          if (e.key == currentIdx) return alreadyIn || provider.checkedInThisVisit;
+          if (e.key == currentIdx)
+            return alreadyIn || provider.checkedInThisVisit;
           return alreadyIn;
         }).toList();
 
         final currentCheckOut = playerCheckOuts[currentIdx];
         final currentHasCheckedIn = playerCheckedIn[currentIdx];
 
-        final tablet    = isTabletLayout(context);
-        final layout    = tablet ? context.watch<TabletLayoutProvider>() : null;
-        final mq        = MediaQuery.of(context);
+        final tablet = isTabletLayout(context);
+        final layout = tablet ? context.watch<TabletLayoutProvider>() : null;
+        final mq = MediaQuery.of(context);
         final landscape = mq.size.width >= mq.size.height;
 
         // How much bigger than a phone the score card may be. The card shares
         // its column with the input, so what it may spend follows from the
         // height both have: a large tablet reads from across the room, a small
         // one in landscape has barely more room than a phone.
-        final bodyHeight = mq.size.height -
+        final bodyHeight =
+            mq.size.height -
             mq.padding.top -
             mq.padding.bottom -
             (tablet ? 56 : 44);
@@ -95,46 +105,51 @@ class _GameScreenState extends State<GameScreen> {
         final hintScale = scale.clamp(1.0, 1.5).toDouble();
 
         final scoreboard = _Scoreboard(
-              states: states,
-              currentIdx: currentIdx,
-              game: game,
-              isSolo: isSolo,
-              liveRemaining: displayRemaining,
-              liveBust: liveBust,
-              currentLeg: provider.currentLeg,
-              currentSet: provider.currentSet,
-              liveDartsInVisit: liveDartsInVisit,
-              playerCheckIns: playerCheckIns,
-              playerCheckOuts: playerCheckOuts,
-              playerCheckedIn: playerCheckedIn,
+          states: states,
+          currentIdx: currentIdx,
+          game: game,
+          isSolo: isSolo,
+          liveRemaining: displayRemaining,
+          liveBust: liveBust,
+          currentLeg: provider.currentLeg,
+          currentSet: provider.currentSet,
+          liveDartsInVisit: liveDartsInVisit,
+          playerCheckIns: playerCheckIns,
+          playerCheckOuts: playerCheckOuts,
+          playerCheckedIn: playerCheckedIn,
           scale: scale,
-          onSlotTap: (i) => Navigator.of(context)
-              .push(LivePlayerStatsRoute<void>(slotIndex: i)),
+          onSlotTap: (i) => Navigator.of(
+            context,
+          ).push(LivePlayerStatsRoute<void>(slotIndex: i)),
         );
 
         // Fixed-height area for the checkout hint so buttons never shift
         final checkoutHint = SizedBox(
           height: 62 * hintScale,
-          child: Row(children: [
-            if (!isSolo) Expanded(child: B74ScoreCorrection(slotIndex: 0)),
-            Expanded(
-              flex: 3,
-              child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: FinishSuggestionWidget(
-                  key: ValueKey(
-                    '${liveBust ? current.remaining : displayRemaining}_$liveDartsInVisit',
+          child: Row(
+            children: [
+              if (!isSolo) Expanded(child: B74ScoreCorrection(slotIndex: 0)),
+              Expanded(
+                flex: 3,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 200),
+                  child: FinishSuggestionWidget(
+                    key: ValueKey(
+                      '${liveBust ? current.remaining : displayRemaining}_$liveDartsInVisit',
+                    ),
+                    remaining: liveBust ? current.remaining : displayRemaining,
+                    favoriteDouble: current.player.favoriteDouble,
+                    dartsThrown: liveDartsInVisit,
+                    checkoutMode: currentHasCheckedIn
+                        ? currentCheckOut
+                        : CheckoutMode.doubleOut,
+                    scale: hintScale,
                   ),
-                  remaining: liveBust ? current.remaining : displayRemaining,
-                  favoriteDouble: current.player.favoriteDouble,
-                  dartsThrown: liveDartsInVisit,
-                  checkoutMode: currentHasCheckedIn ? currentCheckOut : CheckoutMode.doubleOut,
-                  scale: hintScale,
                 ),
               ),
-            ),
-            if (!isSolo) Expanded(child: B74ScoreCorrection(slotIndex: 1)),
-          ]),
+              if (!isSolo) Expanded(child: B74ScoreCorrection(slotIndex: 1)),
+            ],
+          ),
         );
 
         // The hint belongs to the score, and travels with it unless a layout
@@ -172,17 +187,18 @@ class _GameScreenState extends State<GameScreen> {
                               ? '${context.l10n.openPlay} · ${game.startScore} · ${context.l10n.legLabel(provider.currentLeg)}'
                               : '${context.l10n.openPlay} · ${game.startScore}',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: tablet ? 19 : 15),
+                            fontWeight: FontWeight.bold,
+                            fontSize: tablet ? 19 : 15,
+                          ),
                         ),
                         if (game.legs > 1)
                           Text(
                             context.l10n.legsSetsShort(game.legs, game.sets),
                             style: TextStyle(
                               fontSize: tablet ? 13 : 11,
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onSurfaceVariant,
+                              color: Theme.of(
+                                context,
+                              ).colorScheme.onSurfaceVariant,
                             ),
                           ),
                       ],
@@ -194,19 +210,20 @@ class _GameScreenState extends State<GameScreen> {
                         Text(
                           '${game.startScore} · ${context.l10n.legLabel(provider.currentLeg)} · ${context.l10n.setLabel(provider.currentSet)}',
                           style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: tablet ? 19 : 15),
+                            fontWeight: FontWeight.bold,
+                            fontSize: tablet ? 19 : 15,
+                          ),
                         ),
                         Text(
                           game.placementMode
                               ? context.l10n.placementFormatLabel(game.legs)
                               : '${context.l10n.matchFormatLabel(MatchFormatLookup.fromValues(game.legs, game.sets))}'
-                                ' (${context.l10n.legsSetsShort(game.legs, game.sets)})',
+                                    ' (${context.l10n.legsSetsShort(game.legs, game.sets)})',
                           style: TextStyle(
                             fontSize: tablet ? 13 : 11,
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onSurfaceVariant,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -264,25 +281,25 @@ class _GameScreenState extends State<GameScreen> {
         final l = context.l10n;
         return Center(
           child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
-          child: AlertDialog(
-            title: Text(l.quitTitle),
-            content: Text(l.quitBody),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(l.cancel),
-              ),
-              FilledButton(
-                onPressed: () {
-                  context.read<GameProvider>().leaveGame();
-                  Navigator.pop(context);
-                  Navigator.pop(context);
-                },
-                child: Text(l.leave),
-              ),
-            ],
-          ),
+            constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
+            child: AlertDialog(
+              title: Text(l.quitTitle),
+              content: Text(l.quitBody),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text(l.cancel),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    context.read<GameProvider>().leaveGame();
+                    Navigator.pop(context);
+                    Navigator.pop(context);
+                  },
+                  child: Text(l.leave),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -303,8 +320,11 @@ class _PhoneBody extends StatelessWidget {
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: contentMaxWidth(context,
-              fraction: kGameWidthFraction, maxWidth: kMaxGameWidth),
+          maxWidth: contentMaxWidth(
+            context,
+            fraction: kGameWidthFraction,
+            maxWidth: kMaxGameWidth,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -333,6 +353,7 @@ class _PhoneBody extends StatelessWidget {
 /// score card that size.
 class _TabletBody extends StatelessWidget {
   final Widget scoreboardBlock;
+
   /// The two halves of that block, for the portrait layout that separates them.
   final Widget scoreboard;
   final Widget checkoutHint;
@@ -352,11 +373,14 @@ class _TabletBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final layout = context.watch<TabletLayoutProvider>();
-    final side   = layout.side;
+    final side = layout.side;
     // No header: the score card right above it already says who is throwing,
     // what they need and what they average, and a second copy of that in the
     // pane next to it is noise rather than information.
-    final stats = LivePlayerStatsPanel(slotIndex: currentIdx, showHeader: false);
+    final stats = LivePlayerStatsPanel(
+      slotIndex: currentIdx,
+      showHeader: false,
+    );
 
     if (landscape) {
       return SidePaneLayout(
@@ -407,19 +431,20 @@ class _TabletBody extends StatelessWidget {
               child: SidePaneLayout(
                 side: side,
                 fraction: fraction,
-                onFractionChanged: (f) => layout
-                    .setSplitFraction(SplitPane.game, f, landscape: false),
+                onFractionChanged: (f) => layout.setSplitFraction(
+                  SplitPane.game,
+                  f,
+                  landscape: false,
+                ),
                 onFractionSettled: () {
-                  layout.persistSplitFraction(SplitPane.game,
-                      landscape: false);
+                  layout.persistSplitFraction(SplitPane.game, landscape: false);
                 },
                 primary: hintOverInput
                     ? Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           checkoutHint,
-                          const Expanded(
-                              child: B74NumericInput()),
+                          const Expanded(child: B74NumericInput()),
                         ],
                       )
                     : const B74NumericInput(),
@@ -450,10 +475,12 @@ class _Scoreboard extends StatelessWidget {
   final List<GameMode> playerCheckIns;
   final List<CheckoutMode> playerCheckOuts;
   final List<bool> playerCheckedIn;
+
   /// How much larger than on a phone the card renders. A tablet is read from
   /// across the room rather than at arm's length, and how much room the card
   /// may spend on that depends on the height it shares with the input.
   final double scale;
+
   /// Opens the live info view for the slot at the given index.
   final void Function(int slotIndex) onSlotTap;
 
@@ -481,8 +508,8 @@ class _Scoreboard extends StatelessWidget {
     required bool isCurrent,
   }) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final s     = states[i];
+    final cs = theme.colorScheme;
+    final s = states[i];
 
     final displayValue = isCurrent
         ? (liveBust ? s.remaining : liveRemaining)
@@ -490,15 +517,18 @@ class _Scoreboard extends StatelessWidget {
     final showBust = isCurrent && liveBust;
 
     // Perfect-game live badge
-    final minDarts      = minimumDartsForScore[game.startScore];
+    final minDarts = minimumDartsForScore[game.startScore];
     final committedDarts = s.throws
         .where((t) => t.leg == currentLeg && t.set == currentSet)
         .fold(0, (sum, t) => sum + t.dartsUsed);
-    final totalDarts    = committedDarts + (isCurrent ? liveDartsInVisit : 0);
+    final totalDarts = committedDarts + (isCurrent ? liveDartsInVisit : 0);
     final checkRemaining = isCurrent ? liveRemaining : s.remaining;
     final remainingDarts = minDarts != null ? minDarts - totalDarts : 0;
-    final maxAchievable  = remainingDarts > 0 ? (remainingDarts - 1) * 60 + 50 : 0;
-    final perfectStillPossible = minDarts != null &&
+    final maxAchievable = remainingDarts > 0
+        ? (remainingDarts - 1) * 60 + 50
+        : 0;
+    final perfectStillPossible =
+        minDarts != null &&
         totalDarts < minDarts &&
         checkRemaining > 0 &&
         checkRemaining <= maxAchievable;
@@ -506,16 +536,17 @@ class _Scoreboard extends StatelessWidget {
     final cardColor = showBust
         ? cs.errorContainer
         : isCurrent
-            ? cs.primary
-            : cs.surfaceContainerHigh;
-    final onCard     = showBust
+        ? cs.primary
+        : cs.surfaceContainerHigh;
+    final onCard = showBust
         ? cs.onErrorContainer
         : isCurrent
-            ? cs.onPrimary
-            : cs.onSurface;
+        ? cs.onPrimary
+        : cs.onSurface;
     final onCardMuted = onCard.withValues(alpha: 0.65);
 
     final radius = 16.0 * scale;
+
     /// The phone size of [style], grown by [scale].
     TextStyle? sized(TextStyle? style) =>
         style?.copyWith(fontSize: (style.fontSize ?? 14) * scale);
@@ -536,114 +567,121 @@ class _Scoreboard extends StatelessWidget {
             borderRadius: BorderRadius.circular(radius),
             onTap: () => onSlotTap(i),
             child: Padding(
-          padding: EdgeInsets.fromLTRB(
-              12 * scale, 14 * scale, 12 * scale, 12 * scale),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Name: team name (big) + current player (small) for teams
-              Text(
-                s.label(context.l10n),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
-                style: sized(theme.textTheme.titleSmall)?.copyWith(
-                  color: onCard,
-                  fontWeight: FontWeight.bold,
-                ),
+              padding: EdgeInsets.fromLTRB(
+                12 * scale,
+                14 * scale,
+                12 * scale,
+                12 * scale,
               ),
-              if (s.isTeamSlot)
-                Text(
-                  s.player.label(context.l10n),
-                  textAlign: TextAlign.center,
-                  overflow: TextOverflow.ellipsis,
-                  style: sized(theme.textTheme.labelSmall)?.copyWith(
-                    color: onCard.withValues(alpha: 0.75),
-                  ),
-                ),
-              // Mode badge (check-in required OR in checkout range)
-              Center(
-                child: _ModeBadge(
-                  remaining: displayValue,
-                  checkIn: playerCheckIns[i],
-                  checkOut: playerCheckOuts[i],
-                  checkedIn: playerCheckedIn[i],
-                  onCard: onCard,
-                  scale: scale,
-                ),
-              ),
-              const SizedBox(height: 2),
-              // Big score
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 110),
-                child: Text(
-                  showBust ? 'BUST' : '$displayValue',
-                  key: ValueKey('$i-$displayValue-$showBust'),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 52 * scale,
-                    fontWeight: FontWeight.bold,
-                    color: onCard,
-                    height: 1,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-              // Stats + perfect-game badge
-              Stack(
-                alignment: Alignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: Icon(
-                      Icons.bar_chart_rounded,
-                      size: 14 * scale,
-                      color: onCardMuted,
+                  // Name: team name (big) + current player (small) for teams
+                  Text(
+                    s.label(context.l10n),
+                    textAlign: TextAlign.center,
+                    overflow: TextOverflow.ellipsis,
+                    style: sized(
+                      theme.textTheme.titleSmall,
+                    )?.copyWith(color: onCard, fontWeight: FontWeight.bold),
+                  ),
+                  if (s.isTeamSlot)
+                    Text(
+                      s.player.label(context.l10n),
+                      textAlign: TextAlign.center,
+                      overflow: TextOverflow.ellipsis,
+                      style: sized(
+                        theme.textTheme.labelSmall,
+                      )?.copyWith(color: onCard.withValues(alpha: 0.75)),
+                    ),
+                  // Mode badge (check-in required OR in checkout range)
+                  Center(
+                    child: _ModeBadge(
+                      remaining: displayValue,
+                      checkIn: playerCheckIns[i],
+                      checkOut: playerCheckOuts[i],
+                      checkedIn: playerCheckedIn[i],
+                      onCard: onCard,
+                      scale: scale,
                     ),
                   ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      if (!isSolo || game.legs > 1)
-                        Text(
-                          game.sets > 1
-                              ? '${context.l10n.setsAbbr} ${s.setsWon}  ${context.l10n.legsAbbr} ${s.legsWon}'
-                              : '${context.l10n.legs}: ${s.legsWon}',
-                          style: sized(theme.textTheme.bodySmall)
-                              ?.copyWith(color: onCardMuted),
-                        ),
-                      Text(
-                        'Ø ${s.average.toStringAsFixed(1)}',
-                        style: sized(theme.textTheme.bodySmall)
-                            ?.copyWith(color: onCardMuted),
+                  const SizedBox(height: 2),
+                  // Big score
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 110),
+                    child: Text(
+                      showBust ? 'BUST' : '$displayValue',
+                      key: ValueKey('$i-$displayValue-$showBust'),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 52 * scale,
+                        fontWeight: FontWeight.bold,
+                        color: onCard,
+                        height: 1,
                       ),
-                    ],
+                    ),
                   ),
-                  if (perfectStillPossible)
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: 7 * scale, vertical: 3 * scale),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFB300),
-                          borderRadius: BorderRadius.circular(6 * scale),
+                  const SizedBox(height: 6),
+                  // Stats + perfect-game badge
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Icon(
+                          Icons.bar_chart_rounded,
+                          size: 14 * scale,
+                          color: onCardMuted,
                         ),
-                        child: Text(
-                          '$minDarts',
-                          style: TextStyle(
-                            color: Colors.black,
-                            fontSize: 12 * scale,
-                            fontWeight: FontWeight.bold,
-                            height: 1,
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          if (!isSolo || game.legs > 1)
+                            Text(
+                              game.sets > 1
+                                  ? '${context.l10n.setsAbbr} ${s.setsWon}  ${context.l10n.legsAbbr} ${s.legsWon}'
+                                  : '${context.l10n.legs}: ${s.legsWon}',
+                              style: sized(
+                                theme.textTheme.bodySmall,
+                              )?.copyWith(color: onCardMuted),
+                            ),
+                          Text(
+                            'Ø ${s.average.toStringAsFixed(1)}',
+                            style: sized(
+                              theme.textTheme.bodySmall,
+                            )?.copyWith(color: onCardMuted),
+                          ),
+                        ],
+                      ),
+                      if (perfectStillPossible)
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 7 * scale,
+                              vertical: 3 * scale,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFFB300),
+                              borderRadius: BorderRadius.circular(6 * scale),
+                            ),
+                            child: Text(
+                              '$minDarts',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 12 * scale,
+                                fontWeight: FontWeight.bold,
+                                height: 1,
+                              ),
+                            ),
                           ),
                         ),
-                      ),
-                    ),
+                    ],
+                  ),
                 ],
               ),
-            ],
-          ),
             ),
           ),
         ),
@@ -654,7 +692,7 @@ class _Scoreboard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     // Placement mode: slots that already checked out this leg are shown only
     // as a small chip (with their finishing place) and never as a big card.
@@ -662,8 +700,9 @@ class _Scoreboard extends StatelessWidget {
     final finishedIndices = game.placementMode
         ? allIndices.where((i) => states[i].legPlacement != null).toList()
         : <int>[];
-    final activeIndices =
-        allIndices.where((i) => !finishedIndices.contains(i)).toList();
+    final activeIndices = allIndices
+        .where((i) => !finishedIndices.contains(i))
+        .toList();
 
     // With 3+ active players: show only current + next.  ≤2: show all.
     final showAll = activeIndices.length <= 2;
@@ -688,11 +727,15 @@ class _Scoreboard extends StatelessWidget {
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: mainIndices.map((i) => _buildCard(
-                context: context,
-                i: i,
-                isCurrent: i == currentIdx,
-              )).toList(),
+              children: mainIndices
+                  .map(
+                    (i) => _buildCard(
+                      context: context,
+                      i: i,
+                      isCurrent: i == currentIdx,
+                    ),
+                  )
+                  .toList(),
             ),
           ),
 
@@ -706,12 +749,13 @@ class _Scoreboard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: otherIndices.map((i) {
                   final s = states[i];
-                  final finished =
-                      game.placementMode && s.legPlacement != null;
-                  final chipBg =
-                      finished ? cs.secondaryContainer : cs.surfaceContainerHigh;
-                  final chipFg =
-                      finished ? cs.onSecondaryContainer : cs.onSurface;
+                  final finished = game.placementMode && s.legPlacement != null;
+                  final chipBg = finished
+                      ? cs.secondaryContainer
+                      : cs.surfaceContainerHigh;
+                  final chipFg = finished
+                      ? cs.onSecondaryContainer
+                      : cs.onSurface;
                   return Container(
                     margin: EdgeInsets.symmetric(horizontal: 4 * scale),
                     decoration: BoxDecoration(
@@ -725,56 +769,66 @@ class _Scoreboard extends StatelessWidget {
                         onTap: () => onSlotTap(i),
                         child: Padding(
                           padding: EdgeInsets.symmetric(
-                              horizontal: 10 * scale, vertical: 4 * scale),
+                            horizontal: 10 * scale,
+                            vertical: 4 * scale,
+                          ),
                           child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        CircleAvatar(
-                          radius: 9 * scale,
-                          backgroundColor: cs.outline.withValues(alpha: 0.3),
-                          child: Text(
-                            s.player.label(context.l10n).isNotEmpty
-                                ? s.player.label(context.l10n)[0].toUpperCase()
-                                : '?',
-                            style: TextStyle(
-                              fontSize: 9 * scale,
-                              fontWeight: FontWeight.bold,
-                              color: cs.onSurface,
-                            ),
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CircleAvatar(
+                                radius: 9 * scale,
+                                backgroundColor: cs.outline.withValues(
+                                  alpha: 0.3,
+                                ),
+                                child: Text(
+                                  s.player.label(context.l10n).isNotEmpty
+                                      ? s.player
+                                            .label(context.l10n)[0]
+                                            .toUpperCase()
+                                      : '?',
+                                  style: TextStyle(
+                                    fontSize: 9 * scale,
+                                    fontWeight: FontWeight.bold,
+                                    color: cs.onSurface,
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 5 * scale),
+                              Text(
+                                // A person's first name; a bot's whole label, or
+                                // the number that tells two of a tier apart is lost.
+                                !s.isTeamSlot && s.player.isBot
+                                    ? s.label(context.l10n)
+                                    : s.label(context.l10n).split(' ').first,
+                                style: theme.textTheme.labelSmall?.copyWith(
+                                  fontSize:
+                                      (theme.textTheme.labelSmall?.fontSize ??
+                                          11) *
+                                      scale,
+                                  color: finished
+                                      ? chipFg.withValues(alpha: 0.85)
+                                      : cs.onSurfaceVariant,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              SizedBox(width: 6 * scale),
+                              Text(
+                                finished
+                                    ? context.l10n.placementBadge(
+                                        s.legPlacement!,
+                                      )
+                                    : '${s.remaining}',
+                                style: theme.textTheme.labelMedium?.copyWith(
+                                  fontSize:
+                                      (theme.textTheme.labelMedium?.fontSize ??
+                                          12) *
+                                      scale,
+                                  fontWeight: FontWeight.bold,
+                                  color: chipFg,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        SizedBox(width: 5 * scale),
-                        Text(
-                          // A person's first name; a bot's whole label, or
-                          // the number that tells two of a tier apart is lost.
-                          !s.isTeamSlot && s.player.isBot
-                              ? s.label(context.l10n)
-                              : s.label(context.l10n).split(' ').first,
-                          style: theme.textTheme.labelSmall
-                              ?.copyWith(
-                            fontSize:
-                                (theme.textTheme.labelSmall?.fontSize ?? 11) * scale,
-                            color: finished
-                                ? chipFg.withValues(alpha: 0.85)
-                                : cs.onSurfaceVariant,
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        SizedBox(width: 6 * scale),
-                        Text(
-                          finished
-                              ? context.l10n.placementBadge(s.legPlacement!)
-                              : '${s.remaining}',
-                          style: theme.textTheme.labelMedium
-                              ?.copyWith(
-                            fontSize:
-                                (theme.textTheme.labelMedium?.fontSize ?? 12) * scale,
-                            fontWeight: FontWeight.bold,
-                            color: chipFg,
-                          ),
-                        ),
-                      ],
-                    ),
                         ),
                       ),
                     ),
@@ -803,6 +857,7 @@ class _ModeBadge extends StatelessWidget {
   final CheckoutMode checkOut;
   final bool checkedIn;
   final Color onCard;
+
   /// How much larger than on a phone the badge renders, matching its card.
   final double scale;
 
@@ -818,13 +873,16 @@ class _ModeBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Priority 1: Double-In / Master-In not yet done
-    if ((checkIn == GameMode.doubleIn || checkIn == GameMode.masterIn) && !checkedIn) {
+    if ((checkIn == GameMode.doubleIn || checkIn == GameMode.masterIn) &&
+        !checkedIn) {
       final label = checkIn == GameMode.masterIn ? 'MASTER IN' : 'DOUBLE IN';
       return Padding(
         padding: const EdgeInsets.only(top: 3),
         child: Container(
           padding: EdgeInsets.symmetric(
-              horizontal: 8 * scale, vertical: 2 * scale),
+            horizontal: 8 * scale,
+            vertical: 2 * scale,
+          ),
           decoration: BoxDecoration(
             color: const Color(0xFFFFB300).withValues(alpha: 0.9),
             borderRadius: BorderRadius.circular(20),
@@ -845,8 +903,8 @@ class _ModeBadge extends StatelessWidget {
     // Priority 2: In checkout range, show checkout mode
     if (remaining <= 170 && remaining > 1) {
       final label = switch (checkOut) {
-        CheckoutMode.doubleOut  => 'D-Out',
-        CheckoutMode.masterOut  => 'M-Out',
+        CheckoutMode.doubleOut => 'D-Out',
+        CheckoutMode.masterOut => 'M-Out',
         CheckoutMode.straightOut => 'S-Out',
       };
       return Padding(

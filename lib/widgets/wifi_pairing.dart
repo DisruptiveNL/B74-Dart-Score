@@ -134,8 +134,9 @@ class _QrScannerState extends State<QrScanner> with WidgetsBindingObserver {
                 color: Colors.white,
                 shadows: [
                   Shadow(
-                      color: Colors.black.withValues(alpha: 0.8),
-                      blurRadius: 8),
+                    color: Colors.black.withValues(alpha: 0.8),
+                    blurRadius: 8,
+                  ),
                 ],
               ),
             ),
@@ -181,8 +182,8 @@ class _PairingDialogState extends State<PairingDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
 
     return PopScope(
       canPop: false,
@@ -245,10 +246,9 @@ class PairingQrCard extends StatelessWidget {
         if (title != null) ...[
           Text(
             title!,
-            style: Theme.of(context)
-                .textTheme
-                .titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
         ],
@@ -258,7 +258,8 @@ class PairingQrCard extends StatelessWidget {
           // the screen. Measured against the window rather than the box,
           // because in a scrolling column there is no height to measure.
           constraints: BoxConstraints(
-              maxWidth: MediaQuery.sizeOf(context).height * 0.5),
+            maxWidth: MediaQuery.sizeOf(context).height * 0.5,
+          ),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -329,12 +330,13 @@ class TransferRouteSelector extends StatelessWidget {
     if (!ownNetworkAvailable) {
       final hint = unavailableHint;
       return Text(
-        hint == null ? l.routeSharedWifiHint : '${l.routeSharedWifiHint}\n$hint',
+        hint == null
+            ? l.routeSharedWifiHint
+            : '${l.routeSharedWifiHint}\n$hint',
         textAlign: TextAlign.center,
-        style: Theme.of(context)
-            .textTheme
-            .bodySmall
-            ?.copyWith(color: cs.onSurfaceVariant),
+        style: Theme.of(
+          context,
+        ).textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
       );
     }
 
@@ -350,11 +352,21 @@ class TransferRouteSelector extends StatelessWidget {
         },
         child: Column(
           children: [
-            _option(context, TransferRoute.sharedWifi, Icons.wifi,
-                l.routeSharedWifi, l.routeSharedWifiHint),
+            _option(
+              context,
+              TransferRoute.sharedWifi,
+              Icons.wifi,
+              l.routeSharedWifi,
+              l.routeSharedWifiHint,
+            ),
             Divider(height: 1, color: cs.outlineVariant),
-            _option(context, TransferRoute.ownNetwork, Icons.wifi_tethering,
-                l.routeOwnNetwork, l.routeOwnNetworkHint),
+            _option(
+              context,
+              TransferRoute.ownNetwork,
+              Icons.wifi_tethering,
+              l.routeOwnNetwork,
+              l.routeOwnNetworkHint,
+            ),
           ],
         ),
       ),
@@ -362,8 +374,13 @@ class TransferRouteSelector extends StatelessWidget {
   }
 
   /// One route as a tappable row.
-  Widget _option(BuildContext context, TransferRoute route, IconData icon,
-      String title, String hint) {
+  Widget _option(
+    BuildContext context,
+    TransferRoute route,
+    IconData icon,
+    String title,
+    String hint,
+  ) {
     return RadioListTile<TransferRoute>(
       value: route,
       // Off while a transfer is running: the route cannot change under a
@@ -393,7 +410,8 @@ String transferStartMessage(BuildContext context, Object error) {
     TransferStartException() => l.syncServerFailed,
     HotspotException(reason: HotspotFailure.incompatibleMode) =>
       l.hotspotIncompatible,
-    HotspotException(reason: HotspotFailure.permissionDenied) => l.hotspotDenied,
+    HotspotException(reason: HotspotFailure.permissionDenied) =>
+      l.hotspotDenied,
     HotspotException() => l.hotspotFailed,
     _ => '${l.syncServerFailed}\n\n${l.error}: $error',
   };

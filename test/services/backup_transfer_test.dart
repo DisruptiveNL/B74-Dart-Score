@@ -53,7 +53,10 @@ void main() {
 
   /// Where the peer connects, on loopback whatever address was reported.
   TransferInvite loopback(TransferInvite i) => TransferInvite.forNow(
-      addresses: const ['127.0.0.1'], port: i.port, token: i.token);
+    addresses: const ['127.0.0.1'],
+    port: i.port,
+    token: i.token,
+  );
 
   test('the peer gets a database it can actually read', () async {
     final id = await DbHelper.instance.insertPlayer(Player(name: 'Ann'));
@@ -65,8 +68,10 @@ void main() {
       contentType: ContentType.binary,
       addresses: const ['127.0.0.1'],
     );
-    expect(connection.qrPayload(kBackupWifiPrefix),
-        startsWith(kBackupWifiPrefix));
+    expect(
+      connection.qrPayload(kBackupWifiPrefix),
+      startsWith(kBackupWifiPrefix),
+    );
 
     final fetch = SyncClient().fetchBytes(loopback(connection));
     await until(SyncServerState.pending);
@@ -84,9 +89,13 @@ void main() {
     final info = await DbHelper.instance.inspectBackup(incoming);
     expect(info, isNotNull);
     expect(info!.playerCount, 2);
-    expect(info.deviceId, 'SENDER0000000001',
-        reason: 'the receiver has to know which device played what it is '
-            'about to take on');
+    expect(
+      info.deviceId,
+      'SENDER0000000001',
+      reason:
+          'the receiver has to know which device played what it is '
+          'about to take on',
+    );
     expect(id, isPositive);
   });
 
@@ -144,15 +153,20 @@ void main() {
       final connection = await serveLargePayload();
 
       String? seen;
-      final fetch = SyncClient()
-          .fetchBytes(loopback(connection), onPin: (pin) => seen = pin);
+      final fetch = SyncClient().fetchBytes(
+        loopback(connection),
+        onPin: (pin) => seen = pin,
+      );
       await until(SyncServerState.pending);
       server.approve();
       await fetch;
 
       expect(seen, isNotNull);
-      expect(seen, server.pin,
-          reason: 'both screens have to show the same digits');
+      expect(
+        seen,
+        server.pin,
+        reason: 'both screens have to show the same digits',
+      );
     });
 
     test('both sides can follow how far the database has got', () async {
@@ -174,14 +188,24 @@ void main() {
       server.approve();
       final bytes = await fetch;
 
-      expect(sent, isNotEmpty, reason: 'the sending screen needs a bar to move');
-      expect(sent.length, greaterThan(1),
-          reason: 'one step at the end is not progress');
+      expect(
+        sent,
+        isNotEmpty,
+        reason: 'the sending screen needs a bar to move',
+      );
+      expect(
+        sent.length,
+        greaterThan(1),
+        reason: 'one step at the end is not progress',
+      );
       expect(sent, orderedEquals(List.of(sent)..sort()));
       expect(sent.last, 1.0);
 
-      expect(announcedTotal, bytes.length,
-          reason: 'without the length the receiver cannot draw a bar at all');
+      expect(
+        announcedTotal,
+        bytes.length,
+        reason: 'without the length the receiver cannot draw a bar at all',
+      );
       expect(lastReceived, bytes.length);
     });
 
@@ -194,8 +218,11 @@ void main() {
       expect(server.progress.value, 1.0);
 
       await server.stop();
-      await server.start((await BackupService.exportBytes()).$1,
-          twoWay: false, addresses: const ['127.0.0.1']);
+      await server.start(
+        (await BackupService.exportBytes()).$1,
+        twoWay: false,
+        addresses: const ['127.0.0.1'],
+      );
 
       expect(server.progress.value, 0.0);
     });
@@ -203,7 +230,10 @@ void main() {
 
   test('a profile sync code is not a database code', () {
     final invite = TransferInvite.forNow(
-        addresses: const ['10.0.0.5'], port: 1234, token: 'TOKEN');
+      addresses: const ['10.0.0.5'],
+      port: 1234,
+      token: 'TOKEN',
+    );
     final syncCode = invite.qrPayload(kSyncWifiPrefix);
     final backupCode = invite.qrPayload(kBackupWifiPrefix);
 
@@ -212,7 +242,9 @@ void main() {
     expect(TransferInvite.parse(syncCode, prefix: kBackupWifiPrefix), isNull);
     expect(TransferInvite.parse(backupCode, prefix: kSyncWifiPrefix), isNull);
     expect(TransferInvite.parse(syncCode, prefix: kSyncWifiPrefix), isNotNull);
-    expect(TransferInvite.parse(backupCode, prefix: kBackupWifiPrefix),
-        isNotNull);
+    expect(
+      TransferInvite.parse(backupCode, prefix: kBackupWifiPrefix),
+      isNotNull,
+    );
   });
 }

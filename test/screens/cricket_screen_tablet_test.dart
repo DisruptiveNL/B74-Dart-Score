@@ -30,12 +30,12 @@ void main() {
       provider = CricketProvider();
       await provider.startGame(
         CricketGame(
-          variant:       CricketVariant.normal,
-          scoringMode:   CricketScoringMode.standard,
-          legs:          1,
-          sets:          1,
-          createdAt:     DateTime(2026, 4, 1),
-          playerIds:     players.map((p) => p.id!).toList(),
+          variant: CricketVariant.normal,
+          scoringMode: CricketScoringMode.standard,
+          legs: 1,
+          sets: 1,
+          createdAt: DateTime(2026, 4, 1),
+          playerIds: players.map((p) => p.id!).toList(),
           startingOrder: StartingOrder.fixed,
         ),
         players,
@@ -44,12 +44,14 @@ void main() {
 
     Future<void> pumpBoard(WidgetTester tester, Size size) async {
       usePhoneSurface(tester, size: size);
-      await tester.pumpWidget(testApp(
-        ChangeNotifierProvider<CricketProvider>.value(
-          value: provider,
-          child: const CricketScreen(),
+      await tester.pumpWidget(
+        testApp(
+          ChangeNotifierProvider<CricketProvider>.value(
+            value: provider,
+            child: const CricketScreen(),
+          ),
         ),
-      ));
+      );
       await tester.pumpAndSettle();
     }
 
@@ -67,7 +69,7 @@ void main() {
       testWidgets('fills the height it is given on a tablet', (tester) async {
         await pumpBoard(tester, const Size(1180, 820));
 
-        final card  = tester.getRect(boardCard());
+        final card = tester.getRect(boardCard());
         final input = tester.getRect(find.text('Miss'));
 
         // Down to the input rather than stopping a third of the way there. The
@@ -78,34 +80,41 @@ void main() {
         expect(markSize(tester), greaterThan(36));
       });
 
-      testWidgets('gives every player a column that is on the screen',
-          (tester) async {
+      testWidgets('gives every player a column that is on the screen', (
+        tester,
+      ) async {
         await pumpBoard(tester, const Size(1180, 820));
 
         // The sixth player used to sit past the right edge of a card capped at
         // a phone's width, reachable only by scrolling the grid.
-        expect(tester.getRect(find.text('P6')).right,
-            lessThanOrEqualTo(tester.getRect(boardCard()).right));
+        expect(
+          tester.getRect(find.text('P6')).right,
+          lessThanOrEqualTo(tester.getRect(boardCard()).right),
+        );
 
         // Upright too, where there is less width to divide.
         await pumpBoard(tester, const Size(820, 1180));
-        expect(tester.getRect(find.text('P6')).right,
-            lessThanOrEqualTo(tester.getRect(boardCard()).right));
+        expect(
+          tester.getRect(find.text('P6')).right,
+          lessThanOrEqualTo(tester.getRect(boardCard()).right),
+        );
       });
     });
 
     group('with two players', () {
       setUp(() => startGame(2));
 
-      testWidgets('stands centred rather than stretching them across the room',
-          (tester) async {
-        await pumpBoard(tester, const Size(1180, 820));
+      testWidgets(
+        'stands centred rather than stretching them across the room',
+        (tester) async {
+          await pumpBoard(tester, const Size(1180, 820));
 
-        final card = tester.getRect(boardCard());
-        expect(card.center.dx, closeTo(1180 / 2, 8));
-        // Two columns at their cap plus the labels, not the whole window.
-        expect(card.width, lessThan(600));
-      });
+          final card = tester.getRect(boardCard());
+          expect(card.center.dx, closeTo(1180 / 2, 8));
+          // Two columns at their cap plus the labels, not the whole window.
+          expect(card.width, lessThan(600));
+        },
+      );
 
       testWidgets('is the same fixed board on a phone', (tester) async {
         await pumpBoard(tester, const Size(400, 900));

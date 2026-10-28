@@ -22,12 +22,12 @@ enum BotLevel {
   /// Deliberately not localized: the row outlives the language setting. What
   /// the screen shows comes from `label(l)`, never from here.
   String get storedName => switch (this) {
-        BotLevel.rookie  => 'Bot Rookie',
-        BotLevel.amateur => 'Bot Amateur',
-        BotLevel.semiPro => 'Bot Semi-Pro',
-        BotLevel.pro     => 'Bot Pro',
-        BotLevel.legend  => 'Bot Legend',
-      };
+    BotLevel.rookie => 'Bot Rookie',
+    BotLevel.amateur => 'Bot Amateur',
+    BotLevel.semiPro => 'Bot Semi-Pro',
+    BotLevel.pro => 'Bot Pro',
+    BotLevel.legend => 'Bot Legend',
+  };
 
   /// The stored name of the bot numbered [ordinal] in this tier: the first
   /// carries the bare tier name, the rest their number.

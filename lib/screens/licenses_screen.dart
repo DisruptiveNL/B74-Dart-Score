@@ -47,8 +47,7 @@ class _LicensesScreenState extends State<LicensesScreen> {
     return byPackage.entries
         .map((e) => _PackageLicenses(name: e.key, entries: e.value))
         .toList()
-      ..sort((a, b) =>
-          a.name.toLowerCase().compareTo(b.name.toLowerCase()));
+      ..sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
   }
 
   /// Opens [package]: beside the list where there is room for it, on top of it
@@ -58,14 +57,16 @@ class _LicensesScreenState extends State<LicensesScreen> {
       setState(() => _selected = package);
       return;
     }
-    Navigator.of(context).push(MaterialPageRoute(
-      builder: (_) => _PackageLicenseScreen(package: package),
-    ));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => _PackageLicenseScreen(package: package),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final l      = context.l10n;
+    final l = context.l10n;
     final tablet = isTabletLayout(context);
 
     return Scaffold(
@@ -177,9 +178,9 @@ class _PackageLicenseScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: Text(package.label(context.l10n))),
-        body: _LicenseText(package: package),
-      );
+    appBar: AppBar(title: Text(package.label(context.l10n))),
+    body: _LicenseText(package: package),
+  );
 }
 
 /// The licenses of one package inside the pane beside the list, under the name
@@ -201,8 +202,9 @@ class _LicensePane extends StatelessWidget {
           child: Text(
             package.label(context.l10n),
             textAlign: TextAlign.center,
-            style: theme.textTheme.titleMedium
-                ?.copyWith(fontWeight: FontWeight.bold),
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
         Expanded(child: _LicenseText(package: package)),
@@ -256,23 +258,25 @@ class _LicenseText extends StatelessWidget {
     for (var i = 0; i < package.entries.length; i++) {
       if (i > 0) children.add(const Divider(height: 32));
       for (final paragraph in package.entries[i].paragraphs) {
-        children.add(Padding(
-          // The registry states an indent per paragraph, and a centred one for
-          // the headings a license opens with.
-          padding: EdgeInsets.only(
-            top: 8,
-            left: paragraph.indent == LicenseParagraph.centeredIndent
-                ? 0
-                : 16.0 * paragraph.indent,
+        children.add(
+          Padding(
+            // The registry states an indent per paragraph, and a centred one for
+            // the headings a license opens with.
+            padding: EdgeInsets.only(
+              top: 8,
+              left: paragraph.indent == LicenseParagraph.centeredIndent
+                  ? 0
+                  : 16.0 * paragraph.indent,
+            ),
+            child: Text(
+              paragraph.text,
+              textAlign: paragraph.indent == LicenseParagraph.centeredIndent
+                  ? TextAlign.center
+                  : TextAlign.start,
+              style: theme.textTheme.bodySmall,
+            ),
           ),
-          child: Text(
-            paragraph.text,
-            textAlign: paragraph.indent == LicenseParagraph.centeredIndent
-                ? TextAlign.center
-                : TextAlign.start,
-            style: theme.textTheme.bodySmall,
-          ),
-        ));
+        );
       }
     }
 

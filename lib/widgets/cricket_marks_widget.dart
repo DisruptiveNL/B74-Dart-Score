@@ -45,7 +45,7 @@ class _MarksPainter extends CustomPainter {
 
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r  = size.width * 0.38;
+    final r = size.width * 0.38;
 
     canvas.drawLine(Offset(cx - r, cy + r), Offset(cx + r, cy - r), paint);
     if (marks >= 2) {
@@ -73,7 +73,7 @@ class _ClosedPainter extends CustomPainter {
 
     final cx = size.width / 2;
     final cy = size.height / 2;
-    final r  = size.width * 0.42;
+    final r = size.width * 0.42;
 
     canvas.drawCircle(Offset(cx, cy), r, paint);
     final xi = r * 0.6;

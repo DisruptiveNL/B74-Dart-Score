@@ -2,10 +2,21 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dartscore_app/services/competition_leg_start_policy.dart';
 
 void main() {
-  int? starter(int leg, int home, int away, {int? bull, int bestOf = 5,
-      bool enabled = true}) => CompetitionLegStartPolicy.starterForLeg(
-        legNumber: leg, bestOf: bestOf, homeLegs: home, awayLegs: away,
-        bullDecidingLeg: enabled, decidingBullWinnerSlot: bull);
+  int? starter(
+    int leg,
+    int home,
+    int away, {
+    int? bull,
+    int bestOf = 5,
+    bool enabled = true,
+  }) => CompetitionLegStartPolicy.starterForLeg(
+    legNumber: leg,
+    bestOf: bestOf,
+    homeLegs: home,
+    awayLegs: away,
+    bullDecidingLeg: enabled,
+    decidingBullWinnerSlot: bull,
+  );
 
   test('ordinary legs alternate regardless of who won the previous leg', () {
     expect(starter(1, 0, 0), 0);

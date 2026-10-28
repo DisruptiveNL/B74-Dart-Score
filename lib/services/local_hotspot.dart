@@ -78,7 +78,9 @@ HotspotFailure _failureFrom(Object error) {
 /// joins. Which device hosts says nothing about which way the data travels: an
 /// Android phone can raise the network and still be the one receiving.
 class LocalHotspot {
-  static const MethodChannel _channel = MethodChannel('dartscore/local_hotspot');
+  static const MethodChannel _channel = MethodChannel(
+    'dartscore/local_hotspot',
+  );
 
   static final StreamController<void> _stopped =
       StreamController<void>.broadcast();

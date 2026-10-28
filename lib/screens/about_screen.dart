@@ -44,11 +44,14 @@ class _LicenseTextScreen extends StatelessWidget {
   /// Opens [url] in the browser, showing an error snackbar if no handler is
   /// available.
   Future<void> _open(BuildContext context, String url) async {
-    final ok = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+    final ok = await launchUrl(
+      Uri.parse(url),
+      mode: LaunchMode.externalApplication,
+    );
     if (!ok && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.linkOpenError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.linkOpenError)));
     }
   }
 
@@ -60,12 +63,14 @@ class _LicenseTextScreen extends StatelessWidget {
       body: ListView(
         padding: contentPadding(context, top: 16, bottom: 16, innerH: 16),
         children: [
-          Text(l.appName,
-              style: Theme.of(context).textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            l.appName,
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+          ),
           const SizedBox(height: 4),
-          Text(l.licenseDesc,
-              style: Theme.of(context).textTheme.bodySmall),
+          Text(l.licenseDesc, style: Theme.of(context).textTheme.bodySmall),
           const Divider(height: 24),
           Text(_gplNoticeText, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 12),
@@ -109,9 +114,9 @@ class _AboutScreenState extends State<AboutScreen> {
   Future<void> _openLink(Uri uri) async {
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(context.l10n.linkOpenError)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.linkOpenError)));
     }
   }
 
@@ -131,9 +136,13 @@ class _AboutScreenState extends State<AboutScreen> {
             children: [
               const DartboardIcon(size: 72),
               const SizedBox(height: 12),
-              Text(l.appName,
-                  style: theme.textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold, color: cs.primary)),
+              Text(
+                l.appName,
+                style: theme.textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: cs.primary,
+                ),
+              ),
               const SizedBox(height: 4),
               Text(
                 info == null
@@ -176,7 +185,9 @@ class _AboutScreenState extends State<AboutScreen> {
                   subtitle: Text(l.licenseDesc),
                   trailing: const Icon(Icons.chevron_right_rounded),
                   onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(builder: (_) => const _LicenseTextScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => const _LicenseTextScreen(),
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -199,9 +210,9 @@ class _AboutScreenState extends State<AboutScreen> {
               title: Text(l.openSourceLicenses),
               subtitle: Text(l.openSourceLicensesDesc),
               trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const LicensesScreen()),
-              ),
+              onTap: () => Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const LicensesScreen())),
             ),
           ),
         ],
@@ -231,11 +242,13 @@ class _Card extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: cs.primary),
               const SizedBox(width: 6),
-              Text(title,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.bold,
-                  )),
+              Text(
+                title,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),

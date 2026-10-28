@@ -74,7 +74,9 @@ typedef LocalInterface = ({String name, List<String> addresses});
 Future<List<String>> localTransferAddresses() async {
   try {
     final interfaces = await NetworkInterface.list(
-        type: InternetAddressType.IPv4, includeLinkLocal: false);
+      type: InternetAddressType.IPv4,
+      includeLinkLocal: false,
+    );
     return rankTransferAddresses([
       for (final iface in interfaces)
         (

@@ -18,30 +18,42 @@ void main() {
 
   test('valid result round-trips', () {
     final payload = sample();
-    expect(CompetitionSingleResultContract.decode(
-      CompetitionSingleResultContract.encode(payload)), payload);
+    expect(
+      CompetitionSingleResultContract.decode(
+        CompetitionSingleResultContract.encode(payload),
+      ),
+      payload,
+    );
   });
 
   test('same match and slot has stable retry identity', () {
-    expect(CompetitionSingleResultContract.resultId('match-42', 2),
-        'match-42:single:2');
+    expect(
+      CompetitionSingleResultContract.resultId('match-42', 2),
+      'match-42:single:2',
+    );
   });
 
   test('wrong winner is rejected', () {
     final value = sample()..['winnerPlayerId'] = 'away-1';
-    expect(() => CompetitionSingleResultContract.encode(value),
-        throwsFormatException);
+    expect(
+      () => CompetitionSingleResultContract.encode(value),
+      throwsFormatException,
+    );
   });
 
   test('wrong result id is rejected', () {
     final value = sample()..['resultId'] = 'another';
-    expect(() => CompetitionSingleResultContract.encode(value),
-        throwsFormatException);
+    expect(
+      () => CompetitionSingleResultContract.encode(value),
+      throwsFormatException,
+    );
   });
 
   test('incomplete or tied match is rejected', () {
     final value = sample()..['awayLegs'] = 3;
-    expect(() => CompetitionSingleResultContract.encode(value),
-        throwsFormatException);
+    expect(
+      () => CompetitionSingleResultContract.encode(value),
+      throwsFormatException,
+    );
   });
 }

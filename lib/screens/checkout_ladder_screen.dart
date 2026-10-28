@@ -22,17 +22,23 @@ class CheckoutLadderScreen extends StatelessWidget {
     return Consumer<CheckoutLadderProvider>(
       builder: (context, provider, _) {
         if (provider.game == null) {
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         if (provider.gameOver) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             Navigator.pushReplacement(
               context,
-              MaterialPageRoute(builder: (_) => const CheckoutLadderSummaryScreen()),
+              MaterialPageRoute(
+                builder: (_) => const CheckoutLadderSummaryScreen(),
+              ),
             );
           });
-          return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
         }
 
         return _GameView(provider: provider);
@@ -54,20 +60,20 @@ class _GameView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l      = context.l10n;
-    final game   = provider.game!;
+    final l = context.l10n;
+    final game = provider.game!;
     final tablet = isTabletLayout(context);
     final layout = tablet ? context.watch<TabletLayoutProvider>() : null;
 
     final scoreboard = _Scoreboard(provider: provider);
-    final restBlock  = _RestBlock(provider: provider);
+    final restBlock = _RestBlock(provider: provider);
 
-    final sd    = provider.suddenDeathNumber;
+    final sd = provider.suddenDeathNumber;
     final title = !game.isRace
         ? l.ladderTrainingFrom(game.startNumber)
         : sd != null
-            ? l.ladderSuddenDeath(sd)
-            : l.ladderRaceTo(game.targetNumber!);
+        ? l.ladderSuddenDeath(sd)
+        : l.ladderRaceTo(game.targetNumber!);
 
     return PopScope(
       // A running game must not be lost to a stray back gesture; the system
@@ -83,7 +89,9 @@ class _GameView extends StatelessWidget {
           title: Text(
             title,
             style: TextStyle(
-                fontWeight: FontWeight.bold, fontSize: tablet ? 19 : 15),
+              fontWeight: FontWeight.bold,
+              fontSize: tablet ? 19 : 15,
+            ),
           ),
           actions: [
             if (layout != null)
@@ -117,7 +125,8 @@ class _GameView extends StatelessWidget {
                       restBlock,
                       const Expanded(
                         child: DartboardInput<CheckoutLadderProvider>(
-                            fillHeight: true),
+                          fillHeight: true,
+                        ),
                       ),
                     ],
                   ),
@@ -129,9 +138,11 @@ class _GameView extends StatelessWidget {
               : Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(
-                      maxWidth: contentMaxWidth(context,
-                          fraction: kGameWidthFraction,
-                          maxWidth: kMaxGameWidth),
+                      maxWidth: contentMaxWidth(
+                        context,
+                        fraction: kGameWidthFraction,
+                        maxWidth: kMaxGameWidth,
+                      ),
                     ),
                     child: LayoutBuilder(
                       builder: (context, box) => Column(
@@ -140,8 +151,9 @@ class _GameView extends StatelessWidget {
                           // The ladders scroll inside a share of the screen,
                           // so a game of five never pushes the input off it.
                           ConstrainedBox(
-                            constraints:
-                                BoxConstraints(maxHeight: box.maxHeight * 0.36),
+                            constraints: BoxConstraints(
+                              maxHeight: box.maxHeight * 0.36,
+                            ),
                             child: SingleChildScrollView(
                               padding: const EdgeInsets.fromLTRB(8, 6, 8, 0),
                               child: scoreboard,
@@ -149,7 +161,8 @@ class _GameView extends StatelessWidget {
                           ),
                           restBlock,
                           const Expanded(
-                              child: DartboardInput<CheckoutLadderProvider>()),
+                            child: DartboardInput<CheckoutLadderProvider>(),
+                          ),
                         ],
                       ),
                     ),
@@ -164,7 +177,7 @@ class _GameView extends StatelessWidget {
   /// the history. A training can be left the same way or ended, which stores
   /// it as finished and shows the summary.
   void _confirmQuit(BuildContext context) {
-    final l        = context.l10n;
+    final l = context.l10n;
     final provider = context.read<CheckoutLadderProvider>();
     final training = !provider.game!.isRace;
 
@@ -224,12 +237,12 @@ class _RestBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l        = context.l10n;
-    final theme    = Theme.of(context);
-    final cs       = theme.colorScheme;
-    final slot     = provider.currentSlot;
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final slot = provider.currentSlot;
     final position = slot.position;
-    final darts    = position.dartsInVisit;
+    final darts = position.dartsInVisit;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 6, 16, 0),
@@ -256,8 +269,9 @@ class _RestBlock extends StatelessWidget {
               ),
               Text(
                 l.ladderRest,
-                style: theme.textTheme.labelLarge
-                    ?.copyWith(color: cs.onSurfaceVariant),
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
               const SizedBox(width: 8),
               Text(
@@ -307,8 +321,8 @@ class _Scoreboard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(bottom: 6),
             child: _SlotCard(
-              slot:   slots[i],
-              game:   provider.game!,
+              slot: slots[i],
+              game: provider.game!,
               active: i == provider.currentSlotIndex,
               suddenDeath: provider.suddenDeathNumber != null,
               onTap: () => openCheckoutLadderSlotInfo(context, i),
@@ -324,8 +338,10 @@ class _SlotCard extends StatelessWidget {
   final CheckoutLadderSlotState slot;
   final CheckoutLadderGame game;
   final bool active;
+
   /// Whether the race is in sudden death, where only the level slots play.
   final bool suddenDeath;
+
   /// Opens the live info of this slot.
   final VoidCallback onTap;
 
@@ -339,10 +355,10 @@ class _SlotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l        = context.l10n;
-    final theme    = Theme.of(context);
-    final cs       = theme.colorScheme;
-    final ladder   = slot.ladder;
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final ladder = slot.ladder;
     final position = slot.position;
 
     // A slot that has nothing left to throw says why, instead of a direction
@@ -350,10 +366,10 @@ class _SlotCard extends StatelessWidget {
     final String? done = position.completed
         ? l.ladderCompleted
         : suddenDeath && !ladder.inSuddenDeath
-            ? l.ladderOut
-            : !suddenDeath && ladder.reachedTargetAt != null
-                ? l.ladderTargetChecked
-                : null;
+        ? l.ladderOut
+        : !suddenDeath && ladder.reachedTargetAt != null
+        ? l.ladderTargetChecked
+        : null;
 
     final tags = <Widget>[
       if (done != null)
@@ -378,7 +394,9 @@ class _SlotCard extends StatelessWidget {
       _Tag(
         label: l.ladderFloor(position.floor),
         // A floor above the start number was built by a safehouse.
-        color: position.floor > game.startNumber ? cs.tertiary : cs.onSurfaceVariant,
+        color: position.floor > game.startNumber
+            ? cs.tertiary
+            : cs.onSurfaceVariant,
         icon: position.floor > game.startNumber ? Icons.home_rounded : null,
       ),
     ];
@@ -418,15 +436,16 @@ class _SlotCard extends StatelessWidget {
                         slot.player.label(l),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.labelSmall
-                            ?.copyWith(color: cs.onSurfaceVariant),
+                        style: theme.textTheme.labelSmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     const SizedBox(height: 6),
                     Wrap(spacing: 6, runSpacing: 4, children: tags),
                     if (done == null) ...[
                       const SizedBox(height: 8),
                       _AttemptPips(
-                        used:  position.dartsInAttempt,
+                        used: position.dartsInAttempt,
                         total: game.dartsFor(position.number),
                       ),
                     ],
@@ -459,7 +478,9 @@ class _Tag extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final style = Theme.of(context).textTheme.labelSmall?.copyWith(color: color);
+    final style = Theme.of(
+      context,
+    ).textTheme.labelSmall?.copyWith(color: color);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
       decoration: BoxDecoration(
@@ -522,66 +543,84 @@ class _AttemptPips extends StatelessWidget {
 /// visit still being thrown is listed first while it is open.
 void openCheckoutLadderSlotInfo(BuildContext context, int slotIndex) {
   final provider = context.read<CheckoutLadderProvider>();
-  Navigator.of(context).push(MaterialPageRoute<void>(
-    builder: (_) => ModeLiveInfoScreen(
-      listenable: provider,
-      data: (context) {
-        final l      = context.l10n;
-        final s      = provider.slots[slotIndex];
-        final ladder = s.ladder;
-        final rate   = ladder.checkRate;
-        final perCheck = ladder.dartsPerCheck;
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => ModeLiveInfoScreen(
+        listenable: provider,
+        data: (context) {
+          final l = context.l10n;
+          final s = provider.slots[slotIndex];
+          final ladder = s.ladder;
+          final rate = ladder.checkRate;
+          final perCheck = ladder.dartsPerCheck;
 
-        final open = slotIndex == provider.currentSlotIndex &&
-                s.position.dartsInVisit > 0
-            ? provider.currentVisitDarts
-            : const <DartEntry>[];
-        final done = ladder.visits;
-        final from = done.length <= 3 ? 0 : done.length - 3;
-        final recent = <VisitSummary>[
-          if (open.isNotEmpty)
-            (
-              darts: [for (final d in open) visitDartFrom(d.field, d.field == 0 ? 0 : d.modifier, l)],
-              yield: l.ladderVisitRest(s.position.rest),
-            ),
-          for (var i = done.length - 1; i >= from; i--)
-            (
-              darts: [
-                for (final d in done[i].darts)
-                  visitDartFrom(d.field, d.multiplier, l),
-              ],
-              yield: done[i].checked
-                  ? l.ladderVisitChecked(done[i].number)
-                  : done[i].bust
-                      ? l.ladderVisitBust
-                      : l.ladderVisitRest(done[i].restAfter),
-            ),
-        ];
+          final open =
+              slotIndex == provider.currentSlotIndex &&
+                  s.position.dartsInVisit > 0
+              ? provider.currentVisitDarts
+              : const <DartEntry>[];
+          final done = ladder.visits;
+          final from = done.length <= 3 ? 0 : done.length - 3;
+          final recent = <VisitSummary>[
+            if (open.isNotEmpty)
+              (
+                darts: [
+                  for (final d in open)
+                    visitDartFrom(d.field, d.field == 0 ? 0 : d.modifier, l),
+                ],
+                yield: l.ladderVisitRest(s.position.rest),
+              ),
+            for (var i = done.length - 1; i >= from; i--)
+              (
+                darts: [
+                  for (final d in done[i].darts)
+                    visitDartFrom(d.field, d.multiplier, l),
+                ],
+                yield: done[i].checked
+                    ? l.ladderVisitChecked(done[i].number)
+                    : done[i].bust
+                    ? l.ladderVisitBust
+                    : l.ladderVisitRest(done[i].restAfter),
+              ),
+          ];
 
-        return (
-          title:    s.label(l),
-          subtitle: s.isTeamSlot ? s.player.label(l) : null,
-          visitSlots: 3,
-          recentVisits: recent.take(3).toList(),
-          stats: [
-            (l.ladderNumber, s.position.completed
-                ? l.ladderCompleted
-                : '${s.position.number}'),
-            (l.ladderFloorLabel, '${s.position.floor}'),
-            (l.ladderHighestChecked, ladder.highestChecked?.toString() ?? '—'),
-            (l.ladderChecksAttempts,
-                '${ladder.checks} / ${ladder.attemptsCompleted}'),
-            (l.ladderCheckRate,
-                rate == null ? '—' : '${(rate * 100).round()} %'),
-            (l.ladderDartsPerCheck,
-                perCheck == null ? '—' : perCheck.toStringAsFixed(1)),
-            (l.ladderSafehouses, '${ladder.safehouses}'),
-            (l.ladderDrops, '${ladder.drops}'),
-            (l.ladderBusts, '${ladder.busts}'),
-            (l.dartsThrown, '${ladder.darts}'),
-          ],
-        );
-      },
+          return (
+            title: s.label(l),
+            subtitle: s.isTeamSlot ? s.player.label(l) : null,
+            visitSlots: 3,
+            recentVisits: recent.take(3).toList(),
+            stats: [
+              (
+                l.ladderNumber,
+                s.position.completed
+                    ? l.ladderCompleted
+                    : '${s.position.number}',
+              ),
+              (l.ladderFloorLabel, '${s.position.floor}'),
+              (
+                l.ladderHighestChecked,
+                ladder.highestChecked?.toString() ?? '—',
+              ),
+              (
+                l.ladderChecksAttempts,
+                '${ladder.checks} / ${ladder.attemptsCompleted}',
+              ),
+              (
+                l.ladderCheckRate,
+                rate == null ? '—' : '${(rate * 100).round()} %',
+              ),
+              (
+                l.ladderDartsPerCheck,
+                perCheck == null ? '—' : perCheck.toStringAsFixed(1),
+              ),
+              (l.ladderSafehouses, '${ladder.safehouses}'),
+              (l.ladderDrops, '${ladder.drops}'),
+              (l.ladderBusts, '${ladder.busts}'),
+              (l.dartsThrown, '${ladder.darts}'),
+            ],
+          );
+        },
+      ),
     ),
-  ));
+  );
 }

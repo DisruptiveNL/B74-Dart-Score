@@ -22,7 +22,8 @@ class AroundTheClockSetupScreen extends StatefulWidget {
   const AroundTheClockSetupScreen({super.key});
 
   @override
-  State<AroundTheClockSetupScreen> createState() => _AroundTheClockSetupScreenState();
+  State<AroundTheClockSetupScreen> createState() =>
+      _AroundTheClockSetupScreenState();
 }
 
 class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
@@ -31,6 +32,7 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
 
   // ── Team game ─────────────────────────────────────────────────────────────
   bool _teamGameEnabled = false;
+
   /// Whether the computer opponent card is open. Off drops every bot.
   bool _botEnabled = false;
   final Map<Player, int> _teamAssignment = {}; // player → team index
@@ -74,16 +76,24 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
   /// The draggable entries of the starting-order section: the teams in a team
   /// game, otherwise the selected players.
   List<StartingOrderEntry> _startingOrderEntries() => _teamGameEnabled
-      ? List.generate(_teamNames.length, (ti) => StartingOrderEntry(
+      ? List.generate(
+          _teamNames.length,
+          (ti) => StartingOrderEntry(
             // The controller instance identifies the team across reorders; the
             // index does not, because it is exactly what the drag changes.
-            key:   ObjectKey(_teamNameCtrl[ti]),
+            key: ObjectKey(_teamNameCtrl[ti]),
             label: _teamNames[ti],
             color: teamColor(ti),
-          ))
+          ),
+        )
       : _selectedPlayers
-          .map((p) => StartingOrderEntry(key: ValueKey(p.id), label: p.label(context.l10n)))
-          .toList();
+            .map(
+              (p) => StartingOrderEntry(
+                key: ValueKey(p.id),
+                label: p.label(context.l10n),
+              ),
+            )
+            .toList();
 
   /// Moves the entry at [oldIndex] to [newIndex] in the throwing order: the
   /// teams in a team game, otherwise the selected players.
@@ -124,8 +134,8 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l          = context.l10n;
-    final theme      = Theme.of(context);
+    final l = context.l10n;
+    final theme = Theme.of(context);
     final allPlayers = context.watch<PlayersProvider>().players;
 
     return Scaffold(
@@ -146,20 +156,23 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
                     ChoiceChip(
                       label: Text(l.aroundClockBasic),
                       selected: _variant == AroundTheClockVariant.basic,
-                      onSelected: (_) =>
-                          setState(() => _variant = AroundTheClockVariant.basic),
+                      onSelected: (_) => setState(
+                        () => _variant = AroundTheClockVariant.basic,
+                      ),
                     ),
                     ChoiceChip(
                       label: Text(l.aroundClockFullSegments),
                       selected: _variant == AroundTheClockVariant.fullSegments,
-                      onSelected: (_) =>
-                          setState(() => _variant = AroundTheClockVariant.fullSegments),
+                      onSelected: (_) => setState(
+                        () => _variant = AroundTheClockVariant.fullSegments,
+                      ),
                     ),
                     ChoiceChip(
                       label: Text(l.aroundClockSkipRules),
                       selected: _variant == AroundTheClockVariant.skipRules,
-                      onSelected: (_) =>
-                          setState(() => _variant = AroundTheClockVariant.skipRules),
+                      onSelected: (_) => setState(
+                        () => _variant = AroundTheClockVariant.skipRules,
+                      ),
                     ),
                   ],
                 ),
@@ -209,14 +222,14 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
                 _teamGameEnabled = v;
                 if (v) {
                   for (var i = 0; i < _selectedPlayers.length; i++) {
-                    _teamAssignment[_selectedPlayers[i]] = i % _teamNames.length;
+                    _teamAssignment[_selectedPlayers[i]] =
+                        i % _teamNames.length;
                   }
                 }
               }),
               onAssignmentChanged: (p, t) =>
                   setState(() => _teamAssignment[p] = t),
-              onNameChanged: (i, name) =>
-                  setState(() => _teamNames[i] = name),
+              onNameChanged: (i, name) => setState(() => _teamNames[i] = name),
               onAddTeam: _addTeam,
               onRemoveTeam: _removeTeam,
             ),
@@ -226,8 +239,8 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
           if (_selectedPlayers.length >= 2) ...[
             const SizedBox(height: 16),
             StartingOrderSection(
-              order:    _startingOrder,
-              entries:  _startingOrderEntries(),
+              order: _startingOrder,
+              entries: _startingOrderEntries(),
               teamMode: _teamGameEnabled,
               onOrderChanged: (o) => setState(() => _startingOrder = o),
               onReorder: _reorderStartingOrder,
@@ -247,8 +260,7 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
               ),
             ),
           FilledButton.icon(
-            onPressed:
-                _canStart ? _startGame : null,
+            onPressed: _canStart ? _startGame : null,
             icon: const Icon(Icons.play_arrow),
             label: Text(l.startGame),
             style: FilledButton.styleFrom(
@@ -277,7 +289,6 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
     );
   }
 
-
   /// The computer opponents, picked by tier. A bot joins the selection the
   /// way a person does, so everything below the card treats it as a player.
   /// A second plus on a tier adds its next free number, so two bots of one
@@ -302,9 +313,10 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
         while (taken.contains(ordinal)) {
           ordinal++;
         }
-        final bot = await context
-            .read<PlayersProvider>()
-            .botFor(level, ordinal: ordinal);
+        final bot = await context.read<PlayersProvider>().botFor(
+          level,
+          ordinal: ordinal,
+        );
         if (!mounted) return;
         setState(() => _selectedPlayers.add(bot));
       },
@@ -334,7 +346,7 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
             .where((p) => (_teamAssignment[p] ?? 0) == ti)
             .toList();
         return TeamConfig(
-          name:      _teamNames[ti],
+          name: _teamNames[ti],
           playerIds: teamPlayers.map((p) => p.id!).toList(),
         );
       }).where((t) => t.playerIds.isNotEmpty).toList();
@@ -344,12 +356,12 @@ class _AroundTheClockSetupScreenState extends State<AroundTheClockSetupScreen> {
     }
 
     final game = AroundTheClockGame(
-      variant:   _variant,
-      legs:      1,
-      sets:      1,
+      variant: _variant,
+      legs: 1,
+      sets: 1,
       createdAt: DateTime.now(),
       playerIds: players.map((p) => p.id!).toList(),
-      teams:     teamConfigs,
+      teams: teamConfigs,
       startingOrder: _startingOrder,
     );
 
@@ -380,11 +392,12 @@ class _Section extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             child,
           ],
@@ -393,4 +406,3 @@ class _Section extends StatelessWidget {
     );
   }
 }
-

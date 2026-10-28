@@ -37,27 +37,42 @@ void main() {
     });
 
     test('numbers a bot from the second of its tier on', () {
-      final second = Player(name: 'Bot Pro 2', botLevel: BotLevel.pro, botOrdinal: 2);
+      final second = Player(
+        name: 'Bot Pro 2',
+        botLevel: BotLevel.pro,
+        botOrdinal: 2,
+      );
 
       expect(second.label(en), 'Pro bot 2');
       expect(second.label(de), 'Profi-Bot 2');
-      expect(Player(name: 'Bot Pro', botLevel: BotLevel.pro, botOrdinal: 1)
-          .label(en), 'Pro bot');
+      expect(
+        Player(
+          name: 'Bot Pro',
+          botLevel: BotLevel.pro,
+          botOrdinal: 1,
+        ).label(en),
+        'Pro bot',
+      );
     });
 
     test('keeps every German bot name one word for the compact scoreboard', () {
       for (final level in BotLevel.values) {
         final bot = Player(name: level.storedName, botLevel: level);
-        expect(bot.label(de).split(' ').first, bot.label(de),
-            reason: '${level.name} splits into two words');
+        expect(
+          bot.label(de).split(' ').first,
+          bot.label(de),
+          reason: '${level.name} splits into two words',
+        );
       }
     });
 
     test('names a slot by its team, or by the one player in it', () {
       final bot = Player(name: 'Bot Legend', botLevel: BotLevel.legend);
 
-      expect(_Slot('Us', [Player(name: 'Ada'), bot], isTeamSlot: true).label(en),
-          'Us');
+      expect(
+        _Slot('Us', [Player(name: 'Ada'), bot], isTeamSlot: true).label(en),
+        'Us',
+      );
       expect(_Slot(bot.name, [bot]).label(en), 'Legend bot');
     });
 

@@ -27,10 +27,10 @@ BoardHit cricketTarget({
   required bool aimTriples,
 }) {
   bool ownClosed(int f) => (ownMarks[f] ?? 0) >= 3;
-  bool anyOpponentOpen(int f) =>
-      opponentMarks.any((m) => (m[f] ?? 0) < 3);
+  bool anyOpponentOpen(int f) => opponentMarks.any((m) => (m[f] ?? 0) < 3);
 
-  final behind = scoring == CricketScoringMode.standard &&
+  final behind =
+      scoring == CricketScoringMode.standard &&
       opponentScores.isNotEmpty &&
       (variant == CricketVariant.cutThroat
           ? ownScore > opponentScores.reduce((a, b) => a < b ? a : b)
@@ -50,10 +50,8 @@ BoardHit cricketTarget({
     return null;
   }
 
-  final field = (behind ? scoringField() : null) ??
-      openField() ??
-      scoringField() ??
-      25;
+  final field =
+      (behind ? scoringField() : null) ?? openField() ?? scoringField() ?? 25;
 
   return _aimAt(field, aimTriples && scoring == CricketScoringMode.standard);
 }

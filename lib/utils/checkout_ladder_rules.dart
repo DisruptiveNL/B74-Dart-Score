@@ -13,23 +13,31 @@ import 'finish_calculator.dart';
 class LadderPosition {
   /// The number the current attempt has to check.
   final int number;
+
   /// The lowest number this slot can fall to: the start number, raised by
   /// every safehouse.
   final int floor;
+
   /// Whether the slot arrived at [number] by checking the one below it, rather
   /// than by falling from the one above.
   final bool climbing;
+
   /// 1 or 2. Only a climbing slot ever plays a second attempt on a number.
   final int attempt;
+
   /// What is left of [number] in this attempt.
   final int rest;
+
   /// [rest] when the current visit began, which a bust falls back to.
   final int restAtVisitStart;
+
   /// Dart slots of the attempt used up so far. A bust uses up the whole visit
   /// it happened in, so this can run ahead of the darts actually thrown.
   final int dartsInAttempt;
+
   /// Darts thrown in the current visit, reset when the visit ends.
   final int dartsInVisit;
+
   /// Whether the slot has checked [kCheckoutLadderTop]. Nothing follows that.
   final bool completed;
 
@@ -48,11 +56,11 @@ class LadderPosition {
   /// A slot standing on [startNumber] before its first dart: climbing, first
   /// attempt, with the start number as its floor.
   factory LadderPosition.start(int startNumber) => LadderPosition(
-        number:           startNumber,
-        floor:            startNumber,
-        rest:             startNumber,
-        restAtVisitStart: startNumber,
-      );
+    number: startNumber,
+    floor: startNumber,
+    rest: startNumber,
+    restAtVisitStart: startNumber,
+  );
 
   /// A fresh attempt on [number], keeping nothing of the attempt before it.
   factory LadderPosition.freshAttempt({
@@ -60,15 +68,14 @@ class LadderPosition {
     required int floor,
     required bool climbing,
     int attempt = 1,
-  }) =>
-      LadderPosition(
-        number:           number,
-        floor:            floor,
-        climbing:         climbing,
-        attempt:          attempt,
-        rest:             number,
-        restAtVisitStart: number,
-      );
+  }) => LadderPosition(
+    number: number,
+    floor: floor,
+    climbing: climbing,
+    attempt: attempt,
+    rest: number,
+    restAtVisitStart: number,
+  );
 
   /// Whether the slot stands on its floor, where a failed attempt costs
   /// nothing and the slot simply tries again.
@@ -81,23 +88,31 @@ class LadderStep {
   /// Where the slot stands after the dart, already on the next attempt when
   /// this dart ended one.
   final LadderPosition position;
+
   /// The number the dart was thrown at.
   final int number;
+
   /// What is left of [number] once the dart has landed: zero after a check,
   /// the rest the visit began with after a bust. Read before the attempt moves
   /// on, so a missed attempt still says where it stopped.
   final int restAfter;
+
   /// Whether the dart took the rest to zero under the check-out rule.
   final bool checked;
+
   /// Whether the dart busted the visit.
   final bool bust;
+
   /// Whether the check came with the first visit of the attempt and raised
   /// the floor.
   final bool safehouse;
+
   /// Whether the visit is over: three darts, a check or a bust.
   final bool visitOver;
+
   /// Whether the attempt is over, checked or not.
   final bool attemptOver;
+
   /// Whether the slot has to step down a number after this attempt.
   final bool dropped;
 
@@ -137,14 +152,16 @@ LadderStep applyLadderDart({
   final score = field == 0 || multiplier == 0
       ? 0
       : field == 25
-          ? (multiplier == 2 ? 50 : 25)
-          : field * multiplier;
-  final newRest       = p.rest - score;
-  final dartsInVisit  = p.dartsInVisit + 1;
+      ? (multiplier == 2 ? 50 : 25)
+      : field * multiplier;
+  final newRest = p.rest - score;
+  final dartsInVisit = p.dartsInVisit + 1;
   final dartsInAttempt = p.dartsInAttempt + 1;
 
-  final bust = newRest < 0 ||
-      (newRest == 0 && !FinishCalculator.finishesOn(field, multiplier, game.checkOut)) ||
+  final bust =
+      newRest < 0 ||
+      (newRest == 0 &&
+          !FinishCalculator.finishesOn(field, multiplier, game.checkOut)) ||
       (newRest > 0 && !FinishCalculator.canStillFinish(newRest, game.checkOut));
   final checked = newRest == 0 && !bust;
 
@@ -156,28 +173,31 @@ LadderStep applyLadderDart({
     if (p.number >= kCheckoutLadderTop) {
       return LadderStep(
         position: LadderPosition(
-          number:           p.number,
-          floor:            floor,
-          rest:             0,
+          number: p.number,
+          floor: floor,
+          rest: 0,
           restAtVisitStart: 0,
-          completed:        true,
+          completed: true,
         ),
-        number:      p.number,
-        restAfter:   0,
-        checked:     true,
-        safehouse:   safehouse,
-        visitOver:   true,
+        number: p.number,
+        restAfter: 0,
+        checked: true,
+        safehouse: safehouse,
+        visitOver: true,
         attemptOver: true,
       );
     }
     return LadderStep(
       position: LadderPosition.freshAttempt(
-          number: p.number + 1, floor: floor, climbing: true),
-      number:      p.number,
-      restAfter:   0,
-      checked:     true,
-      safehouse:   safehouse,
-      visitOver:   true,
+        number: p.number + 1,
+        floor: floor,
+        climbing: true,
+      ),
+      number: p.number,
+      restAfter: 0,
+      checked: true,
+      safehouse: safehouse,
+      visitOver: true,
       attemptOver: true,
     );
   }
@@ -185,26 +205,26 @@ LadderStep applyLadderDart({
   final budget = game.dartsFor(p.number);
   // A bust gives up what is left of its visit, so the attempt counts the
   // visit as thrown in full.
-  final used       = bust ? p.dartsInAttempt - p.dartsInVisit + 3 : dartsInAttempt;
-  final rest       = bust ? p.restAtVisitStart : newRest;
-  final visitOver  = bust || dartsInVisit >= 3;
+  final used = bust ? p.dartsInAttempt - p.dartsInVisit + 3 : dartsInAttempt;
+  final rest = bust ? p.restAtVisitStart : newRest;
+  final visitOver = bust || dartsInVisit >= 3;
   final attemptOver = visitOver && used >= budget;
 
   if (!attemptOver) {
     return LadderStep(
       position: LadderPosition(
-        number:           p.number,
-        floor:            p.floor,
-        climbing:         p.climbing,
-        attempt:          p.attempt,
-        rest:             rest,
+        number: p.number,
+        floor: p.floor,
+        climbing: p.climbing,
+        attempt: p.attempt,
+        rest: rest,
         restAtVisitStart: visitOver ? rest : p.restAtVisitStart,
-        dartsInAttempt:   used,
-        dartsInVisit:     visitOver ? 0 : dartsInVisit,
+        dartsInAttempt: used,
+        dartsInVisit: visitOver ? 0 : dartsInVisit,
       ),
-      number:    p.number,
+      number: p.number,
       restAfter: rest,
-      bust:      bust,
+      bust: bust,
       visitOver: visitOver,
     );
   }
@@ -213,23 +233,33 @@ LadderStep applyLadderDart({
   var dropped = false;
   if (p.onFloor) {
     next = LadderPosition.freshAttempt(
-        number: p.number, floor: p.floor, climbing: p.climbing);
+      number: p.number,
+      floor: p.floor,
+      climbing: p.climbing,
+    );
   } else if (p.climbing && p.attempt == 1) {
     next = LadderPosition.freshAttempt(
-        number: p.number, floor: p.floor, climbing: true, attempt: 2);
+      number: p.number,
+      floor: p.floor,
+      climbing: true,
+      attempt: 2,
+    );
   } else {
     dropped = true;
     next = LadderPosition.freshAttempt(
-        number: p.number - 1, floor: p.floor, climbing: false);
+      number: p.number - 1,
+      floor: p.floor,
+      climbing: false,
+    );
   }
   return LadderStep(
-    position:    next,
-    number:      p.number,
-    restAfter:   rest,
-    bust:        bust,
-    visitOver:   true,
+    position: next,
+    number: p.number,
+    restAfter: rest,
+    bust: bust,
+    visitOver: true,
     attemptOver: true,
-    dropped:     dropped,
+    dropped: dropped,
   );
 }
 
@@ -258,36 +288,49 @@ class LadderSlot {
   /// How many players take turns in this slot: one, or the team's size.
   final int memberCount;
   LadderPosition position;
+
   /// Attempts begun, the current one included. Decides which member starts it.
   int attemptsStarted = 1;
+
   /// Attempts played to the end, checked or not.
   int attemptsCompleted = 0;
+
   /// Darts actually thrown in the whole game.
   int darts = 0;
+
   /// Darts actually thrown in the current attempt.
   int dartsThisAttempt = 0;
+
   /// Visits begun in the current attempt, the current one included once its
   /// first dart has landed.
   int visitsThisAttempt = 0;
   int checks = 0;
+
   /// Darts actually thrown in the attempts that ended in a check.
   int dartsInChecks = 0;
   int safehouses = 0;
   int busts = 0;
   int drops = 0;
+
   /// The highest number this slot has checked, null before its first check.
   int? highestChecked;
+
   /// Race only: the attempt count at which the target was checked.
   int? reachedTargetAt;
+
   /// Race only: darts in the whole game when the target was checked.
   int? reachedTargetDarts;
+
   /// Every finished visit of this slot, oldest first. A visit can end after
   /// one dart, on a check or a bust, so the darts are never grouped in threes.
   final List<LadderVisit> visits = [];
+
   /// Sudden death only: whether this slot is still in it.
   bool inSuddenDeath = false;
+
   /// Sudden death only: whether this slot has played its attempt of the round.
   bool suddenDeathPlayed = false;
+
   /// Sudden death only: whether that attempt checked, and in how many darts.
   bool suddenDeathChecked = false;
   int suddenDeathDarts = 0;
@@ -307,8 +350,9 @@ class LadderSlot {
   /// Members take the visits of an attempt in turn, and the member who starts
   /// moves on by one with every attempt, so in a pair both set up and both
   /// check.
-  int get currentMember =>
-      memberCount <= 1 ? 0 : (attemptsStarted - 1 + visitsInProgress) % memberCount;
+  int get currentMember => memberCount <= 1
+      ? 0
+      : (attemptsStarted - 1 + visitsInProgress) % memberCount;
 
   /// Visits of the current attempt already over. The visit in progress
   /// belongs to the member after them.
@@ -349,13 +393,13 @@ class CheckoutLadderEngine {
   /// Builds the board before the first dart, one slot per entry of
   /// [memberCounts], in throwing order.
   CheckoutLadderEngine(this.game, List<int> memberCounts)
-      : slots = [
-          for (final count in memberCounts)
-            LadderSlot(
-              memberCount: count,
-              position:    LadderPosition.start(game.startNumber),
-            ),
-        ];
+    : slots = [
+        for (final count in memberCounts)
+          LadderSlot(
+            memberCount: count,
+            position: LadderPosition.start(game.startNumber),
+          ),
+      ];
 
   /// Index of the slot on turn, or of the slot whose finished visit is still
   /// waiting for [endVisit].
@@ -389,9 +433,9 @@ class CheckoutLadderEngine {
     if (slot.position.dartsInVisit == 0) slot.visitsThisAttempt++;
 
     final step = applyLadderDart(
-      game:       game,
-      position:   slot.position,
-      field:      field,
+      game: game,
+      position: slot.position,
+      field: field,
       multiplier: multiplier,
     );
     _visit.add((field: field, multiplier: multiplier));
@@ -412,10 +456,10 @@ class CheckoutLadderEngine {
     if (step.visitOver) {
       _visitOver = true;
       slot.visits.add((
-        darts:     List.of(_visit),
-        number:    step.number,
-        checked:   step.checked,
-        bust:      step.bust,
+        darts: List.of(_visit),
+        number: step.number,
+        checked: step.checked,
+        bust: step.bust,
         safehouse: step.safehouse,
         restAfter: step.restAfter,
       ));
@@ -439,7 +483,7 @@ class CheckoutLadderEngine {
     slot.attemptsCompleted++;
     final dartsThisAttempt = slot.dartsThisAttempt;
     if (!slot.position.completed) slot.attemptsStarted++;
-    slot.dartsThisAttempt  = 0;
+    slot.dartsThisAttempt = 0;
     slot.visitsThisAttempt = 0;
 
     if (!game.isRace) {
@@ -448,14 +492,14 @@ class CheckoutLadderEngine {
     }
 
     if (_suddenDeathNumber != null) {
-      slot.suddenDeathPlayed  = true;
+      slot.suddenDeathPlayed = true;
       slot.suddenDeathChecked = step.checked;
-      slot.suddenDeathDarts   = dartsThisAttempt;
+      slot.suddenDeathDarts = dartsThisAttempt;
       return;
     }
 
     if (step.checked && step.number == game.targetNumber) {
-      slot.reachedTargetAt    = slot.attemptsCompleted;
+      slot.reachedTargetAt = slot.attemptsCompleted;
       slot.reachedTargetDarts = slot.darts;
     }
   }
@@ -513,7 +557,9 @@ class CheckoutLadderEngine {
       final fewest = reached
           .map((i) => slots[i].reachedTargetDarts!)
           .reduce(min);
-      level = reached.where((i) => slots[i].reachedTargetDarts == fewest).toList();
+      level = reached
+          .where((i) => slots[i].reachedTargetDarts == fewest)
+          .toList();
       if (level.length == 1) return _decide(level.single);
       _startSuddenDeath(level, min(game.targetNumber! + 1, kCheckoutLadderTop));
       return;
@@ -531,8 +577,7 @@ class CheckoutLadderEngine {
     final fewest = checkers.map((i) => slots[i].suddenDeathDarts).reduce(min);
     level = checkers.where((i) => slots[i].suddenDeathDarts == fewest).toList();
     if (level.length == 1) return _decide(level.single);
-    _startSuddenDeath(
-        level, min(_suddenDeathNumber! + 1, kCheckoutLadderTop));
+    _startSuddenDeath(level, min(_suddenDeathNumber! + 1, kCheckoutLadderTop));
   }
 
   /// Puts the slots in [level] on one fresh attempt each at [number], in
@@ -541,13 +586,16 @@ class CheckoutLadderEngine {
     _suddenDeathNumber = number;
     for (var i = 0; i < slots.length; i++) {
       final s = slots[i];
-      s.inSuddenDeath      = level.contains(i);
-      s.suddenDeathPlayed  = false;
+      s.inSuddenDeath = level.contains(i);
+      s.suddenDeathPlayed = false;
       s.suddenDeathChecked = false;
-      s.suddenDeathDarts   = 0;
+      s.suddenDeathDarts = 0;
       if (s.inSuddenDeath) {
         s.position = LadderPosition.freshAttempt(
-            number: number, floor: number, climbing: true);
+          number: number,
+          floor: number,
+          climbing: true,
+        );
       }
     }
     _current = level.first;
@@ -555,7 +603,7 @@ class CheckoutLadderEngine {
 
   /// Ends the race with [slot] as the winner.
   void _decide(int slot) {
-    _winner   = slot;
+    _winner = slot;
     _gameOver = true;
   }
 }

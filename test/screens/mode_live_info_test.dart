@@ -48,12 +48,12 @@ void main() {
         final p = cricket = CricketProvider();
         await p.startGame(
           CricketGame(
-            variant:       CricketVariant.normal,
-            scoringMode:   CricketScoringMode.standard,
-            legs:          1,
-            sets:          1,
-            createdAt:     DateTime(2026, 9, 11),
-            playerIds:     players.map((pl) => pl.id!).toList(),
+            variant: CricketVariant.normal,
+            scoringMode: CricketScoringMode.standard,
+            legs: 1,
+            sets: 1,
+            createdAt: DateTime(2026, 9, 11),
+            playerIds: players.map((pl) => pl.id!).toList(),
             startingOrder: StartingOrder.fixed,
           ),
           players,
@@ -61,7 +61,9 @@ void main() {
         await p.recordDart(20, 3);
         await p.recordDart(0, 0);
         wrapped = ChangeNotifierProvider<CricketProvider>.value(
-            value: p, child: const CricketScreen());
+          value: p,
+          child: const CricketScreen(),
+        );
       });
 
       testWidgets('shows the darts of the visit as chips', (tester) async {
@@ -72,8 +74,9 @@ void main() {
         expect(find.text('Miss'), findsWidgets);
       });
 
-      testWidgets('offers Continue while a finished visit is on show',
-          (tester) async {
+      testWidgets('offers Continue while a finished visit is on show', (
+        tester,
+      ) async {
         await pumpLive(tester);
         final p = cricket;
         // A pause long enough never to run out on its own: what ends it here
@@ -97,19 +100,26 @@ void main() {
         expect(find.text('Continue'), findsNothing);
       });
 
-      testWidgets('opens the info of a slot with its visit and its numbers',
-          (tester) async {
+      testWidgets('opens the info of a slot with its visit and its numbers', (
+        tester,
+      ) async {
         await pumpLive(tester);
         await openInfo(tester, 'Ada');
 
         expect(find.byType(ModeLiveInfoScreen), findsOneWidget);
         expect(find.text('Last 3 Visits'), findsOneWidget);
-        expect(find.text('3 marks'), findsWidgets,
-            reason: 'the visit, and the best visit is the same one');
+        expect(
+          find.text('3 marks'),
+          findsWidgets,
+          reason: 'the visit, and the best visit is the same one',
+        );
         expect(find.text('Marks per round'), findsOneWidget);
         expect(find.text('Fields closed'), findsOneWidget);
-        expect(find.text('1 of 7'), findsOneWidget,
-            reason: 'the triple closed the 20');
+        expect(
+          find.text('1 of 7'),
+          findsOneWidget,
+          reason: 'the triple closed the 20',
+        );
       });
     });
 
@@ -119,18 +129,20 @@ void main() {
         final p = ShanghaiProvider();
         await p.startGame(
           ShanghaiGame(
-            variant:       ShanghaiVariant.classic,
-            legs:          1,
-            sets:          1,
-            createdAt:     DateTime(2026, 9, 11),
-            playerIds:     players.map((pl) => pl.id!).toList(),
+            variant: ShanghaiVariant.classic,
+            legs: 1,
+            sets: 1,
+            createdAt: DateTime(2026, 9, 11),
+            playerIds: players.map((pl) => pl.id!).toList(),
             startingOrder: StartingOrder.fixed,
           ),
           players,
         );
         await p.recordDart(3);
         wrapped = ChangeNotifierProvider<ShanghaiProvider>.value(
-            value: p, child: const ShanghaiScreen());
+          value: p,
+          child: const ShanghaiScreen(),
+        );
       });
 
       testWidgets('labels the dart with the round\'s number', (tester) async {
@@ -139,8 +151,9 @@ void main() {
         expect(find.text('T1'), findsOneWidget);
       });
 
-      testWidgets('opens the info with points per round and Shanghais',
-          (tester) async {
+      testWidgets('opens the info with points per round and Shanghais', (
+        tester,
+      ) async {
         await pumpLive(tester);
         await openInfo(tester, 'Ada');
 
@@ -156,11 +169,11 @@ void main() {
         final p = AroundTheClockProvider();
         await p.startGame(
           AroundTheClockGame(
-            variant:       AroundTheClockVariant.skipRules,
-            legs:          1,
-            sets:          1,
-            createdAt:     DateTime(2026, 9, 11),
-            playerIds:     players.map((pl) => pl.id!).toList(),
+            variant: AroundTheClockVariant.skipRules,
+            legs: 1,
+            sets: 1,
+            createdAt: DateTime(2026, 9, 11),
+            playerIds: players.map((pl) => pl.id!).toList(),
             startingOrder: StartingOrder.fixed,
           ),
           players,
@@ -168,11 +181,14 @@ void main() {
         // The clock starts on the 1, and a triple there skips two numbers.
         await p.recordDart(1, 3);
         wrapped = ChangeNotifierProvider<AroundTheClockProvider>.value(
-            value: p, child: const AroundTheClockScreen());
+          value: p,
+          child: const AroundTheClockScreen(),
+        );
       });
 
-      testWidgets('opens the info with darts per target and skipped fields',
-          (tester) async {
+      testWidgets('opens the info with darts per target and skipped fields', (
+        tester,
+      ) async {
         await pumpLive(tester);
         expect(find.text('T1'), findsOneWidget);
 
@@ -181,8 +197,11 @@ void main() {
         expect(find.text('1 hit'), findsOneWidget);
         expect(find.text('Darts per target'), findsOneWidget);
         expect(find.text('Fields skipped'), findsOneWidget);
-        expect(find.text('2'), findsWidgets,
-            reason: 'the triple skipped the 2 and the 3');
+        expect(
+          find.text('2'),
+          findsWidgets,
+          reason: 'the triple skipped the 2 and the 3',
+        );
       });
     });
   });

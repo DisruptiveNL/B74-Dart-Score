@@ -13,8 +13,16 @@ VisitDart visitDartFrom(int field, int multiplier, AppLocalizations l) {
     return (label: l.miss, multiplier: 0, miss: true);
   }
   if (field == 25) {
-    return (label: multiplier == 2 ? 'Bull' : '25', multiplier: multiplier, miss: false);
+    return (
+      label: multiplier == 2 ? 'Bull' : '25',
+      multiplier: multiplier,
+      miss: false,
+    );
   }
-  final ring = switch (multiplier) { 3 => 'T', 2 => 'D', _ => 'S' };
+  final ring = switch (multiplier) {
+    3 => 'T',
+    2 => 'D',
+    _ => 'S',
+  };
   return (label: '$ring$field', multiplier: multiplier, miss: false);
 }

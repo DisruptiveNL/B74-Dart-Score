@@ -25,10 +25,13 @@ void main() {
 
   test('names the Gradle artifact behind every entry', () {
     expect(
-        textOf(entryFor('Google Play services (ML Kit barcode scanning)')),
-        contains('play-services-mlkit-barcode-scanning'));
-    expect(textOf(entryFor('Google Play Billing Library')),
-        contains('com.android.billingclient:billing'));
+      textOf(entryFor('Google Play services (ML Kit barcode scanning)')),
+      contains('play-services-mlkit-barcode-scanning'),
+    );
+    expect(
+      textOf(entryFor('Google Play Billing Library')),
+      contains('com.android.billingclient:billing'),
+    );
     expect(textOf(entryFor('AndroidX')), contains('androidx.camera'));
     expect(textOf(entryFor('Kotlin')), contains('kotlinx-coroutines-android'));
   });
@@ -45,9 +48,12 @@ void main() {
 
   test('points at the terms of the two Google libraries', () {
     expect(
-        textOf(entryFor('Google Play services (ML Kit barcode scanning)')),
-        contains('https://developers.google.com/ml-kit/terms'));
-    expect(textOf(entryFor('Google Play Billing Library')),
-        contains('https://developer.android.com/studio/terms'));
+      textOf(entryFor('Google Play services (ML Kit barcode scanning)')),
+      contains('https://developers.google.com/ml-kit/terms'),
+    );
+    expect(
+      textOf(entryFor('Google Play Billing Library')),
+      contains('https://developer.android.com/studio/terms'),
+    );
   });
 }

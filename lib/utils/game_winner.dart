@@ -49,8 +49,9 @@ Set<int> winningPlayerIds(
   final teams = game.teams;
   if (teams == null || teams.isEmpty) {
     final winner = game.placementMode
-        ? _bestPlaced(_groupBy(throws, (t) => t.playerId,
-            slots: participantIds))
+        ? _bestPlaced(
+            _groupBy(throws, (t) => t.playerId, slots: participantIds),
+          )
         : lastCheckoutPlayerId(throws);
     return winner == null ? const {} : {winner};
   }
@@ -65,9 +66,10 @@ Set<int> winningPlayerIds(
   int? side;
   if (game.placementMode) {
     final bySide = _groupBy(
-        throws.where((t) => sideOf.containsKey(t.playerId)),
-        (t) => sideOf[t.playerId]!,
-        slots: [for (var i = 0; i < teams.length; i++) i]);
+      throws.where((t) => sideOf.containsKey(t.playerId)),
+      (t) => sideOf[t.playerId]!,
+      slots: [for (var i = 0; i < teams.length; i++) i],
+    );
     side = _bestPlaced(bySide);
   } else {
     final last = lastCheckoutPlayerId(throws);
@@ -97,8 +99,10 @@ int? _bestPlaced(Map<int, List<DartThrow>> throwsById) {
 /// of [slots]: a slot without a throw of its own is present with an empty list
 /// rather than absent, which is what keeps the participant count right.
 Map<int, List<DartThrow>> _groupBy(
-    Iterable<DartThrow> throws, int Function(DartThrow) keyOf,
-    {required Iterable<int> slots}) {
+  Iterable<DartThrow> throws,
+  int Function(DartThrow) keyOf, {
+  required Iterable<int> slots,
+}) {
   final grouped = <int, List<DartThrow>>{
     for (final slot in slots) slot: <DartThrow>[],
   };

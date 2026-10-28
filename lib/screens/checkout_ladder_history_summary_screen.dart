@@ -68,7 +68,10 @@ class _CheckoutLadderHistorySummaryScreenState
                 return Center(child: Text(context.l10n.noThrowData));
               }
               return _Body(
-                  game: widget.game, players: widget.players, provider: provider);
+                game: widget.game,
+                players: widget.players,
+                provider: provider,
+              );
             },
           ),
         ),
@@ -82,7 +85,9 @@ class _CheckoutLadderHistorySummaryScreenState
       ? content
       : Scaffold(
           appBar: AppBar(
-            title: Text(DateFormat('dd.MM.yy  HH:mm').format(widget.game.createdAt)),
+            title: Text(
+              DateFormat('dd.MM.yy  HH:mm').format(widget.game.createdAt),
+            ),
           ),
           body: content,
         );
@@ -110,22 +115,27 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l      = context.l10n;
-    final slots  = provider.slots;
+    final l = context.l10n;
+    final slots = provider.slots;
     final banner = checkoutLadderBanner(context, slots, provider.winnerIndex);
 
     final rematch = RematchButton(
       modeName: l.modeCheckoutLadderName,
       details: checkoutLadderSettingRows(l, game),
       slots: slots
-          .map((s) => s.isTeamSlot
-              ? RematchSlot.team(s.label(l),
-                  s.players.map((p) => RematchSlot.player(p.label(l))).toList())
-              : RematchSlot.player(s.label(l)))
+          .map(
+            (s) => s.isTeamSlot
+                ? RematchSlot.team(
+                    s.label(l),
+                    s.players
+                        .map((p) => RematchSlot.player(p.label(l)))
+                        .toList(),
+                  )
+                : RematchSlot.player(s.label(l)),
+          )
           .toList(),
-      onRematch: () => context
-          .read<CheckoutLadderProvider>()
-          .startRematch(game, players),
+      onRematch: () =>
+          context.read<CheckoutLadderProvider>().startRematch(game, players),
       destination: (_) => const CheckoutLadderScreen(),
     );
 
@@ -135,13 +145,18 @@ class _Body extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(14, 16, 14, 24),
       children: [
         if (banner != null) ...[banner, const SizedBox(height: 16)],
-        GameInfoCard(dense: true, rows: [
-          (l.gameLabel, l.modeCheckoutLadderName),
-          ...checkoutLadderSettingRows(l, game),
-          (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
-        ]),
+        GameInfoCard(
+          dense: true,
+          rows: [
+            (l.gameLabel, l.modeCheckoutLadderName),
+            ...checkoutLadderSettingRows(l, game),
+            (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
+          ],
+        ),
         CheckoutLadderResultCards(
-            slots: slots, winnerIndex: provider.winnerIndex),
+          slots: slots,
+          winnerIndex: provider.winnerIndex,
+        ),
       ],
     );
 

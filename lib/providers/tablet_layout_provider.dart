@@ -57,11 +57,12 @@ class TabletLayoutProvider extends ChangeNotifier {
 
     for (final pane in SplitPane.values) {
       for (final landscape in [true, false]) {
-        final key   = _splitKey(pane, landscape);
+        final key = _splitKey(pane, landscape);
         final saved = prefs.getDouble(key);
         if (saved != null) {
-          _splits[key] =
-              saved.clamp(kMinSplitFraction, kMaxSplitFraction).toDouble();
+          _splits[key] = saved
+              .clamp(kMinSplitFraction, kMaxSplitFraction)
+              .toDouble();
         }
       }
     }
@@ -90,8 +91,9 @@ class TabletLayoutProvider extends ChangeNotifier {
     double fraction, {
     required bool landscape,
   }) {
-    final clamped =
-        fraction.clamp(kMinSplitFraction, kMaxSplitFraction).toDouble();
+    final clamped = fraction
+        .clamp(kMinSplitFraction, kMaxSplitFraction)
+        .toDouble();
     if (clamped == splitFraction(pane, landscape: landscape)) return;
     _splits[_splitKey(pane, landscape)] = clamped;
     notifyListeners();

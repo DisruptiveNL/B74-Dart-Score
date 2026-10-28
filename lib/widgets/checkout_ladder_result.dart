@@ -12,6 +12,7 @@ import 'stat_row.dart';
 /// in fewer attempts, then the higher ladders.
 class CheckoutLadderResultCards extends StatelessWidget {
   final List<CheckoutLadderSlotState> slots;
+
   /// The slot that won the race, null in training.
   final int? winnerIndex;
 
@@ -55,11 +56,11 @@ class _SlotResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l      = context.l10n;
-    final theme  = Theme.of(context);
-    final cs     = theme.colorScheme;
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
     final ladder = slot.ladder;
-    final rate   = ladder.checkRate;
+    final rate = ladder.checkRate;
     final perCheck = ladder.dartsPerCheck;
 
     return Card(
@@ -74,8 +75,11 @@ class _SlotResultCard extends StatelessWidget {
                 if (isWinner)
                   Padding(
                     padding: const EdgeInsets.only(right: 6),
-                    child: Icon(Icons.emoji_events_rounded,
-                        size: 20, color: cs.primary),
+                    child: Icon(
+                      Icons.emoji_events_rounded,
+                      size: 20,
+                      color: cs.primary,
+                    ),
                   ),
                 Expanded(
                   child: Text(
@@ -91,8 +95,9 @@ class _SlotResultCard extends StatelessWidget {
             if (slot.isTeamSlot)
               Text(
                 slot.players.labels(l, ' & '),
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
             const SizedBox(height: 8),
             const Divider(height: 1),
@@ -137,9 +142,9 @@ Widget? checkoutLadderBanner(
   List<CheckoutLadderSlotState> slots,
   int? winnerIndex,
 ) {
-  final l     = context.l10n;
+  final l = context.l10n;
   final theme = Theme.of(context);
-  final cs    = theme.colorScheme;
+  final cs = theme.colorScheme;
 
   final String text;
   if (winnerIndex != null) {

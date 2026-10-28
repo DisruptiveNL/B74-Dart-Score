@@ -10,17 +10,16 @@ Map<int, int> legPlacements(
 ) {
   final checkouts = <int, DateTime>{};
   for (final entry in throwsById.entries) {
-    final checkout = entry.value.where((t) =>
-        t.leg == leg && t.set == set && !t.bust && t.remainingAfter == 0);
+    final checkout = entry.value.where(
+      (t) => t.leg == leg && t.set == set && !t.bust && t.remainingAfter == 0,
+    );
     if (checkout.isNotEmpty) {
       checkouts[entry.key] = checkout.first.thrownAt;
     }
   }
   final ordered = checkouts.keys.toList()
     ..sort((a, b) => checkouts[a]!.compareTo(checkouts[b]!));
-  return {
-    for (var i = 0; i < ordered.length; i++) ordered[i]: i + 1,
-  };
+  return {for (var i = 0; i < ordered.length; i++) ordered[i]: i + 1};
 }
 
 /// [legPlacements] completed by the rule that ends a leg as soon as the
@@ -104,16 +103,15 @@ List<int> placementOrder(
   required Map<int, int> legsWon,
   required Map<int, int> placementSum,
 }) {
-  return slots.toList()
-    ..sort((a, b) {
-      final pointsA = points[a] ?? 0;
-      final pointsB = points[b] ?? 0;
-      if (pointsA != pointsB) return pointsB.compareTo(pointsA);
-      final legsA = legsWon[a] ?? 0;
-      final legsB = legsWon[b] ?? 0;
-      if (legsA != legsB) return legsB.compareTo(legsA);
-      return (placementSum[a] ?? 0).compareTo(placementSum[b] ?? 0);
-    });
+  return slots.toList()..sort((a, b) {
+    final pointsA = points[a] ?? 0;
+    final pointsB = points[b] ?? 0;
+    if (pointsA != pointsB) return pointsB.compareTo(pointsA);
+    final legsA = legsWon[a] ?? 0;
+    final legsB = legsWon[b] ?? 0;
+    if (legsA != legsB) return legsB.compareTo(legsA);
+    return (placementSum[a] ?? 0).compareTo(placementSum[b] ?? 0);
+  });
 }
 
 /// [placementOrder] worked out from the throws alone, for the callers that keep
@@ -129,8 +127,8 @@ List<int> placementOrderFromThrows(
   final ranking = placementRanking(throwsById, upToLeg, set);
   return placementOrder(
     throwsById.keys,
-    points:       placementPointsTotal(throwsById, upToLeg, set),
-    legsWon:      ranking.legsWon,
+    points: placementPointsTotal(throwsById, upToLeg, set),
+    legsWon: ranking.legsWon,
     placementSum: ranking.placementSum,
   );
 }
@@ -147,7 +145,8 @@ Map<int, int> placementPointsTotal(
     final placements = completedLegPlacements(throwsById, leg, set);
     for (final entry in placements.entries) {
       totals[entry.key] =
-          (totals[entry.key] ?? 0) + placementPoints(entry.value, participantCount);
+          (totals[entry.key] ?? 0) +
+          placementPoints(entry.value, participantCount);
     }
   }
   return totals;

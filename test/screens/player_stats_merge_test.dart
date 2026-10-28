@@ -32,7 +32,9 @@ void main() {
     Future<int> playGame() async {
       final provider = GameProvider();
       await provider.startGame(
-          Game(startScore: 501, legs: 1, createdAt: DateTime.now()), players);
+        Game(startScore: 501, legs: 1, createdAt: DateTime.now()),
+        players,
+      );
 
       Future<void> oneEighty() async {
         await provider.tapField(20, 3);
@@ -46,15 +48,15 @@ void main() {
         await provider.tapField(20, 1);
       }
 
-      await oneEighty();  // A: 501 to 321
-      await sixty();      // B
-      await oneEighty();  // A: 321 to 141
-      await sixty();      // B
+      await oneEighty(); // A: 501 to 321
+      await sixty(); // B
+      await oneEighty(); // A: 321 to 141
+      await sixty(); // B
       // A: 141 to 81 to 24, one dart from D12, then the triple 20 overshoots.
       await provider.tapField(20, 3);
       await provider.tapField(19, 3);
       await provider.tapField(20, 3);
-      await sixty();      // B
+      await sixty(); // B
       // A: T20, T19, D12 finishes 141 on a double.
       await provider.tapField(20, 3);
       await provider.tapField(19, 3);
@@ -73,50 +75,59 @@ void main() {
       await DbHelper.instance.deleteGame(first);
       final afterDelete = await loadPlayerStats(players.first);
 
-      expect(afterDelete.totalDarts,       beforeDelete.totalDarts);
-      expect(afterDelete.totalVisits,      beforeDelete.totalVisits);
-      expect(afterDelete.totalScored,      beforeDelete.totalScored);
-      expect(afterDelete.count180,         beforeDelete.count180);
-      expect(afterDelete.highestVisit,     beforeDelete.highestVisit);
-      expect(afterDelete.highestCheckout,  beforeDelete.highestCheckout);
-      expect(afterDelete.legsWon,          beforeDelete.legsWon);
-      expect(afterDelete.perfectLegs,      beforeDelete.perfectLegs);
-      expect(afterDelete.checkoutPercent,
-          closeTo(beforeDelete.checkoutPercent, 0.001));
+      expect(afterDelete.totalDarts, beforeDelete.totalDarts);
+      expect(afterDelete.totalVisits, beforeDelete.totalVisits);
+      expect(afterDelete.totalScored, beforeDelete.totalScored);
+      expect(afterDelete.count180, beforeDelete.count180);
+      expect(afterDelete.highestVisit, beforeDelete.highestVisit);
+      expect(afterDelete.highestCheckout, beforeDelete.highestCheckout);
+      expect(afterDelete.legsWon, beforeDelete.legsWon);
+      expect(afterDelete.perfectLegs, beforeDelete.perfectLegs);
+      expect(
+        afterDelete.checkoutPercent,
+        closeTo(beforeDelete.checkoutPercent, 0.001),
+      );
 
       // A second game, this one still present, has to land on top of the
       // snapshot rather than replace it.
       await playGame();
       final merged = await loadPlayerStats(players.first);
 
-      expect(merged.totalDarts,   beforeDelete.totalDarts * 2);
-      expect(merged.totalVisits,  beforeDelete.totalVisits * 2);
-      expect(merged.totalScored,  beforeDelete.totalScored * 2);
-      expect(merged.count180,     beforeDelete.count180 * 2);
-      expect(merged.legsWon,      beforeDelete.legsWon * 2);
-      expect(merged.gamesPlayed,  2);
-      expect(merged.highestVisit, beforeDelete.highestVisit,
-          reason: 'a maximum is not a sum');
+      expect(merged.totalDarts, beforeDelete.totalDarts * 2);
+      expect(merged.totalVisits, beforeDelete.totalVisits * 2);
+      expect(merged.totalScored, beforeDelete.totalScored * 2);
+      expect(merged.count180, beforeDelete.count180 * 2);
+      expect(merged.legsWon, beforeDelete.legsWon * 2);
+      expect(merged.gamesPlayed, 2);
+      expect(
+        merged.highestVisit,
+        beforeDelete.highestVisit,
+        reason: 'a maximum is not a sum',
+      );
       expect(merged.highestCheckout, beforeDelete.highestCheckout);
-      expect(merged.highestGameAverage,
-          closeTo(beforeDelete.highestGameAverage, 0.001));
+      expect(
+        merged.highestGameAverage,
+        closeTo(beforeDelete.highestGameAverage, 0.001),
+      );
     });
 
-    test('counts the busted attempt from 24 against the checkout rate',
-        () async {
-      await playGame();
-      final stats = await loadPlayerStats(players.first);
+    test(
+      'counts the busted attempt from 24 against the checkout rate',
+      () async {
+        await playGame();
+        final stats = await loadPlayerStats(players.first);
 
-      // Two visits put a dart on a finish: the overshoot from 24 and the
-      // checkout. The two 180s never did, however low they left A.
-      expect(stats.checkoutPercent, closeTo(50, 0.001));
-      expect(stats.busts, 1);
-      expect(stats.count180, 2, reason: 'the busted visit scores nothing');
-      expect(stats.totalDarts, 12);
-      expect(stats.totalScored, 501);
-      expect(stats.highestCheckout, 141);
-      expect(stats.perfectLegs, 0, reason: '12 darts is not a nine darter');
-    });
+        // Two visits put a dart on a finish: the overshoot from 24 and the
+        // checkout. The two 180s never did, however low they left A.
+        expect(stats.checkoutPercent, closeTo(50, 0.001));
+        expect(stats.busts, 1);
+        expect(stats.count180, 2, reason: 'the busted visit scores nothing');
+        expect(stats.totalDarts, 12);
+        expect(stats.totalScored, 501);
+        expect(stats.highestCheckout, 141);
+        expect(stats.perfectLegs, 0, reason: '12 darts is not a nine darter');
+      },
+    );
 
     test('counts a nine darter as a perfect leg', () async {
       // The counterpart to the case above: the same 501, finished in the
@@ -124,7 +135,9 @@ void main() {
       // stuck at zero and every other assertion here would still pass.
       final provider = GameProvider();
       await provider.startGame(
-          Game(startScore: 501, legs: 1, createdAt: DateTime.now()), players);
+        Game(startScore: 501, legs: 1, createdAt: DateTime.now()),
+        players,
+      );
 
       Future<void> visit(List<(int, int)> darts) async {
         for (final d in darts) {
@@ -133,12 +146,12 @@ void main() {
       }
 
       const maximum = [(20, 3), (20, 3), (20, 3)];
-      const sixty   = [(20, 1), (20, 1), (20, 1)];
+      const sixty = [(20, 1), (20, 1), (20, 1)];
 
-      await visit(maximum);              // 501 to 321
-      await visit(sixty);                // opponent
-      await visit(maximum);              // 321 to 141
-      await visit(sixty);                // opponent
+      await visit(maximum); // 501 to 321
+      await visit(sixty); // opponent
+      await visit(maximum); // 321 to 141
+      await visit(sixty); // opponent
       await visit([(20, 3), (19, 3), (12, 2)]); // 141 checked out on a double
 
       expect(provider.gameOver, isTrue);

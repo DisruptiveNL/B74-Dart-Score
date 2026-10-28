@@ -10,8 +10,10 @@ import '../utils/segment_color.dart';
 class FinishSuggestionWidget extends StatelessWidget {
   final int remaining;
   final String? favoriteDouble;
+
   /// Darts already thrown in the current visit (0, 1, or 2).
   final int dartsThrown;
+
   /// Checkout rule for the current player.
   final CheckoutMode checkoutMode;
 
@@ -38,7 +40,8 @@ class FinishSuggestionWidget extends StatelessWidget {
     final cs = theme.colorScheme;
 
     // Determine if a checkout is possible at all
-    final bool noCheckout = remaining > 170 ||
+    final bool noCheckout =
+        remaining > 170 ||
         (remaining == 1 && checkoutMode != CheckoutMode.straightOut);
 
     if (!noCheckout) {
@@ -56,7 +59,9 @@ class FinishSuggestionWidget extends StatelessWidget {
         return Container(
           margin: EdgeInsets.fromLTRB(12, 4 * scale, 12, 0),
           padding: EdgeInsets.symmetric(
-              horizontal: 12 * scale, vertical: 8 * scale),
+            horizontal: 12 * scale,
+            vertical: 8 * scale,
+          ),
           decoration: BoxDecoration(
             color: bgColor,
             borderRadius: BorderRadius.circular(10 * scale),
@@ -92,7 +97,9 @@ class FinishSuggestionWidget extends StatelessWidget {
         return Container(
           margin: EdgeInsets.fromLTRB(12, 4 * scale, 12, 0),
           padding: EdgeInsets.symmetric(
-              horizontal: 12 * scale, vertical: 8 * scale),
+            horizontal: 12 * scale,
+            vertical: 8 * scale,
+          ),
           decoration: BoxDecoration(
             color: cs.tertiaryContainer,
             borderRadius: BorderRadius.circular(10 * scale),
@@ -123,8 +130,10 @@ class FinishSuggestionWidget extends StatelessWidget {
     // No checkout possible: same red container as checkout hint, same sizing behaviour
     return Container(
       margin: EdgeInsets.fromLTRB(12, 4 * scale, 12, 0),
-      padding:
-          EdgeInsets.symmetric(horizontal: 12 * scale, vertical: 8 * scale),
+      padding: EdgeInsets.symmetric(
+        horizontal: 12 * scale,
+        vertical: 8 * scale,
+      ),
       decoration: BoxDecoration(
         color: cs.tertiaryContainer,
         borderRadius: BorderRadius.circular(10 * scale),
@@ -213,10 +222,10 @@ class _DartChip extends StatelessWidget {
   /// and the outer bull as `25`, which reads as one and the same bull to a
   /// player, so both are spelled out with their ring the way `D16` is.
   String _shown(AppLocalizations l10n) => switch (label) {
-        'Bull' => l10n.routeDoubleBull,
-        '25'   => l10n.routeSingleBull,
-        _      => label,
-      };
+    'Bull' => l10n.routeDoubleBull,
+    '25' => l10n.routeSingleBull,
+    _ => label,
+  };
 
   @override
   Widget build(BuildContext context) {

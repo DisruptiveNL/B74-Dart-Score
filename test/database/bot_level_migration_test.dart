@@ -47,57 +47,73 @@ void main() {
     test('keeps every player it held and reads them all as people', () async {
       final fresh = await DbHelper.instance.db;
       await fresh.insert('players', {'name': 'Nik', 'uuid': 'u-1'});
-      await fresh.insert(
-          'players', {'name': 'Old', 'uuid': 'u-2', 'is_deleted': 1});
+      await fresh.insert('players', {
+        'name': 'Old',
+        'uuid': 'u-2',
+        'is_deleted': 1,
+      });
       await windBackTo22(fresh);
       await DbHelper.debugReset();
 
       final players = await DbHelper.instance.getPlayers();
-      final bots    = await DbHelper.instance.getBots();
+      final bots = await DbHelper.instance.getBots();
 
       expect(players.map((p) => p.name), ['Nik']);
       expect(players.single.isBot, isFalse);
       expect(bots, isEmpty);
-      expect((await DbHelper.instance.getPlayersById()).length, 2,
-          reason: 'the deleted one stays for the history');
+      expect(
+        (await DbHelper.instance.getPlayersById()).length,
+        2,
+        reason: 'the deleted one stays for the history',
+      );
     });
 
-    test('numbers the bots it already had as the first of their tier',
-        () async {
-      final fresh = await DbHelper.instance.db;
-      await windBackTo23(fresh);
-      await fresh.insert('players', {
-        'name':      BotLevel.pro.storedName,
-        'uuid':      BotLevel.pro.uuid,
-        'bot_level': BotLevel.pro.index,
-      });
-      await fresh.insert('players', {'name': 'Nik', 'uuid': 'u-1'});
-      await DbHelper.debugReset();
+    test(
+      'numbers the bots it already had as the first of their tier',
+      () async {
+        final fresh = await DbHelper.instance.db;
+        await windBackTo23(fresh);
+        await fresh.insert('players', {
+          'name': BotLevel.pro.storedName,
+          'uuid': BotLevel.pro.uuid,
+          'bot_level': BotLevel.pro.index,
+        });
+        await fresh.insert('players', {'name': 'Nik', 'uuid': 'u-1'});
+        await DbHelper.debugReset();
 
-      final bots   = await DbHelper.instance.getBots();
-      final people = await DbHelper.instance.getPlayers();
+        final bots = await DbHelper.instance.getBots();
+        final people = await DbHelper.instance.getPlayers();
 
-      expect(bots.single.botOrdinal, 1);
-      expect(bots.single.uuid, BotLevel.pro.uuidFor(1),
-          reason: 'the first bot keeps the uuid it had before the numbering');
-      expect(people.single.botOrdinal, isNull);
-    });
+        expect(bots.single.botOrdinal, 1);
+        expect(
+          bots.single.uuid,
+          BotLevel.pro.uuidFor(1),
+          reason: 'the first bot keeps the uuid it had before the numbering',
+        );
+        expect(people.single.botOrdinal, isNull);
+      },
+    );
 
     test('takes a bot row once upgraded', () async {
       final fresh = await DbHelper.instance.db;
       await windBackTo22(fresh);
       await DbHelper.debugReset();
 
-      final id = await DbHelper.instance.insertPlayer(Player(
-          name:     BotLevel.rookie.storedName,
-          uuid:     BotLevel.rookie.uuid,
-          botLevel: BotLevel.rookie));
+      final id = await DbHelper.instance.insertPlayer(
+        Player(
+          name: BotLevel.rookie.storedName,
+          uuid: BotLevel.rookie.uuid,
+          botLevel: BotLevel.rookie,
+        ),
+      );
 
       expect((await DbHelper.instance.getBots()).single.id, id);
       expect((await DbHelper.instance.getBots()).single.botOrdinal, 1);
       expect(await DbHelper.instance.getPlayers(), isEmpty);
-      expect((await DbHelper.instance.getPlayersById())[id]?.botLevel,
-          BotLevel.rookie);
+      expect(
+        (await DbHelper.instance.getPlayersById())[id]?.botLevel,
+        BotLevel.rookie,
+      );
     });
   });
 }

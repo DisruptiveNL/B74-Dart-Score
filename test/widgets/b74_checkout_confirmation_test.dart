@@ -39,10 +39,9 @@ void main() {
 
     Future<void> openConfirmation(WidgetTester tester) async {
       usePhoneSurface(tester, size: const Size(480, 960));
-      await tester.pumpWidget(testApp(
-        const Scaffold(body: B74NumericInput()),
-        game: game,
-      ));
+      await tester.pumpWidget(
+        testApp(const Scaffold(body: B74NumericInput()), game: game),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(OutlinedButton, '4').last);
       await tester.pump();
@@ -56,8 +55,9 @@ void main() {
       expect(find.text('CHECKOUT BEVESTIGEN'), findsOneWidget);
     }
 
-    testWidgets('ANNULEREN does not record a checkout or advance the leg',
-        (tester) async {
+    testWidgets('ANNULEREN does not record a checkout or advance the leg', (
+      tester,
+    ) async {
       final beforeId = game.currentPlayerState.player.id;
       final beforeCount = game.currentPlayerState.throws.length;
       await openConfirmation(tester);
@@ -86,7 +86,8 @@ void main() {
       expect(
         finishingState.throws.length,
         beforeCount + 1,
-        reason: 'Checkout niet geregistreerd. '
+        reason:
+            'Checkout niet geregistreerd. '
             'Schermtekst: ${tester.widgetList<Text>(find.byType(Text)).map((w) => w.data).whereType<String>().join(' | ')}; '
             'leg: ${game.currentLeg}, speler: ${game.currentPlayerState.player.id}, '
             'remaining: ${finishingState.remaining}, gameOver: ${game.gameOver}, '

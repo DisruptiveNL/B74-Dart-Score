@@ -12,11 +12,7 @@ class FavoriteDoublePicker extends StatelessWidget {
   final String? value;
   final ValueChanged<String> onChanged;
 
-  const FavoriteDoublePicker({
-    super.key,
-    this.value,
-    required this.onChanged,
-  });
+  const FavoriteDoublePicker({super.key, this.value, required this.onChanged});
 
   /// Converts [value] to the painter's target field: 1-20, 25 for `Bull`, or
   /// -1 when nothing is selected.

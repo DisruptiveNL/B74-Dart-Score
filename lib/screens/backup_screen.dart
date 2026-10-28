@@ -68,7 +68,7 @@ class _BackupScreenState extends State<BackupScreen> {
   /// Anchor the share sheet on an iPad, where a popover without an anchor
   /// fails instead of opening. One per entry that can start a share, because
   /// only the one on screen has anything to measure.
-  final _exportKey    = GlobalKey();
+  final _exportKey = GlobalKey();
   final _saveFirstKey = GlobalKey();
 
   final SyncServer _server = SyncServer();
@@ -127,8 +127,9 @@ class _BackupScreenState extends State<BackupScreen> {
     });
     final incoming = widget.incomingPath;
     if (incoming != null) {
-      WidgetsBinding.instance
-          .addPostFrameCallback((_) => _openIncoming(incoming));
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) => _openIncoming(incoming),
+      );
     }
     // Wi-Fi switched off under a running hotspot takes the network with it.
     _hotspotStopped = LocalHotspot.onStopped.listen((_) {
@@ -136,7 +137,7 @@ class _BackupScreenState extends State<BackupScreen> {
       unawaited(_dropNetwork());
       setState(() {
         _invite = null;
-        _error  = context.l10n.hotspotStopped;
+        _error = context.l10n.hotspotStopped;
       });
     });
   }
@@ -199,11 +200,11 @@ class _BackupScreenState extends State<BackupScreen> {
       body: ListView(
         padding: contentPadding(context, top: 12, bottom: 28, innerH: 14),
         children: switch (_mode) {
-          _Mode.idle           => _idleBody(l),
+          _Mode.idle => _idleBody(l),
           _Mode.restoreWarning => _restoreWarningBody(l),
-          _Mode.restoreSource  => _restoreSourceBody(l),
-          _Mode.sending        => _sendingBody(l),
-          _Mode.receiving      => _receivingBody(l),
+          _Mode.restoreSource => _restoreSourceBody(l),
+          _Mode.sending => _sendingBody(l),
+          _Mode.receiving => _receivingBody(l),
         },
       ),
     );
@@ -267,10 +268,10 @@ class _BackupScreenState extends State<BackupScreen> {
       _route = choice == _Destination.deviceWithoutWifi
           ? TransferRoute.ownNetwork
           : TransferRoute.sharedWifi;
-      _mode     = _Mode.sending;
-      _sent     = false;
-      _error    = null;
-      _invite   = null;
+      _mode = _Mode.sending;
+      _sent = false;
+      _error = null;
+      _invite = null;
       _outgoing = null;
     });
   }
@@ -281,14 +282,17 @@ class _BackupScreenState extends State<BackupScreen> {
       context: context,
       builder: (ctx) {
         final cs = Theme.of(ctx).colorScheme;
-        Widget option(IconData icon, String title, String hint,
-                _Destination value) =>
-            ListTile(
-              leading: Icon(icon, color: cs.primary),
-              title: Text(title),
-              subtitle: Text(hint),
-              onTap: () => Navigator.pop(ctx, value),
-            );
+        Widget option(
+          IconData icon,
+          String title,
+          String hint,
+          _Destination value,
+        ) => ListTile(
+          leading: Icon(icon, color: cs.primary),
+          title: Text(title),
+          subtitle: Text(hint),
+          onTap: () => Navigator.pop(ctx, value),
+        );
 
         return Center(
           child: ConstrainedBox(
@@ -299,24 +303,38 @@ class _BackupScreenState extends State<BackupScreen> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  option(Icons.folder_outlined, l.backupToFile,
-                      l.backupToFileDesc, _Destination.file),
-                  option(Icons.wifi_rounded, l.backupToDevice,
-                      l.backupToDeviceDesc, _Destination.deviceOverWifi),
+                  option(
+                    Icons.folder_outlined,
+                    l.backupToFile,
+                    l.backupToFileDesc,
+                    _Destination.file,
+                  ),
+                  option(
+                    Icons.wifi_rounded,
+                    l.backupToDevice,
+                    l.backupToDeviceDesc,
+                    _Destination.deviceOverWifi,
+                  ),
                   // Only where this device can raise a network. An option that
                   // can never be picked here is not a choice.
                   if (_canHostNetwork)
-                    option(Icons.wifi_tethering, l.backupToDeviceDirect,
-                        l.backupToDeviceDirectDesc,
-                        _Destination.deviceWithoutWifi),
+                    option(
+                      Icons.wifi_tethering,
+                      l.backupToDeviceDirect,
+                      l.backupToDeviceDirectDesc,
+                      _Destination.deviceWithoutWifi,
+                    ),
                   // An iPhone has no third row, because no app may raise a
                   // hotspot there, so it gets told which routes are left.
                   if (!_canHostNetwork && Platform.isIOS)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                      child: Text(l.backupIosNoOwnNetwork,
-                          style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
-                              color: cs.onSurfaceVariant)),
+                      child: Text(
+                        l.backupIosNoOwnNetwork,
+                        style: Theme.of(ctx).textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -343,7 +361,7 @@ class _BackupScreenState extends State<BackupScreen> {
   /// now.
   List<Widget> _restoreWarningBody(AppLocalizations l) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     return [
       Card(
@@ -358,25 +376,32 @@ class _BackupScreenState extends State<BackupScreen> {
                   Icon(Icons.warning_amber_rounded, color: cs.onErrorContainer),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: Text(l.backupRestoreQ,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          color: cs.onErrorContainer,
-                          fontWeight: FontWeight.bold,
-                        )),
+                    child: Text(
+                      l.backupRestoreQ,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: cs.onErrorContainer,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              Text(l.backupRestoreWarn,
-                  style: TextStyle(color: cs.onErrorContainer)),
+              Text(
+                l.backupRestoreWarn,
+                style: TextStyle(color: cs.onErrorContainer),
+              ),
             ],
           ),
         ),
       ),
       const SizedBox(height: 20),
-      Text(l.backupSaveFirstQ,
-          style: theme.textTheme.titleSmall
-              ?.copyWith(fontWeight: FontWeight.bold)),
+      Text(
+        l.backupSaveFirstQ,
+        style: theme.textTheme.titleSmall?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
       const SizedBox(height: 8),
       Card(
         child: ListTile(
@@ -395,7 +420,8 @@ class _BackupScreenState extends State<BackupScreen> {
         FilledButton(
           onPressed: () => setState(() => _mode = _Mode.restoreSource),
           style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16)),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
           child: Text(l.backupContinueAnyway),
         ),
     ];
@@ -426,12 +452,11 @@ class _BackupScreenState extends State<BackupScreen> {
             ),
             const Divider(height: 1),
             ListTile(
-              leading:
-                  Icon(Icons.qr_code_scanner_rounded, color: cs.primary),
+              leading: Icon(Icons.qr_code_scanner_rounded, color: cs.primary),
               title: Text(l.backupFromDevice),
               subtitle: Text(l.backupFromDeviceDesc),
               onTap: () => setState(() {
-                _mode  = _Mode.receiving;
+                _mode = _Mode.receiving;
                 _error = null;
               }),
             ),
@@ -445,26 +470,33 @@ class _BackupScreenState extends State<BackupScreen> {
 
   List<Widget> _sendingBody(AppLocalizations l) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     if (_sent) {
       return [
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.check_circle_outline,
-                color: Colors.green, size: 20),
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.green,
+              size: 20,
+            ),
             const SizedBox(width: 8),
-            Text(l.backupSent,
-                style: theme.textTheme.titleSmall
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              l.backupSent,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
         FilledButton(
           onPressed: _finishToHome,
           style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16)),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
           child: Text(l.done),
         ),
       ];
@@ -475,10 +507,13 @@ class _BackupScreenState extends State<BackupScreen> {
       return [
         const Center(child: CircularProgressIndicator()),
         const SizedBox(height: 16),
-        Text(l.backupSendPrep,
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: cs.onSurfaceVariant)),
+        Text(
+          l.backupSendPrep,
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
+        ),
       ];
     }
 
@@ -487,24 +522,31 @@ class _BackupScreenState extends State<BackupScreen> {
       // is left is the go-ahead: this is the moment the database is read out
       // and, on the direct route, a network goes up.
       return [
-        _note(_route == TransferRoute.ownNetwork
-            ? l.routeOwnNetworkHint
-            : l.routeSharedWifiHint),
+        _note(
+          _route == TransferRoute.ownNetwork
+              ? l.routeOwnNetworkHint
+              : l.routeSharedWifiHint,
+        ),
         if (_error != null) ...[
           const SizedBox(height: 12),
-          Text(_error!,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall?.copyWith(color: cs.error)),
+          Text(
+            _error!,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(color: cs.error),
+          ),
         ],
         const SizedBox(height: 16),
         FilledButton.icon(
           onPressed: _startSending,
-          icon: Icon(_route == TransferRoute.ownNetwork
-              ? Icons.wifi_tethering
-              : Icons.wifi_rounded),
+          icon: Icon(
+            _route == TransferRoute.ownNetwork
+                ? Icons.wifi_tethering
+                : Icons.wifi_rounded,
+          ),
           label: Text(l.startServer),
           style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 16)),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
         ),
       ];
     }
@@ -524,13 +566,17 @@ class _BackupScreenState extends State<BackupScreen> {
                 children: [
                   const SizedBox(height: 12),
                   LinearProgressIndicator(
-                      value: progress,
-                      borderRadius: BorderRadius.circular(4)),
+                    value: progress,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
                   const SizedBox(height: 10),
-                  Text(l.backupSending(_percent(progress)),
-                      textAlign: TextAlign.center,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: cs.onSurfaceVariant)),
+                  Text(
+                    l.backupSending(_percent(progress)),
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: cs.onSurfaceVariant,
+                    ),
+                  ),
                 ],
               ),
         child: PairingQrCard(data: invite.qrPayload(kBackupWifiPrefix)),
@@ -540,7 +586,9 @@ class _BackupScreenState extends State<BackupScreen> {
         Text(
           '${l.hotspotNetworkName(_hotspot!.ssid)}\n${l.hotspotSendHint}',
           textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
         ),
       ],
     ];
@@ -553,9 +601,9 @@ class _BackupScreenState extends State<BackupScreen> {
   Future<void> _startSending() async {
     setState(() {
       _starting = true;
-      _sent     = false;
-      _error    = null;
-      _invite   = null;
+      _sent = false;
+      _error = null;
+      _invite = null;
       _outgoing = null;
     });
 
@@ -583,13 +631,16 @@ class _BackupScreenState extends State<BackupScreen> {
         hotspot: hotspot,
       );
       if (!mounted) return;
-      setState(() { _invite = invite; _starting = false; });
+      setState(() {
+        _invite = invite;
+        _starting = false;
+      });
     } catch (e) {
       await _dropNetwork();
       if (!mounted) return;
       setState(() {
         _starting = false;
-        _error    = transferStartMessage(context, e);
+        _error = transferStartMessage(context, e);
       });
     }
   }
@@ -634,7 +685,11 @@ class _BackupScreenState extends State<BackupScreen> {
     final sent = _server.state.value == SyncServerState.served;
     await _server.stop();
     await _dropNetwork();
-    if (mounted) setState(() { _invite = null; _sent = sent; });
+    if (mounted)
+      setState(() {
+        _invite = null;
+        _sent = sent;
+      });
   }
 
   /// Joins the network the invitation names, when it names one.
@@ -662,7 +717,7 @@ class _BackupScreenState extends State<BackupScreen> {
 
   List<Widget> _receivingBody(AppLocalizations l) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     if (_busy) {
       final received = _received;
@@ -672,10 +727,13 @@ class _BackupScreenState extends State<BackupScreen> {
         // own that a bare spinner reads as a transfer that died.
         if (_joiningNetwork != null) ...[
           const SizedBox(height: 20),
-          Text(l.hotspotJoining(_joiningNetwork!),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant)),
+          Text(
+            l.hotspotJoining(_joiningNetwork!),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
         ],
         // The number both devices show, so the user can tell that the device
         // asking is the one in front of them.
@@ -684,31 +742,43 @@ class _BackupScreenState extends State<BackupScreen> {
           Text(
             _pairingPin!,
             textAlign: TextAlign.center,
-            style: theme.textTheme.displaySmall
-                ?.copyWith(fontWeight: FontWeight.bold, letterSpacing: 8),
+            style: theme.textTheme.displaySmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              letterSpacing: 8,
+            ),
           ),
           const SizedBox(height: 6),
-          Text(l.syncPairWaiting,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant)),
+          Text(
+            l.syncPairWaiting,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
         ],
         if (received != null && received.$2 > 0) ...[
           const SizedBox(height: 20),
           LinearProgressIndicator(
-              value: received.$1 / received.$2,
-              borderRadius: BorderRadius.circular(4)),
+            value: received.$1 / received.$2,
+            borderRadius: BorderRadius.circular(4),
+          ),
           const SizedBox(height: 10),
-          Text(l.backupReceivingAt(_percent(received.$1 / received.$2)),
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant)),
+          Text(
+            l.backupReceivingAt(_percent(received.$1 / received.$2)),
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
         ] else ...[
           const SizedBox(height: 16),
-          Text(l.backupReceiving,
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant)),
+          Text(
+            l.backupReceiving,
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
+          ),
         ],
       ];
     }
@@ -716,10 +786,7 @@ class _BackupScreenState extends State<BackupScreen> {
     return [
       _note(_error ?? l.backupReceiveHint, isError: _error != null),
       const SizedBox(height: 16),
-      SizedBox(
-        height: 320,
-        child: QrScanner(onScanned: _onScanned),
-      ),
+      SizedBox(height: 320, child: QrScanner(onScanned: _onScanned)),
     ];
   }
 
@@ -734,18 +801,20 @@ class _BackupScreenState extends State<BackupScreen> {
       final isSyncCode =
           TransferInvite.parse(raw, prefix: kSyncWifiPrefix) != null;
       if (mounted) {
-        setState(() => _error = isSyncCode
-            ? context.l10n.backupNotSyncCode
-            : context.l10n.backupNotABackup);
+        setState(
+          () => _error = isSyncCode
+              ? context.l10n.backupNotSyncCode
+              : context.l10n.backupNotABackup,
+        );
       }
       return;
     }
 
     setState(() {
-      _busy       = true;
-      _error      = null;
+      _busy = true;
+      _error = null;
       _pairingPin = null;
-      _received   = null;
+      _received = null;
     });
     try {
       await _joinIfNeeded(invite);
@@ -769,28 +838,31 @@ class _BackupScreenState extends State<BackupScreen> {
       await _leaveNetwork();
       if (mounted) {
         final l = context.l10n;
-        setState(() => _error = switch (e) {
-              SyncRejectedException() => l.syncRejected,
-              TimeoutException()      => l.syncNotConfirmed,
-              SyncPayloadTooLargeException() => l.syncTooLarge,
-              TransferUnreachableException() => invite.hotspot != null
+        setState(
+          () => _error = switch (e) {
+            SyncRejectedException() => l.syncRejected,
+            TimeoutException() => l.syncNotConfirmed,
+            SyncPayloadTooLargeException() => l.syncTooLarge,
+            TransferUnreachableException() =>
+              invite.hotspot != null
                   ? l.syncUnreachableOnHotspot
                   : l.syncUnreachable,
-              TransferInviteExpiredException() => l.syncCodeExpired,
-              // The network was never joined, so the credentials go on screen
-              // and the user does it the long way round rather than be stuck.
-              HotspotException() when invite.hotspot != null =>
-                '${l.hotspotJoinFailed}\n\n'
-                    '${l.hotspotJoinManually(invite.hotspot!.ssid, invite.hotspot!.passphrase)}',
-              _ => '${l.connectionFailed}\n\n${l.error}: $e',
-            });
+            TransferInviteExpiredException() => l.syncCodeExpired,
+            // The network was never joined, so the credentials go on screen
+            // and the user does it the long way round rather than be stuck.
+            HotspotException() when invite.hotspot != null =>
+              '${l.hotspotJoinFailed}\n\n'
+                  '${l.hotspotJoinManually(invite.hotspot!.ssid, invite.hotspot!.passphrase)}',
+            _ => '${l.connectionFailed}\n\n${l.error}: $e',
+          },
+        );
       }
     } finally {
       if (mounted) {
         setState(() {
-          _busy           = false;
-          _pairingPin     = null;
-          _received       = null;
+          _busy = false;
+          _pairingPin = null;
+          _received = null;
           _joiningNetwork = null;
         });
       }
@@ -802,7 +874,7 @@ class _BackupScreenState extends State<BackupScreen> {
   /// Copies the database out and hands it to the share sheet, anchored on the
   /// entry the user tapped.
   Future<void> _export(GlobalKey anchor) async {
-    final box    = anchor.currentContext?.findRenderObject() as RenderBox?;
+    final box = anchor.currentContext?.findRenderObject() as RenderBox?;
     final origin = box == null || !box.hasSize
         ? null
         : box.localToGlobal(Offset.zero) & box.size;
@@ -810,7 +882,8 @@ class _BackupScreenState extends State<BackupScreen> {
     setState(() => _busy = true);
     try {
       final shared = await BackupService.exportAndShare(
-          sharePositionOrigin: origin);
+        sharePositionOrigin: origin,
+      );
       if (shared && mounted) _toast(context.l10n.backupCreated);
     } catch (e) {
       if (mounted) _toast('${context.l10n.error}: $e');
@@ -856,7 +929,7 @@ class _BackupScreenState extends State<BackupScreen> {
   /// showing when it was made and what it contains so two backups can be told
   /// apart.
   Future<bool> _confirm(PickedBackup picked) async {
-    final l    = context.l10n;
+    final l = context.l10n;
     final info = picked.info;
 
     final ok = await showDialog<bool>(
@@ -880,9 +953,13 @@ class _BackupScreenState extends State<BackupScreen> {
                     const SizedBox(height: 14),
                     Text(l.backupRestoreWarn),
                     const SizedBox(height: 10),
-                    Text(l.backupDeviceNote,
-                        style:
-                            TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+                    Text(
+                      l.backupDeviceNote,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: cs.onSurfaceVariant,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -932,44 +1009,49 @@ class _BackupScreenState extends State<BackupScreen> {
     await _leaveNetwork();
     if (!mounted) return;
     setState(() {
-      _mode   = _Mode.idle;
+      _mode = _Mode.idle;
       _invite = null;
-      _sent   = false;
-      _error  = null;
+      _sent = false;
+      _error = null;
     });
   }
 
   String _rejectionMessage(BackupRejectedException e) => switch (e.reason) {
-        BackupRejection.notABackup => context.l10n.backupNotABackup,
-        BackupRejection.tooNew     => context.l10n.backupTooNew,
-      };
+    BackupRejection.notABackup => context.l10n.backupNotABackup,
+    BackupRejection.tooNew => context.l10n.backupTooNew,
+  };
 
   /// What a database holds, in the same four lines wherever it is shown: on the
   /// way out beside the code, and on the way in beside the question.
-  Widget _summaryCard(AppLocalizations l, BackupInfo info,
-      {required String title}) {
+  Widget _summaryCard(
+    AppLocalizations l,
+    BackupInfo info, {
+    required String title,
+  }) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     Widget row(IconData icon, String label, String value) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 3),
-          child: Row(
-            children: [
-              Icon(icon, size: 15, color: cs.onSurfaceVariant),
-              const SizedBox(width: 8),
-              Text(label, style: TextStyle(color: cs.onSurfaceVariant)),
-              const SizedBox(width: 12),
-              // Takes the rest of the row and wraps inside it rather than
-              // being pushed past its edge by a Spacer: the device is named
-              // here, and a name is as long as the device's owner made it.
-              Expanded(
-                child: Text(value,
-                    textAlign: TextAlign.end,
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ],
+      padding: const EdgeInsets.symmetric(vertical: 3),
+      child: Row(
+        children: [
+          Icon(icon, size: 15, color: cs.onSurfaceVariant),
+          const SizedBox(width: 8),
+          Text(label, style: TextStyle(color: cs.onSurfaceVariant)),
+          const SizedBox(width: 12),
+          // Takes the rest of the row and wraps inside it rather than
+          // being pushed past its edge by a Spacer: the device is named
+          // here, and a name is as long as the device's owner made it.
+          Expanded(
+            child: Text(
+              value,
+              textAlign: TextAlign.end,
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
-        );
+        ],
+      ),
+    );
 
     return Card(
       child: Padding(
@@ -977,15 +1059,26 @@ class _BackupScreenState extends State<BackupScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: theme.textTheme.labelLarge
-                    ?.copyWith(color: cs.primary, fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 8),
             row(Icons.schedule_rounded, l.backupWhen, _whenOf(l, info)),
-            row(Icons.smartphone_rounded, l.backupDevice,
-                info.deviceLabel ?? l.unknownDevice),
+            row(
+              Icons.smartphone_rounded,
+              l.backupDevice,
+              info.deviceLabel ?? l.unknownDevice,
+            ),
             row(Icons.people_alt_rounded, l.players, '${info.playerCount}'),
-            row(Icons.sports_esports_rounded, l.backupGames, '${info.gameCount}'),
+            row(
+              Icons.sports_esports_rounded,
+              l.backupGames,
+              '${info.gameCount}',
+            ),
             row(Icons.data_usage_rounded, l.backupSize, _sizeOf(info)),
           ],
         ),
@@ -1014,13 +1107,19 @@ class _BackupScreenState extends State<BackupScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(isError ? Icons.error_outline : Icons.info_outline_rounded,
-                size: 18, color: isError ? cs.error : cs.onSurfaceVariant),
+            Icon(
+              isError ? Icons.error_outline : Icons.info_outline_rounded,
+              size: 18,
+              color: isError ? cs.error : cs.onSurfaceVariant,
+            ),
             const SizedBox(width: 10),
             Expanded(
-              child: Text(text,
-                  style:
-                      TextStyle(color: isError ? cs.error : cs.onSurfaceVariant)),
+              child: Text(
+                text,
+                style: TextStyle(
+                  color: isError ? cs.error : cs.onSurfaceVariant,
+                ),
+              ),
             ),
           ],
         ),
@@ -1029,6 +1128,7 @@ class _BackupScreenState extends State<BackupScreen> {
   }
 
   /// Shows [message] in a snackbar.
-  void _toast(String message) => ScaffoldMessenger.of(context)
-      .showSnackBar(SnackBar(content: Text(message)));
+  void _toast(String message) => ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(SnackBar(content: Text(message)));
 }

@@ -8,15 +8,15 @@ import '../support/test_app.dart';
 /// One visit of [score] points over three darts.
 DartThrow _visit(int score, {int remainingBefore = 501, bool bust = false}) =>
     DartThrow(
-      gameId:          1,
-      playerId:        1,
-      score:           score,
-      dartsUsed:       3,
-      leg:             1,
-      set:             1,
+      gameId: 1,
+      playerId: 1,
+      score: score,
+      dartsUsed: 3,
+      leg: 1,
+      set: 1,
       remainingBefore: remainingBefore,
-      thrownAt:        DateTime(2026, 1, 1),
-      bust:            bust,
+      thrownAt: DateTime(2026, 1, 1),
+      bust: bust,
     );
 
 /// The card the X01 summary and the X01 history detail both render. CLAUDE.md
@@ -25,9 +25,9 @@ DartThrow _visit(int score, {int remainingBefore = 501, bool bust = false}) =>
 void main() {
   Future<void> pumpCard(WidgetTester tester, SummaryPlayerCard card) async {
     usePhoneSurface(tester, size: const Size(400, 1200));
-    await tester.pumpWidget(testApp(Scaffold(body: SingleChildScrollView(
-      child: card,
-    ))));
+    await tester.pumpWidget(
+      testApp(Scaffold(body: SingleChildScrollView(child: card))),
+    );
     await tester.pumpAndSettle();
   }
 
@@ -45,8 +45,9 @@ void main() {
     expect(find.textContaining('2'), findsWidgets);
   });
 
-  testWidgets('averages over the darts thrown, not over the visits',
-      (tester) async {
+  testWidgets('averages over the darts thrown, not over the visits', (
+    tester,
+  ) async {
     // 180 points from six darts is 90 per three. A card that divided by visits
     // would show 90 as well for these two, so the second visit is deliberately
     // a different size.
@@ -72,8 +73,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('says so plainly when a team member threw nothing',
-      (tester) async {
+  testWidgets('says so plainly when a team member threw nothing', (
+    tester,
+  ) async {
     await pumpCard(
       tester,
       SummaryPlayerCard(
@@ -111,8 +113,9 @@ void main() {
     expect(find.byIcon(Icons.groups_rounded), findsOneWidget);
   });
 
-  testWidgets('shows an individual player as an initial, not a group',
-      (tester) async {
+  testWidgets('shows an individual player as an initial, not a group', (
+    tester,
+  ) async {
     await pumpCard(
       tester,
       SummaryPlayerCard(name: 'Ada', throws: [_visit(60)], legsWon: 0),

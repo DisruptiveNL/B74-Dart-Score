@@ -21,11 +21,7 @@ void main() {
 
     test('offers a favorite-double route as a hint when no checkout fits '
         'the remaining darts this turn', () {
-      final routes = FinishCalculator.getRoutes(
-        55,
-        'D8',
-        maxDarts: 1,
-      );
+      final routes = FinishCalculator.getRoutes(55, 'D8', maxDarts: 1);
 
       expect(routes.primary, isNull);
       expect(routes.alternative, ['T13', 'D8']);
@@ -52,12 +48,12 @@ void main() {
     test('double-out finishes on a double or the bull only', () {
       const mode = CheckoutMode.doubleOut;
 
-      expect(can(2, mode),  isTrue);
+      expect(can(2, mode), isTrue);
       expect(can(16, mode), isTrue);
       expect(can(40, mode), isTrue);
       expect(can(50, mode), isTrue);
 
-      expect(can(1, mode),  isFalse, reason: 'no dart scores 1 on a double');
+      expect(can(1, mode), isFalse, reason: 'no dart scores 1 on a double');
       expect(can(15, mode), isFalse, reason: 'odd');
       expect(can(25, mode), isFalse, reason: 'the outer bull is a single');
       expect(can(41, mode), isFalse);
@@ -68,14 +64,18 @@ void main() {
     test('master-out adds the triples and the outer bull', () {
       const mode = CheckoutMode.masterOut;
 
-      expect(can(3, mode),  isTrue);
+      expect(can(3, mode), isTrue);
       expect(can(40, mode), isTrue);
       expect(can(42, mode), isTrue, reason: 'T14');
       expect(can(60, mode), isTrue, reason: 'T20');
-      expect(can(25, mode), isTrue, reason: 'the outer bull counts as a single');
+      expect(
+        can(25, mode),
+        isTrue,
+        reason: 'the outer bull counts as a single',
+      );
       expect(can(50, mode), isTrue);
 
-      expect(can(1, mode),  isFalse);
+      expect(can(1, mode), isFalse);
       expect(can(41, mode), isFalse);
       expect(can(61, mode), isFalse);
     });
@@ -83,11 +83,11 @@ void main() {
     test('straight-out finishes on any single dart that hits the number', () {
       const mode = CheckoutMode.straightOut;
 
-      expect(can(1, mode),  isTrue,  reason: 'S1');
+      expect(can(1, mode), isTrue, reason: 'S1');
       expect(can(20, mode), isTrue);
-      expect(can(22, mode), isTrue,  reason: 'D11');
+      expect(can(22, mode), isTrue, reason: 'D11');
       expect(can(25, mode), isTrue);
-      expect(can(42, mode), isTrue,  reason: 'T14');
+      expect(can(42, mode), isTrue, reason: 'T14');
       expect(can(50, mode), isTrue);
       expect(can(60, mode), isTrue);
 
@@ -98,7 +98,7 @@ void main() {
 
     test('a remaining of zero or less is never one dart away', () {
       for (final mode in CheckoutMode.values) {
-        expect(can(0, mode),  isFalse);
+        expect(can(0, mode), isFalse);
         expect(can(-3, mode), isFalse);
       }
     });
@@ -124,8 +124,11 @@ void main() {
       for (final mode in CheckoutMode.values) {
         for (var rest = 2; rest <= 170; rest++) {
           for (final favourite in const [null, 'D16', 'D20', 'D1', 'Bull']) {
-            final routes =
-                FinishCalculator.getRoutes(rest, favourite, checkoutMode: mode);
+            final routes = FinishCalculator.getRoutes(
+              rest,
+              favourite,
+              checkoutMode: mode,
+            );
             for (final route in [routes.primary, routes.alternative]) {
               if (route == null) continue;
               final darts = route.map(dart).toList();
@@ -138,7 +141,10 @@ void main() {
               if (sum != rest) {
                 wrong.add('${mode.name} $rest $route: adds up to $sum');
               } else if (!FinishCalculator.finishesOn(
-                  last.field, last.multiplier, mode)) {
+                last.field,
+                last.multiplier,
+                mode,
+              )) {
                 wrong.add('${mode.name} $rest $route: no legal finish');
               }
             }

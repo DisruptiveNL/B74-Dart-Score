@@ -67,18 +67,22 @@ class _HistoryGameSummaryScreenState extends State<HistoryGameSummaryScreen> {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
           child: FutureBuilder<_GameData>(
-        future: _future,
-        builder: (context, snap) {
-          if (snap.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final data = snap.data;
-          if (data == null || data.allThrows.isEmpty) {
-            return Center(child: Text(context.l10n.noThrowData));
-          }
-          return _SummaryBody(game: widget.game, data: data, players: widget.players);
-        },
-      ),
+            future: _future,
+            builder: (context, snap) {
+              if (snap.connectionState != ConnectionState.done) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final data = snap.data;
+              if (data == null || data.allThrows.isEmpty) {
+                return Center(child: Text(context.l10n.noThrowData));
+              }
+              return _SummaryBody(
+                game: widget.game,
+                data: data,
+                players: widget.players,
+              );
+            },
+          ),
         ),
       ),
     );
@@ -90,7 +94,9 @@ class _HistoryGameSummaryScreenState extends State<HistoryGameSummaryScreen> {
       ? content
       : Scaffold(
           appBar: AppBar(
-            title: Text(DateFormat('dd.MM.yy  HH:mm').format(widget.game.createdAt)),
+            title: Text(
+              DateFormat('dd.MM.yy  HH:mm').format(widget.game.createdAt),
+            ),
           ),
           body: content,
         );
@@ -129,8 +135,12 @@ class _GameData {
 /// A team game announces the team rather than whoever hit the last double, the
 /// same way the post-game summary does: the shared rule hands back every member
 /// of the winning side, and the side is what won.
-String? _winnerName(AppLocalizations l, Game game, List<Player> players,
-    Set<int> winnerIds) {
+String? _winnerName(
+  AppLocalizations l,
+  Game game,
+  List<Player> players,
+  Set<int> winnerIds,
+) {
   if (winnerIds.isEmpty) return null;
 
   if (game.isTeamGame) {
@@ -167,9 +177,20 @@ class _SummaryBody extends StatelessWidget {
     // under it and the lifetime games won on the statistics screen cannot name
     // three different winners. It is not always the last checkout: a placement
     // game is played for points and goes to the best ranked.
-    final winnerIds = winningPlayerIds(game, data.allThrows,
-        participantIds: [for (final p in players) if (p.id != null) p.id!]);
-    final String? winnerName = _winnerName(context.l10n, game, players, winnerIds);
+    final winnerIds = winningPlayerIds(
+      game,
+      data.allThrows,
+      participantIds: [
+        for (final p in players)
+          if (p.id != null) p.id!,
+      ],
+    );
+    final String? winnerName = _winnerName(
+      context.l10n,
+      game,
+      players,
+      winnerIds,
+    );
 
     // Team configs only store player ids, so the rematch dialog needs a name
     // lookup to list a team's members.
@@ -182,12 +203,16 @@ class _SummaryBody extends StatelessWidget {
           context.l10n.matchFormat,
           game.placementMode
               ? context.l10n.placementMode
-              : context.l10n.standardMode
+              : context.l10n.standardMode,
         ),
         (
           context.l10n.gameMode_,
-          context.l10n.gameSummaryInfo(game.startScore, game.legs, game.sets,
-              placementMode: game.placementMode)
+          context.l10n.gameSummaryInfo(
+            game.startScore,
+            game.legs,
+            game.sets,
+            placementMode: game.placementMode,
+          ),
         ),
         // With handicaps the game defaults say little, so the per-player
         // rows below carry the rules instead.
@@ -195,34 +220,32 @@ class _SummaryBody extends StatelessWidget {
           (context.l10n.checkIn, checkInLabel(context.l10n, game.gameMode)),
           (
             context.l10n.checkOut,
-            checkOutLabel(context.l10n, game.checkoutMode)
+            checkOutLabel(context.l10n, game.checkoutMode),
           ),
         ],
       ],
       slots: game.isTeamGame
           ? game.teams!
-              .map((t) => RematchSlot.team(
-                    t.name,
-                    [
-                      for (final id in t.playerIds)
-                        if (namesById[id] != null)
-                          RematchSlot.player(
-                            namesById[id]!,
-                            rules: handicapRulesLabel(
-                                context.l10n, game, id),
-                          ),
-                    ],
-                  ))
-              .toList()
+                .map(
+                  (t) => RematchSlot.team(t.name, [
+                    for (final id in t.playerIds)
+                      if (namesById[id] != null)
+                        RematchSlot.player(
+                          namesById[id]!,
+                          rules: handicapRulesLabel(context.l10n, game, id),
+                        ),
+                  ]),
+                )
+                .toList()
           : players
-              .map((p) => RematchSlot.player(
+                .map(
+                  (p) => RematchSlot.player(
                     p.label(context.l10n),
-                    rules:
-                        handicapRulesLabel(context.l10n, game, p.id),
-                  ))
-              .toList(),
-      onRematch: () =>
-          context.read<GameProvider>().startRematch(game, players),
+                    rules: handicapRulesLabel(context.l10n, game, p.id),
+                  ),
+                )
+                .toList(),
+      onRematch: () => context.read<GameProvider>().startRematch(game, players),
       destination: (_) => const GameScreen(),
     );
 
@@ -240,7 +263,11 @@ class _SummaryBody extends StatelessWidget {
                     color: cs.primaryContainer,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.emoji_events_rounded, size: 52, color: cs.primary),
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    size: 52,
+                    color: cs.primary,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -256,26 +283,33 @@ class _SummaryBody extends StatelessWidget {
           ),
         const SizedBox(height: 14),
         // Game info
-        GameInfoCard(dense: true, rows: [
-          (context.l10n.gameLabel, context.l10n.modeX01Name),
-          (
-            context.l10n.matchFormat,
-            game.placementMode
-                ? context.l10n.placementMode
-                : context.l10n.standardMode
-          ),
-          (
-            context.l10n.gameMode_,
-            context.l10n.gameSummaryInfo(game.startScore, game.legs, game.sets,
-                placementMode: game.placementMode)
-          ),
-          // A solo game has nobody to be ordered against.
-          if (game.isTeamGame || players.length > 1)
+        GameInfoCard(
+          dense: true,
+          rows: [
+            (context.l10n.gameLabel, context.l10n.modeX01Name),
             (
-              context.l10n.startingOrder,
-              startingOrderLabel(context.l10n, game.startingOrder)
+              context.l10n.matchFormat,
+              game.placementMode
+                  ? context.l10n.placementMode
+                  : context.l10n.standardMode,
             ),
-        ]),
+            (
+              context.l10n.gameMode_,
+              context.l10n.gameSummaryInfo(
+                game.startScore,
+                game.legs,
+                game.sets,
+                placementMode: game.placementMode,
+              ),
+            ),
+            // A solo game has nobody to be ordered against.
+            if (game.isTeamGame || players.length > 1)
+              (
+                context.l10n.startingOrder,
+                startingOrderLabel(context.l10n, game.startingOrder),
+              ),
+          ],
+        ),
         // Final ranking (placement mode only). Slots are keyed by team index in
         // a team game and by player id otherwise, matching how the placement
         // helpers group the throws.
@@ -284,11 +318,15 @@ class _SummaryBody extends StatelessWidget {
             throwsById: game.isTeamGame
                 ? {
                     for (var ti = 0; ti < game.teams!.length; ti++)
-                      ti: (data.allThrows
-                          .where((t) =>
-                              game.teams![ti].playerIds.contains(t.playerId))
-                          .toList()
-                        ..sort((a, b) => a.thrownAt.compareTo(b.thrownAt))),
+                      ti:
+                          (data.allThrows
+                              .where(
+                                (t) => game.teams![ti].playerIds.contains(
+                                  t.playerId,
+                                ),
+                              )
+                              .toList()
+                            ..sort((a, b) => a.thrownAt.compareTo(b.thrownAt))),
                   }
                 : {
                     for (final p in players)
@@ -316,8 +354,8 @@ class _SummaryBody extends StatelessWidget {
             final teamThrows = [for (final m in members) ...m.$2]
               ..sort((a, b) => a.thrownAt.compareTo(b.thrownAt));
             return SummaryPlayerCard(
-              name:    team.name,
-              throws:  teamThrows,
+              name: team.name,
+              throws: teamThrows,
               legsWon: legsWonFromThrows(teamThrows),
               members: members,
             );
@@ -330,18 +368,18 @@ class _SummaryBody extends StatelessWidget {
             // throws.
             final legsWonOverride = game.placementMode
                 ? (placementRanking(
-                        data.playerThrows,
-                        data.allThrows.isEmpty
-                            ? 0
-                            : data.allThrows
-                                .map((t) => t.leg)
-                                .reduce((a, b) => a > b ? a : b),
-                        1)
-                    .legsWon[p.id!])
+                    data.playerThrows,
+                    data.allThrows.isEmpty
+                        ? 0
+                        : data.allThrows
+                              .map((t) => t.leg)
+                              .reduce((a, b) => a > b ? a : b),
+                    1,
+                  ).legsWon[p.id!])
                 : null;
             return SummaryPlayerCard(
-              name:    p.label(context.l10n),
-              throws:  throws,
+              name: p.label(context.l10n),
+              throws: throws,
               legsWon: legsWonOverride ?? legsWonFromThrows(throws),
             );
           }),

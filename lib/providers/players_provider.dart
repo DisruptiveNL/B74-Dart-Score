@@ -26,13 +26,12 @@ class PlayersProvider extends ChangeNotifier {
   bool get loaded => _loaded;
 
   /// The device's primary user, or null if none set yet.
-  Player? get primaryPlayer =>
-      _players.where((p) => p.isPrimary).firstOrNull;
+  Player? get primaryPlayer => _players.where((p) => p.isPrimary).firstOrNull;
 
   /// Loads all players from the database and marks the provider as loaded.
   Future<void> load() async {
     _players = await _db.getPlayers();
-    _bots    = await _db.getBots();
+    _bots = await _db.getBots();
     _sort();
     _loaded = true;
     notifyListeners();
@@ -44,11 +43,7 @@ class PlayersProvider extends ChangeNotifier {
     final player = Player(name: name, isPrimary: isPrimary);
     final id = await _db.insertPlayer(player);
     if (isPrimary) await _db.setPrimaryPlayer(id);
-    final saved = Player(
-      id: id,
-      name: name,
-      isPrimary: isPrimary,
-    );
+    final saved = Player(id: id, name: name, isPrimary: isPrimary);
     // setPrimaryPlayer cleared the flag on every other row, so the list has to
     // follow or primaryPlayer keeps returning the old one until the next load.
     final existing = isPrimary
@@ -99,9 +94,9 @@ class PlayersProvider extends ChangeNotifier {
         .firstOrNull;
     if (existing != null) return existing;
     final bot = Player(
-      name:       level.storedNameFor(ordinal),
-      uuid:       level.uuidFor(ordinal),
-      botLevel:   level,
+      name: level.storedNameFor(ordinal),
+      uuid: level.uuidFor(ordinal),
+      botLevel: level,
       botOrdinal: ordinal,
     );
     final id = await _db.insertPlayer(bot);
@@ -156,13 +151,33 @@ int comparePlayerNames(String a, String b) {
 /// outside the alphabet.
 String _foldForSort(String name) {
   const replacements = {
-    'ä': 'a', 'ö': 'o', 'ü': 'u', 'ß': 'ss',
-    'á': 'a', 'à': 'a', 'â': 'a', 'å': 'a', 'ã': 'a',
-    'é': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e',
-    'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
-    'ó': 'o', 'ò': 'o', 'ô': 'o', 'õ': 'o', 'ø': 'o',
-    'ú': 'u', 'ù': 'u', 'û': 'u',
-    'ñ': 'n', 'ç': 'c',
+    'ä': 'a',
+    'ö': 'o',
+    'ü': 'u',
+    'ß': 'ss',
+    'á': 'a',
+    'à': 'a',
+    'â': 'a',
+    'å': 'a',
+    'ã': 'a',
+    'é': 'e',
+    'è': 'e',
+    'ê': 'e',
+    'ë': 'e',
+    'í': 'i',
+    'ì': 'i',
+    'î': 'i',
+    'ï': 'i',
+    'ó': 'o',
+    'ò': 'o',
+    'ô': 'o',
+    'õ': 'o',
+    'ø': 'o',
+    'ú': 'u',
+    'ù': 'u',
+    'û': 'u',
+    'ñ': 'n',
+    'ç': 'c',
   };
   final buffer = StringBuffer();
   for (final rune in name.toLowerCase().runes) {

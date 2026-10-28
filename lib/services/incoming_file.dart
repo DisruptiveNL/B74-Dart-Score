@@ -139,8 +139,9 @@ class IncomingFile {
 /// The native halves are `IncomingFileHandler.swift` and `MainActivity.kt`,
 /// hand-written like the document picker beside them and for the same reason.
 class IncomingFiles {
-  static const MethodChannel _channel =
-      MethodChannel('dartscore/incoming_file');
+  static const MethodChannel _channel = MethodChannel(
+    'dartscore/incoming_file',
+  );
 
   static final StreamController<IncomingFile> _opened =
       StreamController<IncomingFile>.broadcast();

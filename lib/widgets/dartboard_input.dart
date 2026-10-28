@@ -9,17 +9,25 @@ import 'visit_pause.dart';
 /// A single dart entered on the board input: which [field] was hit, the
 /// [modifier] (single/double/triple) and the resulting [score].
 class DartEntry {
-  final int field;    // 1-20, 25=bull, 0=miss
+  final int field; // 1-20, 25=bull, 0=miss
   final int modifier; // 1=single, 2=double, 3=triple
   final int score;
 
-  const DartEntry({required this.field, required this.modifier, required this.score});
+  const DartEntry({
+    required this.field,
+    required this.modifier,
+    required this.score,
+  });
 
   /// Short notation for this dart, e.g. `T20`, `D16`, `Bull`, `25` or `Miss`.
   String get label {
     if (field == 0) return 'Miss';
     if (field == 25) return modifier == 2 ? 'Bull' : '25';
-    final prefix = modifier == 2 ? 'D' : modifier == 3 ? 'T' : '';
+    final prefix = modifier == 2
+        ? 'D'
+        : modifier == 3
+        ? 'T'
+        : '';
     return '$prefix$field';
   }
 }
@@ -145,8 +153,26 @@ class _DartboardInputState<T extends DartboardInputSource>
   static const double _maxActionRowHeight = 110;
 
   static const _fields = [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-    11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
   ];
 
   /// Registers a tap on [field] (0=miss, 25=bull) with the active modifier.
@@ -171,7 +197,9 @@ class _DartboardInputState<T extends DartboardInputSource>
     final cs = Theme.of(context).colorScheme;
     final provider = context.read<T>();
     // Full, a bot's, or still being shown: no dart of the person's lands now.
-    final dartCount = provider.inputLocked ? 3 : provider.currentVisitDarts.length;
+    final dartCount = provider.inputLocked
+        ? 3
+        : provider.currentVisitDarts.length;
 
     // While a finished visit is on show the two are locked anyway, so their
     // place goes to the one thing that can be done: moving on now. Under the
@@ -243,17 +271,17 @@ class _DartboardInputState<T extends DartboardInputSource>
   /// Single names its grey rather than leaving the segmented button to its
   /// default, which is the theme's green and therefore the double's color.
   Color _modifierColor(BuildContext context) => switch (_modifier) {
-        2 => Theme.of(context).colorScheme.secondaryContainer,
-        3 => tripleContainerColor(context),
-        _ => Theme.of(context).colorScheme.surfaceContainerHigh,
-      };
+    2 => Theme.of(context).colorScheme.secondaryContainer,
+    3 => tripleContainerColor(context),
+    _ => Theme.of(context).colorScheme.surfaceContainerHigh,
+  };
 
   /// Foreground for [_modifierColor].
   Color _onModifierColor(BuildContext context) => switch (_modifier) {
-        2 => Theme.of(context).colorScheme.onSecondaryContainer,
-        3 => onTripleContainerColor(context),
-        _ => Theme.of(context).colorScheme.onSurface,
-      };
+    2 => Theme.of(context).colorScheme.onSecondaryContainer,
+    3 => onTripleContainerColor(context),
+    _ => Theme.of(context).colorScheme.onSurface,
+  };
 
   /// The number grid at its preferred size, as tall as its aspect ratio makes it.
   Widget _grid({
@@ -269,13 +297,17 @@ class _DartboardInputState<T extends DartboardInputSource>
       mainAxisSpacing: spacing,
       crossAxisSpacing: spacing,
       childAspectRatio: aspectRatio,
-      children: _fields.map((f) => _FieldButton(
-        field: f,
-        modifier: _modifier,
-        disabled: disabled,
-        compact: compactButtons,
-        onTap: () => _tapField(f),
-      )).toList(),
+      children: _fields
+          .map(
+            (f) => _FieldButton(
+              field: f,
+              modifier: _modifier,
+              disabled: disabled,
+              compact: compactButtons,
+              onTap: () => _tapField(f),
+            ),
+          )
+          .toList(),
     );
   }
 
@@ -288,8 +320,8 @@ class _DartboardInputState<T extends DartboardInputSource>
     required double maxAspectRatio,
   }) {
     final buttonWidth = (width - 4 * spacing) / 5;
-    final leftover    = (height - 3 * spacing) / 4;
-    final rowHeight   = leftover
+    final leftover = (height - 3 * spacing) / 4;
+    final rowHeight = leftover
         .clamp(_minFieldHeight, buttonWidth / maxAspectRatio)
         .toDouble();
     return (
@@ -333,18 +365,23 @@ class _DartboardInputState<T extends DartboardInputSource>
           mainAxisSpacing: spacing,
           crossAxisSpacing: spacing,
           childAspectRatio: m.buttonWidth / m.rowHeight,
-          children: _fields.map((f) => _FieldButton(
-            field: f,
-            modifier: _modifier,
-            disabled: disabled,
-            compact: m.rowHeight < _twoLineFieldHeight,
-            scale: (m.rowHeight / 48).clamp(1.0, 2.0).toDouble(),
-            onTap: () => _tapField(f),
-          )).toList(),
+          children: _fields
+              .map(
+                (f) => _FieldButton(
+                  field: f,
+                  modifier: _modifier,
+                  disabled: disabled,
+                  compact: m.rowHeight < _twoLineFieldHeight,
+                  scale: (m.rowHeight / 48).clamp(1.0, 2.0).toDouble(),
+                  onTap: () => _tapField(f),
+                ),
+              )
+              .toList(),
         );
 
-        final height =
-            m.scrolls ? box.maxHeight : 4 * m.rowHeight + 3 * spacing;
+        final height = m.scrolls
+            ? box.maxHeight
+            : 4 * m.rowHeight + 3 * spacing;
 
         return SizedBox(
           height: height,
@@ -387,17 +424,18 @@ class _DartboardInputState<T extends DartboardInputSource>
         final compact = constraints.maxHeight < _compactHeight;
         // Both a short screen and a tall pane want the grid to take the height
         // that is left; they differ only in how far a button may grow.
-        final fitted  = compact || widget.fillHeight;
+        final fitted = compact || widget.fillHeight;
         // Beside the grid the actions cost width, which only a wide pane has
         // to spare, and give back the height the row under the grid took.
         final sideActions =
             widget.fillHeight &&
-                DartboardInput.usesSideActions(constraints.maxWidth);
+            DartboardInput.usesSideActions(constraints.maxWidth);
         // A pane far taller than it is wide cannot spend its height on the
         // grid: four rows of five buttons would have to stretch out of shape.
         // The visit display and the modifier take it instead, where a tablet
         // gains something from the size anyway.
-        final tallPane = widget.fillHeight &&
+        final tallPane =
+            widget.fillHeight &&
             constraints.maxHeight / constraints.maxWidth > 1.6;
         final rowScale = tallPane ? 1.35 : 1.0;
         final actionColumnWidth = sideActions
@@ -410,10 +448,10 @@ class _DartboardInputState<T extends DartboardInputSource>
         final segmentVPadding = compact
             ? 4.0
             : tallPane
-                ? 20.0
-                : widget.fillHeight
-                    ? 18.0
-                    : 8.0;
+            ? 20.0
+            : widget.fillHeight
+            ? 18.0
+            : 8.0;
         // One value for both sides of the switch, carried as its own padding so
         // that the leftover height a tall pane spreads over the column lands in
         // one gap above it and one below it. Two spacer children would take two
@@ -463,11 +501,15 @@ class _DartboardInputState<T extends DartboardInputSource>
             // row and the numbers at every pane size and text size.
             Padding(
               padding: EdgeInsets.symmetric(
-                  horizontal: _sidePadding, vertical: segmentGap),
+                horizontal: _sidePadding,
+                vertical: segmentGap,
+              ),
               child: SizedBox(
                 width: widget.fillHeight
-                    ? min(constraints.maxWidth - 2 * _sidePadding,
-                        _maxSegmentWidth)
+                    ? min(
+                        constraints.maxWidth - 2 * _sidePadding,
+                        _maxSegmentWidth,
+                      )
                     : null,
                 child: SegmentedButton<int>(
                   segments: [
@@ -475,31 +517,43 @@ class _DartboardInputState<T extends DartboardInputSource>
                     // make this pane narrow enough that "Single" would
                     // otherwise break across two lines.
                     ButtonSegment(
-                        value: 1, label: _SegmentLabel(context.l10n.single)),
+                      value: 1,
+                      label: _SegmentLabel(context.l10n.single),
+                    ),
                     ButtonSegment(
-                        value: 2, label: _SegmentLabel(context.l10n.double_)),
+                      value: 2,
+                      label: _SegmentLabel(context.l10n.double_),
+                    ),
                     ButtonSegment(
-                        value: 3, label: _SegmentLabel(context.l10n.triple)),
+                      value: 3,
+                      label: _SegmentLabel(context.l10n.triple),
+                    ),
                   ],
                   selected: {_modifier},
-                  onSelectionChanged: (s) => setState(() => _modifier = s.first),
+                  onSelectionChanged: (s) =>
+                      setState(() => _modifier = s.first),
                   style: ButtonStyle(
                     padding: WidgetStateProperty.all(
-                        EdgeInsets.symmetric(vertical: segmentVPadding)),
-                    textStyle: WidgetStateProperty.all(widget.fillHeight
-                        ? theme.textTheme.titleLarge
-                        : theme.textTheme.labelMedium),
+                      EdgeInsets.symmetric(vertical: segmentVPadding),
+                    ),
+                    textStyle: WidgetStateProperty.all(
+                      widget.fillHeight
+                          ? theme.textTheme.titleLarge
+                          : theme.textTheme.labelMedium,
+                    ),
                     // The chosen segment wears the colour the number buttons
                     // are about to take, so the switch shows what it does
                     // rather than only naming it.
-                    backgroundColor: WidgetStateProperty.resolveWith((states) =>
-                        states.contains(WidgetState.selected)
-                            ? _modifierColor(context)
-                            : null),
-                    foregroundColor: WidgetStateProperty.resolveWith((states) =>
-                        states.contains(WidgetState.selected)
-                            ? _onModifierColor(context)
-                            : null),
+                    backgroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected)
+                          ? _modifierColor(context)
+                          : null,
+                    ),
+                    foregroundColor: WidgetStateProperty.resolveWith(
+                      (states) => states.contains(WidgetState.selected)
+                          ? _onModifierColor(context)
+                          : null,
+                    ),
                   ),
                 ),
               ),
@@ -516,8 +570,8 @@ class _DartboardInputState<T extends DartboardInputSource>
                     maxAspectRatio: !widget.fillHeight
                         ? _preferredAspectRatio
                         : sideActions
-                            ? _filledAspectRatio
-                            : _narrowFilledAspectRatio,
+                        ? _filledAspectRatio
+                        : _narrowFilledAspectRatio,
                     sideActions: sideActions,
                     actionWidth: actionColumnWidth,
                     actionVPadding: actionVPadding,
@@ -538,13 +592,17 @@ class _DartboardInputState<T extends DartboardInputSource>
               SizedBox(height: gapBeforeActions),
               // Miss | Bull | Fertig
               Padding(
-                padding:
-                    EdgeInsets.fromLTRB(_sidePadding, 0, _sidePadding, bottomPad),
+                padding: EdgeInsets.fromLTRB(
+                  _sidePadding,
+                  0,
+                  _sidePadding,
+                  bottomPad,
+                ),
                 child: SizedBox(
                   height: widget.fillHeight
                       ? (constraints.maxHeight * _actionRowHeightFactor)
-                          .clamp(_minActionRowHeight, _maxActionRowHeight)
-                          .toDouble()
+                            .clamp(_minActionRowHeight, _maxActionRowHeight)
+                            .toDouble()
                       : null,
                   child: _actions(
                     vertical: false,
@@ -560,7 +618,9 @@ class _DartboardInputState<T extends DartboardInputSource>
 
         final sized = Center(
           child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: widget.fillHeight ? 760 : 500),
+            constraints: BoxConstraints(
+              maxWidth: widget.fillHeight ? 760 : 500,
+            ),
             child: column,
           ),
         );
@@ -588,9 +648,9 @@ class _SegmentLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => FittedBox(
-        fit: BoxFit.scaleDown,
-        child: Text(text, maxLines: 1, softWrap: false),
-      );
+    fit: BoxFit.scaleDown,
+    child: Text(text, maxLines: 1, softWrap: false),
+  );
 }
 
 // ── Dart progress row ────────────────────────────────────────────────────────
@@ -629,7 +689,11 @@ class _DartProgressRow extends StatelessWidget {
     return Container(
       margin: EdgeInsets.fromLTRB(10, compact ? 6 : 8, 10, 0),
       padding: EdgeInsets.fromLTRB(
-          6, (compact ? 4 : 5) * scale, 4, (compact ? 4 : 5) * scale),
+        6,
+        (compact ? 4 : 5) * scale,
+        4,
+        (compact ? 4 : 5) * scale,
+      ),
       decoration: BoxDecoration(
         color: isNegative ? cs.errorContainer : cs.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
@@ -699,7 +763,10 @@ class _UndoRedoBtn extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         onTap: enabled ? onTap : null,
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 6 * scale, vertical: 4 * scale),
+          padding: EdgeInsets.symmetric(
+            horizontal: 6 * scale,
+            vertical: 4 * scale,
+          ),
           child: Icon(
             icon,
             size: 20 * scale,
@@ -795,15 +862,15 @@ class _DartSlot extends StatelessWidget {
         SizedBox(height: 1 * scale),
         Text(
           entry?.label ?? (isActive ? '▶' : '—'),
-          style: sized(theme.textTheme.titleSmall)?.copyWith(
-            fontWeight: FontWeight.bold,
-            color: valueColor,
-          ),
+          style: sized(
+            theme.textTheme.titleSmall,
+          )?.copyWith(fontWeight: FontWeight.bold, color: valueColor),
         ),
         Text(
           entry != null ? '+${entry!.score}' : ' ',
-          style: sized(theme.textTheme.labelSmall)
-              ?.copyWith(color: cs.onSurfaceVariant),
+          style: sized(
+            theme.textTheme.labelSmall,
+          )?.copyWith(color: cs.onSurfaceVariant),
         ),
       ],
     );
@@ -819,6 +886,7 @@ class _FieldButton extends StatelessWidget {
   final int modifier;
   final bool disabled;
   final bool compact;
+
   /// How much larger than on a phone the label renders, following the size of
   /// the button itself.
   final double scale;
@@ -858,7 +926,11 @@ class _FieldButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    final prefix = modifier == 2 ? 'D' : modifier == 3 ? 'T' : '';
+    final prefix = modifier == 2
+        ? 'D'
+        : modifier == 3
+        ? 'T'
+        : '';
 
     final score = field * modifier;
     final notation = '$prefix$field';
@@ -936,7 +1008,9 @@ class _ActionButton extends StatelessWidget {
     final cs = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
     final effectiveColor = disabled ? cs.surfaceContainerLow : color;
-    final effectiveFg = disabled ? cs.onSurface.withValues(alpha: 0.35) : textColor;
+    final effectiveFg = disabled
+        ? cs.onSurface.withValues(alpha: 0.35)
+        : textColor;
 
     return Material(
       color: effectiveColor,
@@ -950,8 +1024,9 @@ class _ActionButton extends StatelessWidget {
             // button reads its size off that: label and icon in the middle
             // rather than at the top edge, and both grown to match.
             final tall = box.hasBoundedHeight && box.maxHeight > 64;
-            final scale =
-                tall ? (box.maxHeight / 54).clamp(1.0, 1.9).toDouble() : 1.0;
+            final scale = tall
+                ? (box.maxHeight / 54).clamp(1.0, 1.9).toDouble()
+                : 1.0;
 
             return Padding(
               padding: EdgeInsets.symmetric(vertical: verticalPadding),

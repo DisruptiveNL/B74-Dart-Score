@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'widgets/b74_link_indicator.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
@@ -121,14 +122,20 @@ class _AppGateState extends State<_AppGate> {
       final navigator = Navigator.of(context);
       switch (file.kind) {
         case IncomingFileKind.backup:
-          await navigator.push(MaterialPageRoute(
-              builder: (_) => BackupScreen(incomingPath: file.path)));
+          await navigator.push(
+            MaterialPageRoute(
+              builder: (_) => BackupScreen(incomingPath: file.path),
+            ),
+          );
         case IncomingFileKind.profile:
           final payload = await File(file.path).readAsString();
           await File(file.path).delete();
           if (!mounted) return;
-          await navigator.push(MaterialPageRoute(
-              builder: (_) => SyncScreen(incomingPayload: payload)));
+          await navigator.push(
+            MaterialPageRoute(
+              builder: (_) => SyncScreen(incomingPayload: payload),
+            ),
+          );
       }
     } catch (_) {
       // An unreadable file is not worth a dialog over the home screen. Both
@@ -152,9 +159,7 @@ class _AppGateState extends State<_AppGate> {
     }
 
     if (!provider.loaded) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (provider.primaryPlayer == null) {
       return const OnboardingScreen();
@@ -188,9 +193,11 @@ class _OrientationLockState extends State<_OrientationLock> {
     if (portraitOnly == _lockedToPortrait) return;
     _lockedToPortrait = portraitOnly;
 
-    SystemChrome.setPreferredOrientations(portraitOnly
-        ? const [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]
-        : DeviceOrientation.values);
+    SystemChrome.setPreferredOrientations(
+      portraitOnly
+          ? const [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]
+          : DeviceOrientation.values,
+    );
   }
 
   @override
@@ -280,29 +287,26 @@ class DartScoreApp extends StatelessWidget {
   /// the schemes it is built from never change, so there is nothing to gain
   /// from doing that again whenever the theme mode or the locale changes.
   static final _lightTheme = _build(_lightScheme);
-  static final _darkTheme  = _build(_darkScheme);
+  static final _darkTheme = _build(_darkScheme);
 
   /// Builds the shared [ThemeData] for the given [cs] color scheme (cards,
   /// app bar, and chips tuned to the dartboard palette).
   static ThemeData _build(ColorScheme cs) => ThemeData(
-        colorScheme: cs,
-        useMaterial3: true,
-        scaffoldBackgroundColor: cs.surface,
-        cardTheme: CardThemeData(
-          elevation: 0,
-          color: cs.surfaceContainer,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14)),
-        ),
-        appBarTheme: AppBarTheme(
-          elevation: 0,
-          backgroundColor: cs.surface,
-          foregroundColor: cs.onSurface,
-        ),
-        chipTheme: ChipThemeData(
-          backgroundColor: cs.surfaceContainerHigh,
-        ),
-      );
+    colorScheme: cs,
+    useMaterial3: true,
+    scaffoldBackgroundColor: cs.surface,
+    cardTheme: CardThemeData(
+      elevation: 0,
+      color: cs.surfaceContainer,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+    ),
+    appBarTheme: AppBarTheme(
+      elevation: 0,
+      backgroundColor: cs.surface,
+      foregroundColor: cs.onSurface,
+    ),
+    chipTheme: ChipThemeData(backgroundColor: cs.surfaceContainerHigh),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +350,7 @@ class DartScoreApp extends StatelessWidget {
               factor: isTabletLayout(context)
                   ? context.watch<TextScaleProvider>().factor
                   : 1.0,
-              child: wrapped,
+              child: wrapped, //child: B74LinkOverlay(child: wrapped),
             );
           },
           localizationsDelegates: const [
@@ -355,10 +359,7 @@ class DartScoreApp extends StatelessWidget {
             GlobalWidgetsLocalizations.delegate,
             GlobalCupertinoLocalizations.delegate,
           ],
-          supportedLocales: const [
-            Locale('en'),
-            Locale('de'),
-          ],
+          supportedLocales: const [Locale('en'), Locale('de')],
           home: const _AppGate(),
         ),
       ),

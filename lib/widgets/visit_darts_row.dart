@@ -48,18 +48,30 @@ class _Chip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final d     = dart;
+    final cs = theme.colorScheme;
+    final d = dart;
 
     final (Color? background, Color foreground, Color border) = d == null
         ? (null, cs.outline, cs.outlineVariant)
         : d.miss
-            ? (cs.surfaceContainerHighest, cs.onSurfaceVariant, cs.surfaceContainerHighest)
-            : d.multiplier == 3
-                ? (tripleContainerColor(context), onTripleContainerColor(context), tripleContainerColor(context))
-                : d.multiplier == 2
-                    ? (doubleContainerColor(context), onDoubleContainerColor(context), doubleContainerColor(context))
-                    : (cs.surfaceContainerHigh, cs.onSurface, cs.surfaceContainerHigh);
+        ? (
+            cs.surfaceContainerHighest,
+            cs.onSurfaceVariant,
+            cs.surfaceContainerHighest,
+          )
+        : d.multiplier == 3
+        ? (
+            tripleContainerColor(context),
+            onTripleContainerColor(context),
+            tripleContainerColor(context),
+          )
+        : d.multiplier == 2
+        ? (
+            doubleContainerColor(context),
+            onDoubleContainerColor(context),
+            doubleContainerColor(context),
+          )
+        : (cs.surfaceContainerHigh, cs.onSurface, cs.surfaceContainerHigh);
 
     return Container(
       constraints: BoxConstraints(minWidth: tight ? 30 : 40),

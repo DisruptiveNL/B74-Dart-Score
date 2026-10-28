@@ -37,17 +37,17 @@ class _DonationScreenState extends State<DonationScreen> {
           context: context,
           builder: (_) => Center(
             child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
-            child: AlertDialog(
-              title: Text(l.donationThankYouTitle),
-              content: Text(l.donationThankYouBody),
-              actions: [
-                FilledButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: Text(l.ok),
-                ),
-              ],
-            ),
+              constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
+              child: AlertDialog(
+                title: Text(l.donationThankYouTitle),
+                content: Text(l.donationThankYouBody),
+                actions: [
+                  FilledButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(l.ok),
+                  ),
+                ],
+              ),
             ),
           ),
         );
@@ -114,9 +114,9 @@ class _Header extends StatelessWidget {
         Text(
           l.donationSubtitle,
           textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: cs.onSurfaceVariant,
-              ),
+          style: Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(color: cs.onSurfaceVariant),
         ),
       ],
     );
@@ -145,11 +145,15 @@ class _TierCard extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 12),
       child: Card(
         child: ListTile(
-          contentPadding:
-              const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 10,
+          ),
           leading: Text(emoji, style: const TextStyle(fontSize: 32)),
-          title: Text(title,
-              style: const TextStyle(fontWeight: FontWeight.bold)),
+          title: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
           subtitle: Text(product.description),
           trailing: FilledButton(
             onPressed: () => dp.buy(product),

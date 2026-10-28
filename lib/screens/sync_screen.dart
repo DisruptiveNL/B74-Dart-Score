@@ -26,11 +26,11 @@ enum _NameResolution { useExisting }
 /// player's whole history. Shared by the sender's picker and the receiver's
 /// confirmation dialog, which only ever sees the day count.
 String _rangeLabelForDays(AppLocalizations l, int? days) => switch (days) {
-      1  => l.syncRangeDay,
-      7  => l.syncRangeWeek,
-      30 => l.syncRangeMonth,
-      _  => l.syncRangeAll,
-    };
+  1 => l.syncRangeDay,
+  7 => l.syncRangeWeek,
+  30 => l.syncRangeMonth,
+  _ => l.syncRangeAll,
+};
 
 /// Builds a [SyncPacket] for [player] covering [range], out of the live throws
 /// plus every stats snapshot the player carries: this device's own, covering
@@ -47,11 +47,14 @@ String _rangeLabelForDays(AppLocalizations l, int? days) => switch (days) {
 /// one total instead and a device gets its own history handed back as part of
 /// somebody else's, on top of the throws it already has.
 Future<SyncPacket> buildSyncPacket(
-    Player player, String senderDevice, SyncRange range) async {
-  final db       = DbHelper.instance;
+  Player player,
+  String senderDevice,
+  SyncRange range,
+) async {
+  final db = DbHelper.instance;
   final deviceId = await DeviceIdentity.id;
 
-  final byOrigin  = await db.getThrowsForPlayerByOrigin(player.id!);
+  final byOrigin = await db.getThrowsForPlayerByOrigin(player.id!);
   final allThrows = [for (final throws in byOrigin.values) ...throws]
     ..sort((a, b) => a.thrownAt.compareTo(b.thrownAt));
 
@@ -74,27 +77,33 @@ Future<SyncPacket> buildSyncPacket(
   // cleared away itself, and what other devices contributed.
   final combined = await db.combinedSnapshotJson(player.id!);
 
-  int persD = 0, persV = 0, persLegs = 0, persHigh = 0, persBusts = 0, pers180 = 0, persScored = 0;
+  int persD = 0,
+      persV = 0,
+      persLegs = 0,
+      persHigh = 0,
+      persBusts = 0,
+      pers180 = 0,
+      persScored = 0;
   if (combined != null && combined.isNotEmpty) {
     try {
       final p = jsonDecode(combined) as Map<String, dynamic>;
-      persD      = p['total_darts']   as int? ?? 0;
-      persV      = p['total_visits']  as int? ?? 0;
-      persLegs   = p['legs_won']      as int? ?? 0;
-      persHigh   = p['highest_visit'] as int? ?? 0;
-      persBusts  = p['busts']         as int? ?? 0;
-      pers180    = p['count_180']     as int? ?? 0;
-      persScored = p['total_scored']  as int? ?? 0;
+      persD = p['total_darts'] as int? ?? 0;
+      persV = p['total_visits'] as int? ?? 0;
+      persLegs = p['legs_won'] as int? ?? 0;
+      persHigh = p['highest_visit'] as int? ?? 0;
+      persBusts = p['busts'] as int? ?? 0;
+      pers180 = p['count_180'] as int? ?? 0;
+      persScored = p['total_scored'] as int? ?? 0;
     } catch (_) {}
   }
 
-  final totalDarts   = liveDarts  + persD;
-  final totalVisits  = allThrows.length + persV;
-  final totalScored  = liveScored + persScored;
-  final totalLegs    = liveLegs   + persLegs;
+  final totalDarts = liveDarts + persD;
+  final totalVisits = allThrows.length + persV;
+  final totalScored = liveScored + persScored;
+  final totalLegs = liveLegs + persLegs;
   final highestVisit = liveHigh > persHigh ? liveHigh : persHigh;
-  final totalBusts   = liveBusts  + persBusts;
-  final total180     = live180    + pers180;
+  final totalBusts = liveBusts + persBusts;
+  final total180 = live180 + pers180;
   final avg = totalDarts == 0 ? 0.0 : (totalScored / totalDarts) * 3;
 
   // Split the history at the range's cutoff. What falls outside still has to
@@ -102,8 +111,8 @@ Future<SyncPacket> buildSyncPacket(
   final cutoff = range.days == null
       ? null
       : DateTime.now()
-          .subtract(Duration(days: range.days!))
-          .millisecondsSinceEpoch;
+            .subtract(Duration(days: range.days!))
+            .millisecondsSinceEpoch;
 
   /// Splits one device's throws into what travels as throws and what gets
   /// folded into that device's snapshot.
@@ -143,8 +152,8 @@ Future<SyncPacket> buildSyncPacket(
     return (included, excluded);
   }
 
-  final stored     = await db.getOriginSnapshots(player.id!);
-  final snapshots  = <String, String>{};
+  final stored = await db.getOriginSnapshots(player.id!);
+  final snapshots = <String, String>{};
   final travelling = <(String, DartThrow)>[];
 
   // This device's own throws and its own snapshot. The throws left out travel
@@ -155,8 +164,9 @@ Future<SyncPacket> buildSyncPacket(
   travelling.addAll(includedOwn.map((t) => (deviceId, t)));
 
   final ownSnapshot = await db.addTravellingGameFacts(
-      await db.foldThrowsIntoSnapshot(player.localStatsJson, excludedOwn),
-      includedOwn);
+    await db.foldThrowsIntoSnapshot(player.localStatsJson, excludedOwn),
+    includedOwn,
+  );
   snapshots[deviceId] = ownSnapshot == null ? '' : jsonEncode(ownSnapshot);
 
   // Everything that arrived from somewhere else is passed on under the device
@@ -170,8 +180,11 @@ Future<SyncPacket> buildSyncPacket(
 
     // What these games knew about themselves is already part of the snapshot
     // their device sent, so only the plain counters are folded here.
-    final snapshot = await db.foldThrowsIntoSnapshot(stored[origin], excluded,
-        gameFacts: false);
+    final snapshot = await db.foldThrowsIntoSnapshot(
+      stored[origin],
+      excluded,
+      gameFacts: false,
+    );
     snapshots[origin] = snapshot == null ? '' : jsonEncode(snapshot);
   }
 
@@ -188,8 +201,10 @@ Future<SyncPacket> buildSyncPacket(
   // ours. The set is finite and does not grow, and one sync per device pair
   // replaces it with data that knows where it is from.
   travelling.addAll(
-      (byOrigin[kLegacyOrigin] ?? const <DartThrow>[])
-          .map((t) => (kLegacyOrigin, t)));
+    (byOrigin[kLegacyOrigin] ?? const <DartThrow>[]).map(
+      (t) => (kLegacyOrigin, t),
+    ),
+  );
   final legacySnapshot = stored[kLegacyOrigin];
   if (legacySnapshot != null && legacySnapshot.isNotEmpty) {
     snapshots[kLegacyOrigin] = legacySnapshot;
@@ -203,27 +218,26 @@ Future<SyncPacket> buildSyncPacket(
   ];
 
   return SyncPacket(
-    version:         2,
-    senderDevice:    senderDevice,
-    senderDeviceId:  deviceId,
-    playerUuid:      player.uuid,
-    playerName:      player.name,
+    version: 2,
+    senderDevice: senderDevice,
+    senderDeviceId: deviceId,
+    playerUuid: player.uuid,
+    playerName: player.name,
     favoriteDoubles: player.favoriteDoubles,
-    origins:         origins,
-    throwOrigins:    [for (final t in travelling) t.$1],
+    origins: origins,
+    throwOrigins: [for (final t in travelling) t.$1],
     // Everything added together, for an app version that knows no origins and
     // reads this field alone.
-    localStatsJson:
-        DbHelper.mergeSnapshots(origins.map((o) => o.snapshotJson)),
-    rangeDays:       range.days,
+    localStatsJson: DbHelper.mergeSnapshots(origins.map((o) => o.snapshotJson)),
+    rangeDays: range.days,
     stats: SyncStats(
-      totalDarts:   totalDarts,
-      totalVisits:  totalVisits,
-      average:      double.parse(avg.toStringAsFixed(2)),
-      legsWon:      totalLegs,
+      totalDarts: totalDarts,
+      totalVisits: totalVisits,
+      average: double.parse(avg.toStringAsFixed(2)),
+      legsWon: totalLegs,
       highestVisit: highestVisit,
-      busts:        totalBusts,
-      count180:     total180,
+      busts: totalBusts,
+      count180: total180,
     ),
     throws: [for (final t in travelling) SyncThrow.fromDartThrow(t.$2)],
   );
@@ -245,11 +259,12 @@ class SyncScreen extends StatefulWidget {
   /// instead of hanging under an app bar that is not there.
   final bool embedded;
 
-  const SyncScreen(
-      {super.key,
-      this.initialPlayer,
-      this.incomingPayload,
-      this.embedded = false});
+  const SyncScreen({
+    super.key,
+    this.initialPlayer,
+    this.incomingPayload,
+    this.embedded = false,
+  });
 
   @override
   State<SyncScreen> createState() => _SyncScreenState();
@@ -290,11 +305,13 @@ class _SyncScreenState extends State<SyncScreen>
           controller: _tab,
           tabs: [
             Tab(
-                icon: const Icon(Icons.download_rounded),
-                text: context.l10n.syncReceive),
+              icon: const Icon(Icons.download_rounded),
+              text: context.l10n.syncReceive,
+            ),
             Tab(
-                icon: const Icon(Icons.upload_rounded),
-                text: context.l10n.syncSend),
+              icon: const Icon(Icons.upload_rounded),
+              text: context.l10n.syncSend,
+            ),
           ],
         ),
       ),
@@ -332,7 +349,12 @@ class _SyncScreenState extends State<SyncScreen>
               ),
             ),
       body: widget.embedded
-          ? Column(children: [tabs, Expanded(child: body)])
+          ? Column(
+              children: [
+                tabs,
+                Expanded(child: body),
+              ],
+            )
           : body,
     );
   }
@@ -555,7 +577,11 @@ class _SenderTabState extends State<_SenderTab>
     final sent = _server.state.value == SyncServerState.served;
     await _server.stop();
     await _dropNetwork();
-    if (mounted) setState(() { _invite = null; _served = sent; });
+    if (mounted)
+      setState(() {
+        _invite = null;
+        _served = sent;
+      });
   }
 
   /// Closes the session once the peer has answered, and imports what it sent.
@@ -569,8 +595,8 @@ class _SenderTabState extends State<_SenderTab>
     await _dropNetwork();
     if (!mounted) return;
     setState(() {
-      _invite      = null;
-      _served      = true;
+      _invite = null;
+      _served = true;
       _returnError = null;
     });
 
@@ -581,8 +607,11 @@ class _SenderTabState extends State<_SenderTab>
       packet = decodeSyncPayload(payload);
     } catch (e) {
       if (mounted) {
-        setState(() => _returnError = '${context.l10n.syncReadFailed}\n\n'
-            '${context.l10n.error}: $e');
+        setState(
+          () => _returnError =
+              '${context.l10n.syncReadFailed}\n\n'
+              '${context.l10n.error}: $e',
+        );
       }
       return;
     }
@@ -615,18 +644,21 @@ class _SenderTabState extends State<_SenderTab>
     });
 
     final packet = await buildSyncPacket(
-        player, await DeviceDescription.label, _range);
+      player,
+      await DeviceDescription.label,
+      _range,
+    );
     final transmission = prepareTransmission(packet);
 
     if (!mounted) return;
     setState(() {
-      _packet       = packet;
+      _packet = packet;
       _transmission = transmission;
-      _encoder      = transmission.transport == SyncTransport.animatedQr
+      _encoder = transmission.transport == SyncTransport.animatedQr
           ? SyncFountainEncoder(transmission.data)
           : null;
-      _streaming  = false;
-      _preparing  = false;
+      _streaming = false;
+      _preparing = false;
     });
     _frameIndex.value = 0;
   }
@@ -671,7 +703,11 @@ class _SenderTabState extends State<_SenderTab>
   Future<void> _startServer() async {
     final transmission = _transmission;
     if (transmission == null) return;
-    setState(() { _serverStarting = true; _served = false; _startError = null; });
+    setState(() {
+      _serverStarting = true;
+      _served = false;
+      _startError = null;
+    });
 
     try {
       if (_server.isRunning) await _server.stop();
@@ -686,12 +722,17 @@ class _SenderTabState extends State<_SenderTab>
       _hotspot = hotspot;
 
       _server.state.removeListener(_onServerState);
-      final invite = await _server.start(utf8.encode(transmission.payload),
-          hotspot: hotspot);
+      final invite = await _server.start(
+        utf8.encode(transmission.payload),
+        hotspot: hotspot,
+      );
       _server.state.addListener(_onServerState);
 
       if (!mounted) return;
-      setState(() { _invite = invite; _serverStarting = false; });
+      setState(() {
+        _invite = invite;
+        _serverStarting = false;
+      });
     } catch (e) {
       await _dropNetwork();
       if (!mounted) return;
@@ -742,8 +783,12 @@ class _SenderTabState extends State<_SenderTab>
   /// for. What stays out is the line that says how much there is and which way
   /// it will travel, because that is the answer to "is this going to work",
   /// which is the question the screen actually raises.
-  List<Widget> _rangeSection(AppLocalizations l, ThemeData theme,
-      ColorScheme cs, SyncPacket? packet) {
+  List<Widget> _rangeSection(
+    AppLocalizations l,
+    ThemeData theme,
+    ColorScheme cs,
+    SyncPacket? packet,
+  ) {
     final locked = _preparing || _server.isRunning;
     return [
       InkWell(
@@ -756,12 +801,16 @@ class _SenderTabState extends State<_SenderTab>
               Expanded(
                 child: Text(
                   '${l.syncRangeLabel}: ${_rangeLabel(l, _range)}',
-                  style: theme.textTheme.labelMedium
-                      ?.copyWith(fontWeight: FontWeight.bold),
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-              Icon(_rangeOpen ? Icons.expand_less : Icons.expand_more,
-                  size: 20, color: cs.onSurfaceVariant),
+              Icon(
+                _rangeOpen ? Icons.expand_less : Icons.expand_more,
+                size: 20,
+                color: cs.onSurfaceVariant,
+              ),
             ],
           ),
         ),
@@ -772,20 +821,22 @@ class _SenderTabState extends State<_SenderTab>
           spacing: 8,
           runSpacing: 8,
           children: SyncRange.values
-              .map((range) => ChoiceChip(
-                    label: Text(_rangeLabel(l, range)),
-                    selected: _range == range,
-                    onSelected:
-                        locked ? null : (_) => _onRangeChanged(range),
-                  ))
+              .map(
+                (range) => ChoiceChip(
+                  label: Text(_rangeLabel(l, range)),
+                  selected: _range == range,
+                  onSelected: locked ? null : (_) => _onRangeChanged(range),
+                ),
+              )
               .toList(),
         ),
         if (packet != null && !_preparing && _range != SyncRange.all) ...[
           const SizedBox(height: 8),
           Text(
             l.syncRangeNote,
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: cs.onSurfaceVariant),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
           ),
           // Only worth saying while a range is picked: that is when the count
           // stops moving and the picker looks broken.
@@ -793,8 +844,9 @@ class _SenderTabState extends State<_SenderTab>
             const SizedBox(height: 6),
             Text(
               l.syncLegacyNote,
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -803,8 +855,9 @@ class _SenderTabState extends State<_SenderTab>
         const SizedBox(height: 10),
         Text(
           '${_visitCountLabel(l, packet)} · ${_transportLabel(l)}',
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: cs.onSurfaceVariant),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
         ),
       ],
     ];
@@ -819,8 +872,8 @@ class _SenderTabState extends State<_SenderTab>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
     final players = context.watch<PlayersProvider>().players;
 
     // Resolve to provider's object so DropdownButton equality works.
@@ -834,50 +887,56 @@ class _SenderTabState extends State<_SenderTab>
     }
 
     final picker = <Widget>[
-        // ── Description ───────────────────────────────────────────────────
-        Text(
-          l.syncSendDesc,
-          style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
-        ),
-        const SizedBox(height: 16),
+      // ── Description ───────────────────────────────────────────────────
+      Text(
+        l.syncSendDesc,
+        style: theme.textTheme.bodySmall?.copyWith(color: cs.onSurfaceVariant),
+      ),
+      const SizedBox(height: 16),
 
-        // ── Player dropdown ───────────────────────────────────────────────
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            child: DropdownButtonHideUnderline(
-              child: DropdownButton<Player>(
-                value: dropdownValue,
-                hint: Text(l.selectPlayer),
-                isExpanded: true,
-                items: players.map((p) => DropdownMenuItem(
-                  value: p,
-                  child: Row(children: [
-                    CircleAvatar(
-                      radius: 14,
-                      backgroundColor: cs.primaryContainer,
-                      child: Text(
-                        p.name.isNotEmpty ? p.name[0].toUpperCase() : "?",
-                        style: TextStyle(
-                          color: cs.onPrimaryContainer,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
+      // ── Player dropdown ───────────────────────────────────────────────
+      Card(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<Player>(
+              value: dropdownValue,
+              hint: Text(l.selectPlayer),
+              isExpanded: true,
+              items: players
+                  .map(
+                    (p) => DropdownMenuItem(
+                      value: p,
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 14,
+                            backgroundColor: cs.primaryContainer,
+                            child: Text(
+                              p.name.isNotEmpty ? p.name[0].toUpperCase() : "?",
+                              style: TextStyle(
+                                color: cs.onPrimaryContainer,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          Text(p.name),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Text(p.name),
-                  ]),
-                )).toList(),
-                onChanged: _server.isRunning ? null : _onPlayerChanged,
-              ),
+                  )
+                  .toList(),
+              onChanged: _server.isRunning ? null : _onPlayerChanged,
             ),
           ),
         ),
-        const SizedBox(height: 12),
+      ),
+      const SizedBox(height: 12),
 
-        // ── Range picker ──────────────────────────────────────────────────
-        _buildRangePicker(l, cs, theme),
+      // ── Range picker ──────────────────────────────────────────────────
+      _buildRangePicker(l, cs, theme),
     ];
 
     final transport = _buildTransportContent(l, cs, theme);
@@ -898,8 +957,9 @@ class _SenderTabState extends State<_SenderTab>
             // all, so the route that works has to be the one named.
             Platform.isIOS ? l.syncShareFileHint : l.syncShareFileHintShare,
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: cs.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
           ),
         ],
       ],
@@ -914,18 +974,20 @@ class _SenderTabState extends State<_SenderTab>
   /// for mail and a chat just as well, and it is one direction only, like a
   /// code on a screen.
   Widget _buildShareFile(AppLocalizations l) => OutlinedButton.icon(
-        key: _shareKey,
-        onPressed: _sharing ? null : _shareFile,
-        icon: _sharing
-            ? const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2))
-            : const Icon(Icons.ios_share),
-        label: Text(l.syncShareFile),
-        style: OutlinedButton.styleFrom(
-            padding: const EdgeInsets.symmetric(vertical: 14)),
-      );
+    key: _shareKey,
+    onPressed: _sharing ? null : _shareFile,
+    icon: _sharing
+        ? const SizedBox(
+            width: 16,
+            height: 16,
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+        : const Icon(Icons.ios_share),
+    label: Text(l.syncShareFile),
+    style: OutlinedButton.styleFrom(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+    ),
+  );
 
   /// Writes the payload out and hands it to the share sheet.
   Future<void> _shareFile() async {
@@ -942,8 +1004,11 @@ class _SenderTabState extends State<_SenderTab>
           ? null
           : box.localToGlobal(Offset.zero) & box.size;
 
-      await shareSyncFile(transmission.payload,
-          playerName: player.name, origin: origin);
+      await shareSyncFile(
+        transmission.payload,
+        playerName: player.name,
+        origin: origin,
+      );
     } catch (e) {
       if (mounted) {
         setState(() => _startError = '${context.l10n.error}: $e');
@@ -955,7 +1020,11 @@ class _SenderTabState extends State<_SenderTab>
 
   /// Builds the range chips plus the line that translates the current choice
   /// into throws and the transport they call for.
-  Widget _buildRangePicker(AppLocalizations l, ColorScheme cs, ThemeData theme) {
+  Widget _buildRangePicker(
+    AppLocalizations l,
+    ColorScheme cs,
+    ThemeData theme,
+  ) {
     final packet = _packet;
 
     return Card(
@@ -963,9 +1032,7 @@ class _SenderTabState extends State<_SenderTab>
         padding: const EdgeInsets.fromLTRB(14, 12, 14, 14),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ..._rangeSection(l, theme, cs, packet),
-          ],
+          children: [..._rangeSection(l, theme, cs, packet)],
         ),
       ),
     );
@@ -981,7 +1048,7 @@ class _SenderTabState extends State<_SenderTab>
   /// What the packet carries as throws, and how much of that the range has no
   /// say over.
   String _visitCountLabel(AppLocalizations l, SyncPacket packet) {
-    final total  = l.syncVisitCount(packet.throws.length);
+    final total = l.syncVisitCount(packet.throws.length);
     final legacy = _legacyCount(packet);
     return legacy == 0 ? total : '$total, ${l.syncLegacyShare(legacy)}';
   }
@@ -989,14 +1056,17 @@ class _SenderTabState extends State<_SenderTab>
   /// How the current payload will travel, in words.
   String _transportLabel(AppLocalizations l) =>
       switch (_transmission!.transport) {
-        SyncTransport.staticQr   => l.syncViaStaticQr,
+        SyncTransport.staticQr => l.syncViaStaticQr,
         SyncTransport.animatedQr => l.syncViaAnimatedQr(_transferSeconds),
-        SyncTransport.server     => l.syncViaServer,
+        SyncTransport.server => l.syncViaServer,
       };
 
   /// Builds whichever transport the prepared payload ended up needing.
   Widget _buildTransportContent(
-      AppLocalizations l, ColorScheme cs, ThemeData theme) {
+    AppLocalizations l,
+    ColorScheme cs,
+    ThemeData theme,
+  ) {
     if (_selectedPlayer == null) return const SizedBox.shrink();
 
     if (_preparing || _transmission == null) {
@@ -1007,9 +1077,9 @@ class _SenderTabState extends State<_SenderTab>
     }
 
     return switch (_transmission!.transport) {
-      SyncTransport.staticQr   => _buildStaticQr(l, cs, theme),
+      SyncTransport.staticQr => _buildStaticQr(l, cs, theme),
       SyncTransport.animatedQr => _buildAnimatedQr(l, cs, theme),
-      SyncTransport.server     => _buildServer(l, cs, theme),
+      SyncTransport.server => _buildServer(l, cs, theme),
     };
   }
 
@@ -1021,8 +1091,9 @@ class _SenderTabState extends State<_SenderTab>
           const SizedBox(height: 8),
           Text(
             l.profileAndStats,
-            style: theme.textTheme.labelSmall
-                ?.copyWith(color: cs.onSurfaceVariant),
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
           ),
         ],
       );
@@ -1061,8 +1132,9 @@ class _SenderTabState extends State<_SenderTab>
           Text(
             l.syncStartStreamHint,
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: cs.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
           ),
         ],
       );
@@ -1084,8 +1156,9 @@ class _SenderTabState extends State<_SenderTab>
         Text(
           l.syncStopStreamHint,
           textAlign: TextAlign.center,
-          style: theme.textTheme.bodySmall
-              ?.copyWith(color: cs.onSurfaceVariant),
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: cs.onSurfaceVariant,
+          ),
         ),
       ],
     );
@@ -1101,12 +1174,18 @@ class _SenderTabState extends State<_SenderTab>
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.check_circle_outline,
-                    color: Colors.green, size: 20),
+                const Icon(
+                  Icons.check_circle_outline,
+                  color: Colors.green,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
-                Text(l.syncServerSent,
-                    style: theme.textTheme.titleSmall
-                        ?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  l.syncServerSent,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 6),
@@ -1114,7 +1193,8 @@ class _SenderTabState extends State<_SenderTab>
               _returnError ?? l.syncServerSentHint,
               textAlign: TextAlign.center,
               style: theme.textTheme.bodySmall?.copyWith(
-                  color: _returnError == null ? cs.onSurfaceVariant : cs.error),
+                color: _returnError == null ? cs.onSurfaceVariant : cs.error,
+              ),
             ),
             const SizedBox(height: 16),
           ],
@@ -1126,7 +1206,7 @@ class _SenderTabState extends State<_SenderTab>
             unavailableHint: Platform.isIOS ? l.syncIosNoOwnNetwork : null,
             enabled: !_serverStarting,
             onChanged: (route) => setState(() {
-              _route      = route;
+              _route = route;
               _startError = null;
             }),
           ),
@@ -1142,12 +1222,16 @@ class _SenderTabState extends State<_SenderTab>
           FilledButton.icon(
             onPressed: _serverStarting ? null : _startServer,
             icon: _serverStarting
-                ? const SizedBox(width: 16, height: 16,
-                    child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.wifi_tethering),
             label: Text(l.startServer),
             style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 16)),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+            ),
           ),
         ],
       );
@@ -1167,7 +1251,8 @@ class _SenderTabState extends State<_SenderTab>
           icon: const Icon(Icons.stop_circle_outlined),
           label: Text(l.stopServer),
           style: OutlinedButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 14)),
+            padding: const EdgeInsets.symmetric(vertical: 14),
+          ),
         ),
         const SizedBox(height: 20),
         if (awaitingReturn) ...[
@@ -1176,8 +1261,9 @@ class _SenderTabState extends State<_SenderTab>
           Text(
             l.syncAwaitingReturn,
             textAlign: TextAlign.center,
-            style: theme.textTheme.bodySmall
-                ?.copyWith(color: cs.onSurfaceVariant),
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: cs.onSurfaceVariant,
+            ),
           ),
         ] else ...[
           _qrCard(invite.qrPayload(kSyncWifiPrefix)),
@@ -1186,8 +1272,9 @@ class _SenderTabState extends State<_SenderTab>
             Text(
               '${l.hotspotNetworkName(_hotspot!.ssid)}\n${l.hotspotSendHint}',
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -1339,8 +1426,9 @@ class _ReceiverTabState extends State<_ReceiverTab> with _PacketImport {
               Text(
                 l.hotspotJoining(_joiningNetwork!),
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
             ],
             if (_pairingPin != null) ...[
@@ -1356,8 +1444,9 @@ class _ReceiverTabState extends State<_ReceiverTab> with _PacketImport {
               Text(
                 l.syncPairWaiting,
                 textAlign: TextAlign.center,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
             ],
           ],
@@ -1379,8 +1468,9 @@ class _ReceiverTabState extends State<_ReceiverTab> with _PacketImport {
               '${l.syncKeepHolding}\n'
               '${l.syncScanProgress(_decoder.solved, _decoder.sourceBlocks)}',
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
             ),
           ],
         ],
@@ -1447,29 +1537,34 @@ class _ReceiverTabState extends State<_ReceiverTab> with _PacketImport {
         if (mounted) {
           setState(() {
             _scanning = false;
-            _error    = context.l10n.syncNotBackupCode;
+            _error = context.l10n.syncNotBackupCode;
           });
         }
         return;
       }
-      await _finishScan(() async => throw const FormatException(
-          'Not a sync code'));
+      await _finishScan(
+        () async => throw const FormatException('Not a sync code'),
+      );
       return;
     }
 
     // One client for both directions, so the return leg goes back on the
     // address that answered rather than working through the candidates again.
     final client = SyncClient();
-    await _finishScan(() async {
-      await _joinIfNeeded(invite);
-      final payload = await client.fetch(
-        invite,
-        onPin: (pin) {
-          if (mounted) setState(() => _pairingPin = pin);
-        },
-      );
-      return decodeSyncPayload(payload);
-    }, invite: invite, client: client);
+    await _finishScan(
+      () async {
+        await _joinIfNeeded(invite);
+        final payload = await client.fetch(
+          invite,
+          onPin: (pin) {
+            if (mounted) setState(() => _pairingPin = pin);
+          },
+        );
+        return decodeSyncPayload(payload);
+      },
+      invite: invite,
+      client: client,
+    );
   }
 
   /// Closes the camera, resolves [read] into a packet and imports it, turning
@@ -1479,13 +1574,16 @@ class _ReceiverTabState extends State<_ReceiverTab> with _PacketImport {
   /// because a code that would not decode is not a network problem and pointing
   /// at the Wi-Fi would only mislead, and it is where this device's own side of
   /// the exchange goes back to, over [client].
-  Future<void> _finishScan(Future<SyncPacket> Function() read,
-      {TransferInvite? invite, SyncClient? client}) async {
+  Future<void> _finishScan(
+    Future<SyncPacket> Function() read, {
+    TransferInvite? invite,
+    SyncClient? client,
+  }) async {
     final overWifi = invite != null;
     setState(() {
-      _scanning   = false;
-      _fetching   = true;
-      _error      = null;
+      _scanning = false;
+      _fetching = true;
+      _error = null;
       _pairingPin = null;
     });
 
@@ -1514,13 +1612,13 @@ class _ReceiverTabState extends State<_ReceiverTab> with _PacketImport {
       if (mounted) {
         final l = context.l10n;
         setState(() {
-          _fetching   = false;
+          _fetching = false;
           // Rescanning is the retry, so the reason stays above a live camera
           // rather than replacing it with a button that would only turn the
           // camera back on. The decoder is reset with it, or a half-read
           // animated code would poison the next one.
-          _scanning   = true;
-          _handled    = false;
+          _scanning = true;
+          _handled = false;
           _pairingPin = null;
           _decoder.reset();
           _error = switch (e) {
@@ -1528,21 +1626,23 @@ class _ReceiverTabState extends State<_ReceiverTab> with _PacketImport {
             // and pointing at the Wi-Fi would send the user looking in the
             // wrong place.
             SyncRejectedException() => l.syncRejected,
-            TimeoutException()      => l.syncNotConfirmed,
+            TimeoutException() => l.syncNotConfirmed,
             SyncPayloadTooLargeException() => l.syncTooLarge,
             // Nothing on the far side ever answered. That is a different fault
             // from a timeout, and the network is the place to look.
-            TransferUnreachableException() => invite?.hotspot != null
-                ? l.syncUnreachableOnHotspot
-                : l.syncUnreachable,
+            TransferUnreachableException() =>
+              invite?.hotspot != null
+                  ? l.syncUnreachableOnHotspot
+                  : l.syncUnreachable,
             TransferInviteExpiredException() => l.syncCodeExpired,
             // The network was never joined, so the credentials go on screen and
             // the user does it the long way round rather than being stuck.
             HotspotException() when invite?.hotspot != null =>
               '${l.hotspotJoinFailed}\n\n'
                   '${l.hotspotJoinManually(invite!.hotspot!.ssid, invite.hotspot!.passphrase)}',
-            _ => '${overWifi ? l.connectionFailed : l.syncReadFailed}'
-                '\n\n${l.error}: $e',
+            _ =>
+              '${overWifi ? l.connectionFailed : l.syncReadFailed}'
+                  '\n\n${l.error}: $e',
           };
         });
       }
@@ -1560,16 +1660,21 @@ class _ReceiverTabState extends State<_ReceiverTab> with _PacketImport {
   /// when this device does not know the player at all, because it is holding
   /// its server open until it hears something.
   Future<void> _returnOwnSide(
-      SyncPacket packet, TransferInvite invite, SyncClient client) async {
+    SyncPacket packet,
+    TransferInvite invite,
+    SyncClient client,
+  ) async {
     var payload = '';
     try {
-      final player =
-          await DbHelper.instance.getPlayerByUuid(packet.playerUuid);
+      final player = await DbHelper.instance.getPlayerByUuid(packet.playerUuid);
       if (player != null) {
         // Encoded straight, with no transport decision to make: this always
         // goes back over the connection it came in on, whatever its size.
         final own = await buildSyncPacket(
-            player, await DeviceDescription.label, SyncRange.all);
+          player,
+          await DeviceDescription.label,
+          SyncRange.all,
+        );
         payload = encodeSyncPayload(own);
       }
     } catch (_) {
@@ -1596,19 +1701,21 @@ mixin _PacketImport<T extends StatefulWidget> on State<T> {
   /// whether anything was written, so the caller can decide what to do with a
   /// screen that is now showing stale data.
   Future<bool> importPacket(SyncPacket packet) async {
-    Player? existing =
-        await DbHelper.instance.getPlayerByUuid(packet.playerUuid);
+    Player? existing = await DbHelper.instance.getPlayerByUuid(
+      packet.playerUuid,
+    );
     if (!mounted) return false;
 
     if (existing == null) {
       final provider = context.read<PlayersProvider>();
       final sameNamePlayer = provider.players
-          .where((p) =>
-              p.name.toLowerCase() == packet.playerName.toLowerCase())
+          .where((p) => p.name.toLowerCase() == packet.playerName.toLowerCase())
           .firstOrNull;
       if (sameNamePlayer != null) {
-        final resolution =
-            await _showNameConflictDialog(packet, sameNamePlayer);
+        final resolution = await _showNameConflictDialog(
+          packet,
+          sameNamePlayer,
+        );
         if (!mounted) return false;
         if (resolution == null) {
           return false;
@@ -1628,9 +1735,12 @@ mixin _PacketImport<T extends StatefulWidget> on State<T> {
   /// Prompts the user to resolve a same-name conflict (merge into the existing
   /// player or import under a different name), returning their choice.
   Future<Object?> _showNameConflictDialog(
-      SyncPacket packet, Player sameNamePlayer) async {
-    final nameCtrl =
-        TextEditingController(text: '${packet.playerName} (${context.l10n.guest})');
+    SyncPacket packet,
+    Player sameNamePlayer,
+  ) async {
+    final nameCtrl = TextEditingController(
+      text: '${packet.playerName} (${context.l10n.guest})',
+    );
     return showDialog<Object>(
       context: context,
       barrierDismissible: false,
@@ -1639,44 +1749,46 @@ mixin _PacketImport<T extends StatefulWidget> on State<T> {
           final l = ctx.l10n;
           return Center(
             child: ConstrainedBox(
-            constraints: BoxConstraints(maxWidth: contentMaxWidth(ctx)),
-            child: AlertDialog(
-              title: Text(l.nameConflictTitle),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(l.nameConflictBody(packet.playerName),
-                      style: Theme.of(ctx).textTheme.bodyMedium),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: nameCtrl,
-                    decoration: InputDecoration(
-                      labelText: l.alternativeName,
-                      border: const OutlineInputBorder(),
+              constraints: BoxConstraints(maxWidth: contentMaxWidth(ctx)),
+              child: AlertDialog(
+                title: Text(l.nameConflictTitle),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      l.nameConflictBody(packet.playerName),
+                      style: Theme.of(ctx).textTheme.bodyMedium,
                     ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: nameCtrl,
+                      decoration: InputDecoration(
+                        labelText: l.alternativeName,
+                        border: const OutlineInputBorder(),
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, null),
+                    child: Text(l.cancel),
+                  ),
+                  OutlinedButton(
+                    onPressed: () =>
+                        Navigator.pop(ctx, _NameResolution.useExisting),
+                    child: Text(l.importAs(sameNamePlayer.name)),
+                  ),
+                  FilledButton(
+                    onPressed: () {
+                      final name = nameCtrl.text.trim();
+                      if (name.isNotEmpty) Navigator.pop(ctx, name);
+                    },
+                    child: Text(l.renameAndImport),
                   ),
                 ],
               ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx, null),
-                  child: Text(l.cancel),
-                ),
-                OutlinedButton(
-                  onPressed: () =>
-                      Navigator.pop(ctx, _NameResolution.useExisting),
-                  child: Text(l.importAs(sameNamePlayer.name)),
-                ),
-                FilledButton(
-                  onPressed: () {
-                    final name = nameCtrl.text.trim();
-                    if (name.isNotEmpty) Navigator.pop(ctx, name);
-                  },
-                  child: Text(l.renameAndImport),
-                ),
-              ],
-            ),
             ),
           );
         },
@@ -1686,8 +1798,7 @@ mixin _PacketImport<T extends StatefulWidget> on State<T> {
 
   /// Shows a confirmation dialog summarizing the incoming stats; returns whether
   /// the user approved the import.
-  Future<bool> _showConfirmDialog(
-      SyncPacket packet, Player? existing) async {
+  Future<bool> _showConfirmDialog(SyncPacket packet, Player? existing) async {
     final result = await showDialog<bool>(
       context: context,
       builder: (_) => _ConfirmDialog(packet: packet, existing: existing),
@@ -1715,14 +1826,17 @@ mixin _PacketImport<T extends StatefulWidget> on State<T> {
   /// Persists the incoming packet: updates the existing player or creates a new
   /// one, stores the received stats snapshot and writes the throws, reporting
   /// progress through [report]. Returns the message to show when it is done.
-  Future<String> _writeImport(SyncPacket packet, Player? existing,
-      void Function(int done, int total) report) async {
-    final provider  = context.read<PlayersProvider>();
-    final l         = context.l10n;
-    final db        = DbHelper.instance;
+  Future<String> _writeImport(
+    SyncPacket packet,
+    Player? existing,
+    void Function(int done, int total) report,
+  ) async {
+    final provider = context.read<PlayersProvider>();
+    final l = context.l10n;
+    final db = DbHelper.instance;
     final statsJson = jsonEncode(packet.stats.toJson());
-    final now       = DateTime.now().millisecondsSinceEpoch;
-    final localId   = await DeviceIdentity.id;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final localId = await DeviceIdentity.id;
 
     int playerId;
 
@@ -1730,13 +1844,18 @@ mixin _PacketImport<T extends StatefulWidget> on State<T> {
     // this device cleared away itself, which no packet knows about and which
     // overwriting it used to lose without a trace.
     if (existing != null) {
-      await provider.updatePlayer(existing.copyWith(
-        name: packet.playerName,
-        favoriteDoubles: packet.favoriteDoubles,
-        syncedStats: statsJson,
-      ));
-      await db.updatePlayerSyncTime(existing.id!, now,
-          syncedStatsJson: statsJson);
+      await provider.updatePlayer(
+        existing.copyWith(
+          name: packet.playerName,
+          favoriteDoubles: packet.favoriteDoubles,
+          syncedStats: statsJson,
+        ),
+      );
+      await db.updatePlayerSyncTime(
+        existing.id!,
+        now,
+        syncedStatsJson: statsJson,
+      );
       playerId = existing.id!;
     } else {
       final newPlayer = await provider.addPlayer(packet.playerName);
@@ -1753,8 +1872,12 @@ mixin _PacketImport<T extends StatefulWidget> on State<T> {
       playerId = newPlayer.id!;
     }
 
-    final written = await applySyncedData(packet, playerId,
-        localDevice: localId, report: report);
+    final written = await applySyncedData(
+      packet,
+      playerId,
+      localDevice: localId,
+      report: report,
+    );
 
     if (packet.throws.isEmpty) {
       return existing != null
@@ -1795,14 +1918,16 @@ Future<int> applySyncedData(
   required String localDevice,
   void Function(int done, int total)? report,
 }) async {
-  final db     = DbHelper.instance;
+  final db = DbHelper.instance;
   final sender = packet.senderDeviceId;
 
   // The legacy bucket goes with the sender: what is in it cannot be told from
   // what the packet carries, and two copies of one history is the error that
   // cannot be seen afterwards.
-  await db.deleteSyncedThrowsForPlayer(playerId,
-      origins: {sender, kLegacyOrigin});
+  await db.deleteSyncedThrowsForPlayer(
+    playerId,
+    origins: {sender, kLegacyOrigin},
+  );
   await db.deleteOriginSnapshots(playerId, {sender, kLegacyOrigin});
 
   final origins = packet.origins.isNotEmpty
@@ -1813,8 +1938,7 @@ Future<int> applySyncedData(
           if (packet.localStatsJson != null)
             SyncOrigin(device: sender, snapshotJson: packet.localStatsJson!),
         ];
-  await db.replaceOriginSnapshots(playerId, origins,
-      localDevice: localDevice);
+  await db.replaceOriginSnapshots(playerId, origins, localDevice: localDevice);
 
   if (packet.throws.isEmpty) return 0;
 
@@ -1839,8 +1963,9 @@ Future<int> applySyncedData(
   for (final entry in byOrigin.entries) {
     final throws = entry.value;
     final gameId = await db.createSyncGame(
-        throws.first.remainingBefore + throws.first.score,
-        originDevice: entry.key);
+      throws.first.remainingBefore + throws.first.score,
+      originDevice: entry.key,
+    );
 
     // Written in slices so the modal can move between them. One batch for
     // everything would be marginally quicker and show nothing until the end.
@@ -1899,7 +2024,11 @@ class _ImportProgressDialogState extends State<_ImportProgressDialog> {
   Future<void> _start() async {
     try {
       final message = await widget.run((done, total) {
-        if (mounted) setState(() { _done = done; _total = total; });
+        if (mounted)
+          setState(() {
+            _done = done;
+            _total = total;
+          });
       });
       if (mounted) setState(() => _message = message);
     } catch (e) {
@@ -1910,8 +2039,8 @@ class _ImportProgressDialogState extends State<_ImportProgressDialog> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
 
     return PopScope(
       canPop: !_running,
@@ -1919,11 +2048,13 @@ class _ImportProgressDialogState extends State<_ImportProgressDialog> {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
           child: AlertDialog(
-            title: Text(_running
-                ? l.syncImporting
-                : _error != null
-                    ? l.syncImportFailed
-                    : l.syncImportDone),
+            title: Text(
+              _running
+                  ? l.syncImporting
+                  : _error != null
+                  ? l.syncImportFailed
+                  : l.syncImportDone,
+            ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1938,8 +2069,9 @@ class _ImportProgressDialogState extends State<_ImportProgressDialog> {
                         Text(
                           l.syncImportProgress(_done, _total),
                           textAlign: TextAlign.center,
-                          style: theme.textTheme.bodySmall
-                              ?.copyWith(color: cs.onSurfaceVariant),
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: cs.onSurfaceVariant,
+                          ),
                         ),
                       ],
                     ]
@@ -1963,8 +2095,7 @@ class _ImportProgressDialogState extends State<_ImportProgressDialog> {
                 ? null
                 : [
                     FilledButton(
-                      onPressed: () =>
-                          Navigator.pop(context, _error == null),
+                      onPressed: () => Navigator.pop(context, _error == null),
                       child: Text(l.ok),
                     ),
                   ],
@@ -1987,93 +2118,111 @@ class _ConfirmDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
     final isNew = existing == null;
-    final s     = packet.stats;
-    final l     = context.l10n;
+    final s = packet.stats;
+    final l = context.l10n;
 
     return Center(
       child: ConstrainedBox(
-      constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
-      child: AlertDialog(
-      title: Text(isNew ? l.importNewPlayer : l.updatePlayer),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: isNew ? cs.secondaryContainer : cs.primaryContainer,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: isNew ? cs.secondary : cs.primary,
-                  child: Text(
-                    packet.playerName.isNotEmpty ? packet.playerName[0].toUpperCase() : "?",
-                    style: const TextStyle(
-                        color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
+        constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
+        child: AlertDialog(
+          title: Text(isNew ? l.importNewPlayer : l.updatePlayer),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isNew ? cs.secondaryContainer : cs.primaryContainer,
+                  borderRadius: BorderRadius.circular(10),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(packet.playerName,
-                          style: theme.textTheme.titleMedium
-                              ?.copyWith(fontWeight: FontWeight.bold)),
-                      if (packet.favoriteDoubles.isNotEmpty)
-                        Text('${l.doublesLabel}: ${packet.favoriteDoubles}',
-                            style: theme.textTheme.bodySmall),
-                      Text(
-                        '${l.fromDevice(packet.senderDevice)}  ·  ${packet.stats.totalVisits} ${l.visits}',
-                        style: theme.textTheme.labelSmall
-                            ?.copyWith(color: cs.onSurfaceVariant),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: isNew ? cs.secondary : cs.primary,
+                      child: Text(
+                        packet.playerName.isNotEmpty
+                            ? packet.playerName[0].toUpperCase()
+                            : "?",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      Text(
-                        l.syncRangeInPacket(
-                            _rangeLabelForDays(l, packet.rangeDays)),
-                        style: theme.textTheme.labelSmall
-                            ?.copyWith(color: cs.onSurfaceVariant),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            packet.playerName,
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (packet.favoriteDoubles.isNotEmpty)
+                            Text(
+                              '${l.doublesLabel}: ${packet.favoriteDoubles}',
+                              style: theme.textTheme.bodySmall,
+                            ),
+                          Text(
+                            '${l.fromDevice(packet.senderDevice)}  ·  ${packet.stats.totalVisits} ${l.visits}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            l.syncRangeInPacket(
+                              _rangeLabelForDays(l, packet.rangeDays),
+                            ),
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: cs.onSurfaceVariant,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                l.statistics,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              _StatLine(l.threeDartAvg, s.average.toStringAsFixed(2)),
+              _StatLine(l.legsWon, '${s.legsWon}'),
+              _StatLine(l.totalDarts, '${s.totalDarts}'),
+              _StatLine(l.highestVisit, '${s.highestVisit}'),
+              _StatLine(l.count180, '${s.count180}'),
+              if (!isNew) ...[
+                const SizedBox(height: 8),
+                Text(
+                  l.overwriteProfile(existing!.name),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: cs.onSurfaceVariant,
                   ),
                 ),
               ],
-            ),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(l.statistics,
-              style: theme.textTheme.labelMedium
-                  ?.copyWith(fontWeight: FontWeight.bold)),
-          const SizedBox(height: 6),
-          _StatLine(l.threeDartAvg, s.average.toStringAsFixed(2)),
-          _StatLine(l.legsWon,      '${s.legsWon}'),
-          _StatLine(l.totalDarts,   '${s.totalDarts}'),
-          _StatLine(l.highestVisit, '${s.highestVisit}'),
-          _StatLine(l.count180,     '${s.count180}'),
-          if (!isNew) ...[
-            const SizedBox(height: 8),
-            Text(l.overwriteProfile(existing!.name),
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: cs.onSurfaceVariant)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: Text(l.cancel),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(isNew ? l.import_ : l.update),
+            ),
           ],
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context, false),
-          child: Text(l.cancel),
         ),
-        FilledButton(
-          onPressed: () => Navigator.pop(context, true),
-          child: Text(isNew ? l.import_ : l.update),
-        ),
-      ],
-      ),
       ),
     );
   }
@@ -2093,11 +2242,12 @@ class _StatLine extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(label, style: Theme.of(context).textTheme.bodySmall),
-          Text(value,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodySmall
-                  ?.copyWith(fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold),
+          ),
         ],
       ),
     );

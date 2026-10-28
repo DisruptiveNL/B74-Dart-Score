@@ -81,8 +81,12 @@ class SummaryBody extends StatelessWidget {
                   ),
                 )
               : ListView(
-                  padding:
-                      contentPadding(context, top: top, bottom: bottom, innerH: 16),
+                  padding: contentPadding(
+                    context,
+                    top: top,
+                    bottom: bottom,
+                    innerH: 16,
+                  ),
                   children: [
                     if (header != null) ...[
                       header!,

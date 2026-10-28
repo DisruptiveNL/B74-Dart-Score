@@ -108,8 +108,12 @@ class _CricketGameView extends StatelessWidget {
                       child: board,
                     )
                   : SingleChildScrollView(
-                      padding:
-                          contentPadding(context, top: 8, bottom: 8, innerH: 12),
+                      padding: contentPadding(
+                        context,
+                        top: 8,
+                        bottom: 8,
+                        innerH: 12,
+                      ),
                       child: board,
                     ),
             ),
@@ -163,10 +167,12 @@ class _CricketGameView extends StatelessWidget {
                               onTap: provider.visitPending
                                   ? provider.flushHeldVisit
                                   : null,
-                              child: VisitDartsRow(darts: [
-                                for (final t in provider.visitBuffer)
-                                  visitDartFrom(t.field, t.multiplier, l),
-                              ]),
+                              child: VisitDartsRow(
+                                darts: [
+                                  for (final t in provider.visitBuffer)
+                                    visitDartFrom(t.field, t.multiplier, l),
+                                ],
+                              ),
                             ),
                           ),
                         ],
@@ -194,25 +200,25 @@ class _CricketGameView extends StatelessWidget {
       context: context,
       builder: (_) => Center(
         child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
-        child: AlertDialog(
-          title: Text(l.quitTitle),
-          content: Text(l.quitBody),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(l.cancel),
-            ),
-            FilledButton(
-              onPressed: () {
-                context.read<CricketProvider>().leaveGame();
-                Navigator.pop(context);
-                Navigator.pop(context);
-              },
-              child: Text(l.leave),
-            ),
-          ],
-        ),
+          constraints: BoxConstraints(maxWidth: contentMaxWidth(context)),
+          child: AlertDialog(
+            title: Text(l.quitTitle),
+            content: Text(l.quitBody),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(l.cancel),
+              ),
+              FilledButton(
+                onPressed: () {
+                  context.read<CricketProvider>().leaveGame();
+                  Navigator.pop(context);
+                  Navigator.pop(context);
+                },
+                child: Text(l.leave),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -296,13 +302,13 @@ class _BoardMetrics {
 
     if (!tablet || !constraints.maxHeight.isFinite) {
       return _BoardMetrics(
-        columnWidth:  _kPlayerColumnWidth,
-        rowHeight:    _kRowHeight,
+        columnWidth: _kPlayerColumnWidth,
+        rowHeight: _kRowHeight,
         headerHeight: baseHeader,
-        markSize:     36,
-        textFactor:   1.0,
-        boardWidth:   double.infinity,
-        fits:         true,
+        markSize: 36,
+        textFactor: 1.0,
+        boardWidth: double.infinity,
+        fits: true,
       );
     }
 
@@ -318,29 +324,33 @@ class _BoardMetrics {
             7 -
         _kRowGap;
 
-    final textFactor =
-        (rowsFor(baseHeader * 1.3) / _kRowHeight).clamp(1.0, 1.3).toDouble();
+    final textFactor = (rowsFor(baseHeader * 1.3) / _kRowHeight)
+        .clamp(1.0, 1.3)
+        .toDouble();
     final headerHeight = baseHeader * textFactor;
-    final rowHeight =
-        rowsFor(headerHeight).clamp(_kRowHeight, _kMaxRowHeight).toDouble();
+    final rowHeight = rowsFor(
+      headerHeight,
+    ).clamp(_kRowHeight, _kMaxRowHeight).toDouble();
 
-    final columnWidth = ((constraints.maxWidth -
-                _kCardMargin -
-                _kCardPadding -
-                _kLabelColumnWidth) /
-            players)
+    final columnWidth =
+        ((constraints.maxWidth -
+                    _kCardMargin -
+                    _kCardPadding -
+                    _kLabelColumnWidth) /
+                players)
             .clamp(_kPlayerColumnWidth, _kMaxPlayerColumnWidth)
             .toDouble();
 
     return _BoardMetrics(
-      columnWidth:  columnWidth,
-      rowHeight:    rowHeight,
+      columnWidth: columnWidth,
+      rowHeight: rowHeight,
       headerHeight: headerHeight,
       // The mark keeps a margin inside its row, and never grows past the column
       // it sits in.
-      markSize:     (rowHeight * 0.9).clamp(36, columnWidth - 8).toDouble(),
-      textFactor:   textFactor,
-      boardWidth: _kCardMargin +
+      markSize: (rowHeight * 0.9).clamp(36, columnWidth - 8).toDouble(),
+      textFactor: textFactor,
+      boardWidth:
+          _kCardMargin +
           _kCardPadding +
           _kLabelColumnWidth +
           columnWidth * players,
@@ -425,8 +435,8 @@ class _CricketBoardState extends State<_CricketBoard> {
       builder: (context, constraints) {
         final m = _BoardMetrics.of(
           constraints,
-          tablet:   isTabletLayout(context),
-          players:  widget.states.length,
+          tablet: isTabletLayout(context),
+          players: widget.states.length,
           teamGame: widget.game.isTeamGame,
         );
         _columnWidth = m.columnWidth;
@@ -524,49 +534,50 @@ class _CricketBoardState extends State<_CricketBoard> {
                               child: InkWell(
                                 onTap: () => openCricketSlotInfo(context, i),
                                 child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    s.label(l),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelMedium
-                                        ?.copyWith(
-                                          fontWeight: isActive
-                                              ? FontWeight.bold
-                                              : FontWeight.normal,
-                                          color: isActive
-                                              ? cs.primary
-                                              : cs.onSurface,
-                                        ),
-                                  ),
-                                  if (s.isTeamSlot)
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
                                     Text(
-                                      s.player.label(l),
+                                      s.label(l),
                                       textAlign: TextAlign.center,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
-                                      style: theme.textTheme.labelSmall
+                                      style: theme.textTheme.labelMedium
                                           ?.copyWith(
+                                            fontWeight: isActive
+                                                ? FontWeight.bold
+                                                : FontWeight.normal,
                                             color: isActive
-                                                ? cs.primary.withValues(
-                                                    alpha: 0.75,
-                                                  )
-                                                : cs.onSurfaceVariant,
+                                                ? cs.primary
+                                                : cs.onSurface,
                                           ),
                                     ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    '${s.score}',
-                                    textAlign: TextAlign.center,
-                                    style: theme.textTheme.titleLarge?.copyWith(
-                                      fontWeight: FontWeight.bold,
-                                      color: isActive ? cs.primary : null,
+                                    if (s.isTeamSlot)
+                                      Text(
+                                        s.player.label(l),
+                                        textAlign: TextAlign.center,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: theme.textTheme.labelSmall
+                                            ?.copyWith(
+                                              color: isActive
+                                                  ? cs.primary.withValues(
+                                                      alpha: 0.75,
+                                                    )
+                                                  : cs.onSurfaceVariant,
+                                            ),
+                                      ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      '${s.score}',
+                                      textAlign: TextAlign.center,
+                                      style: theme.textTheme.titleLarge
+                                          ?.copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            color: isActive ? cs.primary : null,
+                                          ),
                                     ),
-                                  ),
-                                ],
-                              ),
+                                  ],
+                                ),
                               ),
                             );
                           }).toList(),
@@ -589,7 +600,9 @@ class _CricketBoardState extends State<_CricketBoard> {
                                   height: m.rowHeight,
                                   child: Center(
                                     child: CricketMarksWidget(
-                                        marks: marks, size: m.markSize),
+                                      marks: marks,
+                                      size: m.markSize,
+                                    ),
                                   ),
                                 );
                               }).toList(),
@@ -610,7 +623,6 @@ class _CricketBoardState extends State<_CricketBoard> {
 }
 
 // ── Marks widget: shows /, X, or ⊗ ──────────────────────────────────────────
-
 
 // ── Cricket Input ─────────────────────────────────────────────────────────────
 
@@ -698,7 +710,9 @@ class _CricketInputState extends State<_CricketInput> {
               alignment: WrapAlignment.center,
               children: [
                 ...cricketFields.map((field) {
-                  final allClosed = states.every((s) => s.hasClosedField(field));
+                  final allClosed = states.every(
+                    (s) => s.hasClosedField(field),
+                  );
                   final label = field == 25 ? l.bull : '$field';
                   return _FieldButton(
                     label: label,
@@ -924,42 +938,49 @@ class _MultBtn extends StatelessWidget {
 /// visits and the numbers Cricket is played by.
 void openCricketSlotInfo(BuildContext context, int slotIndex) {
   final provider = context.read<CricketProvider>();
-  Navigator.of(context).push(MaterialPageRoute<void>(
-    builder: (_) => ModeLiveInfoScreen(
-      listenable: provider,
-      data: (context) {
-        final l       = context.l10n;
-        final s       = provider.playerStates[slotIndex];
-        final ids     = s.players.map((p) => p.id).toSet();
-        final throws  = provider.throwHistory
-            .where((t) => ids.contains(t.playerId))
-            .toList();
-        final scoring = provider.game!.scoringMode;
-        final stats   = CricketStats.of(throws, scoring);
-        final visits  = cricketVisits(throws);
-        final recent  = visits.length <= 3 ? visits : visits.sublist(visits.length - 3);
-        final closed  = cricketFields.where(s.hasClosedField).length;
-        return (
-          title:    s.label(l),
-          subtitle: s.isTeamSlot ? s.player.label(l) : null,
-          visitSlots: 3,
-          recentVisits: [
-            for (final v in recent.reversed)
-              (
-                darts: [for (final t in v) visitDartFrom(t.field, t.multiplier, l)],
-                yield: l.marksN(cricketMarksOfVisit(v, scoring)),
-              ),
-          ],
-          stats: [
-            (l.marksPerRound, stats.marksPerRound.toStringAsFixed(1)),
-            (l.hitRate, '${(stats.hitRate * 100).round()} %'),
-            (l.fieldsClosed, l.nOfM(closed, cricketFields.length)),
-            if (scoring == CricketScoringMode.standard) (l.points, '${s.score}'),
-            (l.dartsThrown, '${stats.darts}'),
-            (l.bestVisit, l.marksN(stats.bestVisitMarks)),
-          ],
-        );
-      },
+  Navigator.of(context).push(
+    MaterialPageRoute<void>(
+      builder: (_) => ModeLiveInfoScreen(
+        listenable: provider,
+        data: (context) {
+          final l = context.l10n;
+          final s = provider.playerStates[slotIndex];
+          final ids = s.players.map((p) => p.id).toSet();
+          final throws = provider.throwHistory
+              .where((t) => ids.contains(t.playerId))
+              .toList();
+          final scoring = provider.game!.scoringMode;
+          final stats = CricketStats.of(throws, scoring);
+          final visits = cricketVisits(throws);
+          final recent = visits.length <= 3
+              ? visits
+              : visits.sublist(visits.length - 3);
+          final closed = cricketFields.where(s.hasClosedField).length;
+          return (
+            title: s.label(l),
+            subtitle: s.isTeamSlot ? s.player.label(l) : null,
+            visitSlots: 3,
+            recentVisits: [
+              for (final v in recent.reversed)
+                (
+                  darts: [
+                    for (final t in v) visitDartFrom(t.field, t.multiplier, l),
+                  ],
+                  yield: l.marksN(cricketMarksOfVisit(v, scoring)),
+                ),
+            ],
+            stats: [
+              (l.marksPerRound, stats.marksPerRound.toStringAsFixed(1)),
+              (l.hitRate, '${(stats.hitRate * 100).round()} %'),
+              (l.fieldsClosed, l.nOfM(closed, cricketFields.length)),
+              if (scoring == CricketScoringMode.standard)
+                (l.points, '${s.score}'),
+              (l.dartsThrown, '${stats.darts}'),
+              (l.bestVisit, l.marksN(stats.bestVisitMarks)),
+            ],
+          );
+        },
+      ),
     ),
-  ));
+  );
 }

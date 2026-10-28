@@ -100,15 +100,17 @@ void main() {
       }
     }
 
-    testWidgets('keeps the action row on screen with two players',
-        (tester) async {
+    testWidgets('keeps the action row on screen with two players', (
+      tester,
+    ) async {
       await pumpGame(tester, ['Ada', 'Zoe']);
 
       expectActionRowVisible(tester, _seSurface);
     });
 
-    testWidgets('keeps the action row on screen with four players',
-        (tester) async {
+    testWidgets('keeps the action row on screen with four players', (
+      tester,
+    ) async {
       // Four players add the compact score strip below the two big cards.
       await pumpGame(tester, ['Ada', 'Zoe', 'Ben', 'Cleo']);
 
@@ -134,16 +136,31 @@ void main() {
     testWidgets('BUST and ACCEPT have usable touch targets', (tester) async {
       await pumpGame(tester, ['Ada', 'Zoe']);
       final bust = tester.getSize(find.widgetWithText(OutlinedButton, 'BUST'));
-      final accept = tester.getSize(find.widgetWithText(FilledButton, 'ACCEPT'));
+      final accept = tester.getSize(
+        find.widgetWithText(FilledButton, 'ACCEPT'),
+      );
       for (final size in [bust, accept]) {
         expect(size.width, greaterThanOrEqualTo(44));
         expect(size.height, greaterThanOrEqualTo(44));
       }
     });
 
-    testWidgets('numeric input offers quick scores and confirmation', (tester) async {
+    testWidgets('numeric input offers quick scores and confirmation', (
+      tester,
+    ) async {
       await pumpGame(tester, ['Ada', 'Zoe', 'Ben', 'Cleo']);
-      for (final score in ['26', '30', '57', '41', '45', '60', '95', '100', '140', '180']) {
+      for (final score in [
+        '26',
+        '30',
+        '57',
+        '41',
+        '45',
+        '60',
+        '95',
+        '100',
+        '140',
+        '180',
+      ]) {
         expect(find.text(score), findsWidgets);
       }
       expect(find.text('BUST'), findsOneWidget);
@@ -151,8 +168,9 @@ void main() {
       expect(find.text('CLEAR'), findsOneWidget);
     });
 
-    testWidgets('leaves the bottom inset of a rounded phone to the system',
-        (tester) async {
+    testWidgets('leaves the bottom inset of a rounded phone to the system', (
+      tester,
+    ) async {
       await pumpGame(
         tester,
         ['Ada', 'Zoe', 'Ben', 'Cleo'],
@@ -163,7 +181,9 @@ void main() {
       expectActionRowVisible(tester, _roundedSurface, insets: _roundedInsets);
     });
 
-    testWidgets('action controls stay outside the scrolling keypad', (tester) async {
+    testWidgets('action controls stay outside the scrolling keypad', (
+      tester,
+    ) async {
       await pumpGame(tester, ['Ada', 'Zoe']);
       final scroll = find.byType(SingleChildScrollView);
       final accept = find.text('ACCEPT');
@@ -171,8 +191,9 @@ void main() {
       expect(find.ancestor(of: accept, matching: scroll), findsNothing);
     });
 
-    testWidgets('fits on a phone that is both short and rounded',
-        (tester) async {
+    testWidgets('fits on a phone that is both short and rounded', (
+      tester,
+    ) async {
       // The compact layout derives its row height from the box it is given, so
       // an inset the grid quietly claims for itself would overflow it. Pumping
       // is the assertion: an overflow fails the test on its own.
@@ -183,13 +204,18 @@ void main() {
         insets: _roundedInsets,
       );
 
-      expectActionRowVisible(tester, const Size(375, 740),
-          insets: _roundedInsets);
+      expectActionRowVisible(
+        tester,
+        const Size(375, 740),
+        insets: _roundedInsets,
+      );
     });
 
     testWidgets('action buttons stay large enough to hit', (tester) async {
       await pumpGame(tester, ['Ada', 'Zoe', 'Ben', 'Cleo']);
-      final button = tester.getSize(find.widgetWithText(OutlinedButton, 'BUST'));
+      final button = tester.getSize(
+        find.widgetWithText(OutlinedButton, 'BUST'),
+      );
       expect(button.height, greaterThanOrEqualTo(44));
       expect(button.width, greaterThanOrEqualTo(44));
     });

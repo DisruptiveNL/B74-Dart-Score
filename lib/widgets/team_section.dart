@@ -35,7 +35,7 @@ class TeamSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     return Card(
       child: Padding(
@@ -45,12 +45,19 @@ class TeamSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(Icons.groups_rounded, size: 20, color: cs.onSurfaceVariant),
+                Icon(
+                  Icons.groups_rounded,
+                  size: 20,
+                  color: cs.onSurfaceVariant,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(context.l10n.teamGame,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    context.l10n.teamGame,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 Switch(value: enabled, onChanged: onToggle),
               ],
@@ -58,51 +65,60 @@ class TeamSection extends StatelessWidget {
             if (enabled) ...[
               Text(
                 context.l10n.teamGameDesc,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 12),
               // Team name inputs + remove buttons
-              ...List.generate(teamNames.length, (ti) => Padding(
-                padding: const EdgeInsets.only(bottom: 8),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: teamColor(ti),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: TextField(
-                        controller: teamNameCtrl[ti],
-                        decoration: InputDecoration(
-                          // Deliberately not "Team ${ti + 1}": the starting
-                          // order can move a team, so a positional label would
-                          // contradict the name in the field.
-                          labelText: context.l10n.teamNameLabel,
-                          border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 8),
+              ...List.generate(
+                teamNames.length,
+                (ti) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 12,
+                        height: 12,
+                        decoration: BoxDecoration(
+                          color: teamColor(ti),
+                          shape: BoxShape.circle,
                         ),
-                        onChanged: (v) => onNameChanged(ti, v),
                       ),
-                    ),
-                    if (teamNames.length > 2) ...[
-                      const SizedBox(width: 4),
-                      IconButton(
-                        icon: const Icon(Icons.remove_circle_outline, size: 20),
-                        color: cs.error,
-                        onPressed: () => onRemoveTeam(ti),
-                        tooltip: context.l10n.removeTeam,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: TextField(
+                          controller: teamNameCtrl[ti],
+                          decoration: InputDecoration(
+                            // Deliberately not "Team ${ti + 1}": the starting
+                            // order can move a team, so a positional label would
+                            // contradict the name in the field.
+                            labelText: context.l10n.teamNameLabel,
+                            border: const OutlineInputBorder(),
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
+                          ),
+                          onChanged: (v) => onNameChanged(ti, v),
+                        ),
                       ),
+                      if (teamNames.length > 2) ...[
+                        const SizedBox(width: 4),
+                        IconButton(
+                          icon: const Icon(
+                            Icons.remove_circle_outline,
+                            size: 20,
+                          ),
+                          color: cs.error,
+                          onPressed: () => onRemoveTeam(ti),
+                          tooltip: context.l10n.removeTeam,
+                        ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              )),
+              ),
               // Add team button
               if (teamNames.length < players.length)
                 TextButton.icon(
@@ -123,9 +139,13 @@ class TeamSection extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 14,
-                        backgroundColor: teamColor(clampedAssigned).withValues(alpha: 0.2),
+                        backgroundColor: teamColor(
+                          clampedAssigned,
+                        ).withValues(alpha: 0.2),
                         child: Text(
-                          p.label(context.l10n).isNotEmpty ? p.label(context.l10n)[0].toUpperCase() : '?',
+                          p.label(context.l10n).isNotEmpty
+                              ? p.label(context.l10n)[0].toUpperCase()
+                              : '?',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.bold,
@@ -135,14 +155,18 @@ class TeamSection extends StatelessWidget {
                       ),
                       const SizedBox(width: 10),
                       Expanded(
-                        child: Text(p.label(context.l10n), style: theme.textTheme.bodyMedium),
+                        child: Text(
+                          p.label(context.l10n),
+                          style: theme.textTheme.bodyMedium,
+                        ),
                       ),
                       DropdownButton<int>(
                         value: clampedAssigned,
                         underline: const SizedBox(),
                         isDense: true,
-                        items: List.generate(teamNames.length, (ti) =>
-                          DropdownMenuItem(
+                        items: List.generate(
+                          teamNames.length,
+                          (ti) => DropdownMenuItem(
                             value: ti,
                             child: Row(
                               mainAxisSize: MainAxisSize.min,

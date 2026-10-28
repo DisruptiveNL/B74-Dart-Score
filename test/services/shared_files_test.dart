@@ -29,10 +29,8 @@ void main() {
 
   /// What is left, by name.
   Future<List<String>> remaining() async =>
-    (await dir.list().toList())
-        .map((e) => e.uri.pathSegments.last)
-        .toList()
-      ..sort();
+      (await dir.list().toList()).map((e) => e.uri.pathSegments.last).toList()
+        ..sort();
 
   test('earlier shares of the same kind are cleared', () async {
     await touch('backup-1.$kBackupExtension');

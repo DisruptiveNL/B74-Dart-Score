@@ -36,7 +36,9 @@ class GameModeSelectionScreen extends StatelessWidget {
                     available: true,
                     onTap: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const GameSetupScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const GameSetupScreen(),
+                      ),
                     ),
                     onInfo: () => _openInfo(context, GameModeOption.x01),
                   ),
@@ -49,7 +51,8 @@ class GameModeSelectionScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const CricketSetupScreen()),
+                        builder: (_) => const CricketSetupScreen(),
+                      ),
                     ),
                     onInfo: () => _openInfo(context, GameModeOption.cricket),
                   ),
@@ -62,7 +65,8 @@ class GameModeSelectionScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const ShanghaiSetupScreen()),
+                        builder: (_) => const ShanghaiSetupScreen(),
+                      ),
                     ),
                     onInfo: () => _openInfo(context, GameModeOption.shanghai),
                   ),
@@ -75,9 +79,11 @@ class GameModeSelectionScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const AroundTheClockSetupScreen()),
+                        builder: (_) => const AroundTheClockSetupScreen(),
+                      ),
                     ),
-                    onInfo: () => _openInfo(context, GameModeOption.aroundTheClock),
+                    onInfo: () =>
+                        _openInfo(context, GameModeOption.aroundTheClock),
                   ),
                   const SizedBox(height: 14),
                   _ModeCard(
@@ -88,9 +94,11 @@ class GameModeSelectionScreen extends StatelessWidget {
                     onTap: () => Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (_) => const CheckoutLadderSetupScreen()),
+                        builder: (_) => const CheckoutLadderSetupScreen(),
+                      ),
                     ),
-                    onInfo: () => _openInfo(context, GameModeOption.checkoutLadder),
+                    onInfo: () =>
+                        _openInfo(context, GameModeOption.checkoutLadder),
                   ),
                 ],
               ),
@@ -105,9 +113,7 @@ class GameModeSelectionScreen extends StatelessWidget {
   void _openInfo(BuildContext context, GameModeOption mode) {
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => GameModeInfoScreen(mode: mode),
-      ),
+      MaterialPageRoute(builder: (_) => GameModeInfoScreen(mode: mode)),
     );
   }
 }
@@ -139,7 +145,9 @@ class _ModeCard extends StatelessWidget {
     final contentColor = available
         ? cs.onSurface
         : cs.onSurface.withValues(alpha: 0.45);
-    final iconColor = available ? cs.primary : cs.onSurface.withValues(alpha: 0.35);
+    final iconColor = available
+        ? cs.primary
+        : cs.onSurface.withValues(alpha: 0.35);
 
     return Card(
       color: Colors.transparent,
@@ -147,7 +155,9 @@ class _ModeCard extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: available ? cs.outlineVariant : cs.outlineVariant.withValues(alpha: 0.5),
+          color: available
+              ? cs.outlineVariant
+              : cs.outlineVariant.withValues(alpha: 0.5),
         ),
       ),
       child: InkWell(
@@ -181,7 +191,9 @@ class _ModeCard extends StatelessWidget {
                       const SizedBox(height: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 2),
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
                           color: cs.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(8),
@@ -201,7 +213,9 @@ class _ModeCard extends StatelessWidget {
                 onPressed: onInfo,
                 icon: Icon(
                   Icons.info_outline_rounded,
-                  color: available ? cs.primary : cs.onSurface.withValues(alpha: 0.4),
+                  color: available
+                      ? cs.primary
+                      : cs.onSurface.withValues(alpha: 0.4),
                 ),
                 tooltip: l.modeInfoTitle,
               ),

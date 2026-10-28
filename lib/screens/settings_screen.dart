@@ -42,11 +42,11 @@ class _DisplaySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tp   = context.watch<ThemeProvider>();
-    final lp   = context.watch<LanguageProvider>();
+    final tp = context.watch<ThemeProvider>();
+    final lp = context.watch<LanguageProvider>();
     final pace = context.watch<PaceProvider>();
-    final cs   = Theme.of(context).colorScheme;
-    final l  = context.l10n;
+    final cs = Theme.of(context).colorScheme;
+    final l = context.l10n;
 
     return _Card(
       title: l.displaySection,
@@ -147,9 +147,9 @@ class _TextSizeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs      = Theme.of(context).colorScheme;
-    final l       = context.l10n;
-    final scale   = context.watch<TextScaleProvider>();
+    final cs = Theme.of(context).colorScheme;
+    final l = context.l10n;
+    final scale = context.watch<TextScaleProvider>();
     final percent = (scale.factor * 100).round();
 
     return Padding(
@@ -174,7 +174,10 @@ class _TextSizeRow extends StatelessWidget {
           ),
           Row(
             children: [
-              Text('A', style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant)),
+              Text(
+                'A',
+                style: TextStyle(fontSize: 12, color: cs.onSurfaceVariant),
+              ),
               Expanded(
                 child: Slider(
                   value: scale.factor,
@@ -185,7 +188,10 @@ class _TextSizeRow extends StatelessWidget {
                   onChanged: scale.setFactor,
                 ),
               ),
-              Text('A', style: TextStyle(fontSize: 20, color: cs.onSurfaceVariant)),
+              Text(
+                'A',
+                style: TextStyle(fontSize: 20, color: cs.onSurfaceVariant),
+              ),
             ],
           ),
           Padding(
@@ -214,15 +220,17 @@ class _LanguageBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => SizedBox(
-        width: 24,
-        child: Text(code,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: cs.onSurfaceVariant,
-            )),
-      );
+    width: 24,
+    child: Text(
+      code,
+      textAlign: TextAlign.center,
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.bold,
+        color: cs.onSurfaceVariant,
+      ),
+    ),
+  );
 }
 
 // ── App ───────────────────────────────────────────────────────────────────────
@@ -233,7 +241,7 @@ class _AppSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final l  = context.l10n;
+    final l = context.l10n;
     final cs = Theme.of(context).colorScheme;
     final isSupporter = context.watch<DonationProvider>().isSupporter;
 
@@ -272,10 +280,8 @@ class _AppSection extends StatelessWidget {
   }
 
   /// Pushes [screen] onto the navigator.
-  void _open(BuildContext context, Widget screen) => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => screen),
-      );
+  void _open(BuildContext context, Widget screen) =>
+      Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
 }
 
 /// A row that leads to another screen.
@@ -304,12 +310,14 @@ class _LinkRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return ListTile(
-      leading : Icon(icon, color: iconColor ?? cs.onSurfaceVariant),
-      title   : Text(title),
-      subtitle: Text(subtitle,
-          style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12)),
+      leading: Icon(icon, color: iconColor ?? cs.onSurfaceVariant),
+      title: Text(title),
+      subtitle: Text(
+        subtitle,
+        style: TextStyle(color: cs.onSurfaceVariant, fontSize: 12),
+      ),
       trailing: trailing ?? const Icon(Icons.chevron_right_rounded),
-      onTap   : onTap,
+      onTap: onTap,
     );
   }
 }
@@ -378,30 +386,30 @@ class _MenuRowState<T> extends State<_MenuRow<T>> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
     final current = widget.options.firstWhere((o) => o.value == widget.value);
-    final hint  = widget.hint;
+    final hint = widget.hint;
 
     // The row is the anchor, not the value at its end: MenuAnchor counts a tap
     // on its own child as inside the menu, and a tap anywhere else closes it.
     // Anchoring the value alone would let a tap on the label close the menu and
     // reopen it in the same gesture.
     return MenuAnchor(
-      controller  : _controller,
-      style       : const MenuStyle(alignment: AlignmentDirectional.bottomEnd),
+      controller: _controller,
+      style: const MenuStyle(alignment: AlignmentDirectional.bottomEnd),
       menuChildren: [
         for (final option in widget.options)
           _MenuEntry<T>(
-            option  : option,
+            option: option,
             selected: option.value == widget.value,
-            onTap   : () => widget.onSelected(option.value),
+            onTap: () => widget.onSelected(option.value),
           ),
       ],
       child: Column(
         children: [
           ListTile(
             leading: Icon(widget.icon, color: cs.onSurfaceVariant),
-            title  : hint == null
+            title: hint == null
                 ? Text(widget.label)
                 : Row(
                     mainAxisSize: MainAxisSize.min,
@@ -417,17 +425,23 @@ class _MenuRowState<T> extends State<_MenuRow<T>> {
                         color: cs.onSurfaceVariant,
                         visualDensity: VisualDensity.compact,
                         tooltip: context.l10n.whatItDoes,
-                        onPressed: () =>
-                            setState(() => _hintOpen = !_hintOpen),
+                        onPressed: () => setState(() => _hintOpen = !_hintOpen),
                       ),
                     ],
                   ),
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(current.label, style: TextStyle(color: cs.onSurfaceVariant)),
+                Text(
+                  current.label,
+                  style: TextStyle(color: cs.onSurfaceVariant),
+                ),
                 const SizedBox(width: 4),
-                Icon(Icons.unfold_more_rounded, size: 18, color: cs.onSurfaceVariant),
+                Icon(
+                  Icons.unfold_more_rounded,
+                  size: 18,
+                  color: cs.onSurfaceVariant,
+                ),
               ],
             ),
             onTap: () =>
@@ -442,8 +456,9 @@ class _MenuRowState<T> extends State<_MenuRow<T>> {
                       padding: const EdgeInsets.fromLTRB(56, 0, 16, 12),
                       child: Text(
                         hint,
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: cs.onSurfaceVariant),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: cs.onSurfaceVariant,
+                        ),
                       ),
                     )
                   : const SizedBox(width: double.infinity),
@@ -471,16 +486,18 @@ class _MenuEntry<T> extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
     return MenuItemButton(
-      leadingIcon : option.leading,
+      leadingIcon: option.leading,
       trailingIcon: selected
           ? Icon(Icons.check_rounded, size: 18, color: cs.primary)
           : null,
       onPressed: onTap,
-      child: Text(option.label,
-          style: TextStyle(
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            color: selected ? cs.primary : null,
-          )),
+      child: Text(
+        option.label,
+        style: TextStyle(
+          fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+          color: selected ? cs.primary : null,
+        ),
+      ),
     );
   }
 }
@@ -508,11 +525,13 @@ class _Card extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: cs.primary),
               const SizedBox(width: 6),
-              Text(title,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: cs.primary,
-                    fontWeight: FontWeight.bold,
-                  )),
+              Text(
+                title,
+                style: theme.textTheme.labelLarge?.copyWith(
+                  color: cs.primary,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
             ],
           ),
         ),

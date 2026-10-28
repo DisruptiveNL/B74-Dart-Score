@@ -47,7 +47,7 @@ class BackupService {
   /// Returns false when the user dismissed the sheet without choosing a target.
   static Future<bool> exportAndShare({Rect? sharePositionOrigin}) async {
     final source = await _prepare();
-    final tmp    = await getTemporaryDirectory();
+    final tmp = await getTemporaryDirectory();
 
     // Whatever an earlier share left. Cleared here rather than after the sheet
     // closes: a target may still be reading the file off its content URI then,
@@ -70,9 +70,9 @@ class BackupService {
   /// Stamps the database with who is handing it over and when, and returns the
   /// path to read it from.
   static Future<String> _prepare() async => DbHelper.instance.prepareBackup(
-        await DeviceIdentity.id,
-        await DeviceDescription.label,
-      );
+    await DeviceIdentity.id,
+    await DeviceDescription.label,
+  );
 
   /// The database as bytes, ready to be handed to another device over the
   /// local network, together with what is in it.
@@ -83,7 +83,7 @@ class BackupService {
   /// reading it afterwards would describe a file that has already gone.
   static Future<(List<int>, BackupInfo)> exportBytes() async {
     final source = await _prepare();
-    final info   = await DbHelper.instance.describeLocal();
+    final info = await DbHelper.instance.describeLocal();
     return (await File(source).readAsBytes(), info);
   }
 
@@ -93,7 +93,7 @@ class BackupService {
   /// The bytes are written out before anything looks at them: reading a
   /// database means opening it, and opening it means having it somewhere.
   static Future<PickedBackup> acceptTransfer(List<int> bytes) async {
-    final tmp  = await getTemporaryDirectory();
+    final tmp = await getTemporaryDirectory();
     final file = File('${tmp.path}/incoming-backup.db');
     await file.writeAsBytes(bytes, flush: true);
 

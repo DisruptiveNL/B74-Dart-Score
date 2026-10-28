@@ -56,9 +56,9 @@ void main() {
 
     /// The switch in the header of the computer opponent card.
     Finder botSwitch() => find.descendant(
-          of: find.widgetWithText(Card, 'Computer opponent'),
-          matching: find.byType(Switch),
-        );
+      of: find.widgetWithText(Card, 'Computer opponent'),
+      matching: find.byType(Switch),
+    );
 
     /// Opens the bot card and adds the Pro bot, letting the row's database
     /// write through.
@@ -67,7 +67,8 @@ void main() {
       await tester.pumpAndSettle();
       await tester.tap(find.byTooltip('Add Pro bot'));
       await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)));
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
       await tester.pumpAndSettle();
     }
 
@@ -104,47 +105,58 @@ void main() {
       testWidgets('will not start below two players', (tester) async {
         await pumpSetup(tester, const CricketSetupScreen());
 
-        expect(find.text('Cricket requires at least 2 players.'),
-            findsOneWidget);
+        expect(
+          find.text('Cricket requires at least 2 players.'),
+          findsOneWidget,
+        );
         expect(canStart(tester), isFalse);
 
         await tapPlayer(tester, 0);
-        expect(canStart(tester), isFalse,
-            reason: 'one player is not a game of Cricket');
+        expect(
+          canStart(tester),
+          isFalse,
+          reason: 'one player is not a game of Cricket',
+        );
 
         await tapPlayer(tester, 1);
         expect(find.text('Cricket requires at least 2 players.'), findsNothing);
         expect(canStart(tester), isTrue);
       });
 
-      testWidgets('starts on Normal and explains Cut Throat once it is picked',
-          (tester) async {
-        await pumpSetup(tester, const CricketSetupScreen());
+      testWidgets(
+        'starts on Normal and explains Cut Throat once it is picked',
+        (tester) async {
+          await pumpSetup(tester, const CricketSetupScreen());
 
-        ChoiceChip chipFor(String label) => tester
-            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label).first);
-        expect(chipFor('Normal').selected, isTrue);
-        expect(chipFor('Cut Throat').selected, isFalse);
-        expect(find.textContaining('Fewest points wins'), findsNothing);
+          ChoiceChip chipFor(String label) => tester.widget<ChoiceChip>(
+            find.widgetWithText(ChoiceChip, label).first,
+          );
+          expect(chipFor('Normal').selected, isTrue);
+          expect(chipFor('Cut Throat').selected, isFalse);
+          expect(find.textContaining('Fewest points wins'), findsNothing);
 
-        await tester.tap(find.widgetWithText(ChoiceChip, 'Cut Throat'));
-        await tester.pumpAndSettle();
+          await tester.tap(find.widgetWithText(ChoiceChip, 'Cut Throat'));
+          await tester.pumpAndSettle();
 
-        expect(chipFor('Cut Throat').selected, isTrue);
-        expect(chipFor('Normal').selected, isFalse);
-        expect(find.textContaining('Fewest points wins'), findsOneWidget);
-      });
+          expect(chipFor('Cut Throat').selected, isTrue);
+          expect(chipFor('Normal').selected, isFalse);
+          expect(find.textContaining('Fewest points wins'), findsOneWidget);
+        },
+      );
 
       testWidgets('starts on the standard scoring mode and explains the simple '
           'one once it is picked', (tester) async {
         await pumpSetup(tester, const CricketSetupScreen());
 
-        ChoiceChip chipFor(String label) => tester
-            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label).first);
+        ChoiceChip chipFor(String label) => tester.widget<ChoiceChip>(
+          find.widgetWithText(ChoiceChip, label).first,
+        );
         expect(chipFor('Standard (S/D/T)').selected, isTrue);
         expect(find.textContaining('counts as 1 mark'), findsNothing);
 
-        await tester.tap(find.widgetWithText(ChoiceChip, 'Simple (singles only)'));
+        await tester.tap(
+          find.widgetWithText(ChoiceChip, 'Simple (singles only)'),
+        );
         await tester.pumpAndSettle();
 
         expect(chipFor('Simple (singles only)').selected, isTrue);
@@ -159,25 +171,35 @@ void main() {
       testWidgets('will not start below two players', (tester) async {
         await pumpSetup(tester, const ShanghaiSetupScreen());
 
-        expect(find.text('Shanghai requires at least 2 players.'),
-            findsOneWidget);
+        expect(
+          find.text('Shanghai requires at least 2 players.'),
+          findsOneWidget,
+        );
         expect(canStart(tester), isFalse);
 
         await tapPlayer(tester, 0);
         await tapPlayer(tester, 1);
 
-        expect(find.text('Shanghai requires at least 2 players.'), findsNothing);
+        expect(
+          find.text('Shanghai requires at least 2 players.'),
+          findsNothing,
+        );
         expect(canStart(tester), isTrue);
       });
 
-      testWidgets('offers all three variants and describes the picked one',
-          (tester) async {
+      testWidgets('offers all three variants and describes the picked one', (
+        tester,
+      ) async {
         await pumpSetup(tester, const ShanghaiSetupScreen());
 
-        ChoiceChip chipFor(String label) => tester
-            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label).first);
-        expect(chipFor('Classic (1-9)').selected, isTrue,
-            reason: 'Classic is the default');
+        ChoiceChip chipFor(String label) => tester.widget<ChoiceChip>(
+          find.widgetWithText(ChoiceChip, label).first,
+        );
+        expect(
+          chipFor('Classic (1-9)').selected,
+          isTrue,
+          reason: 'Classic is the default',
+        );
         expect(find.textContaining('9 rounds'), findsOneWidget);
 
         await tester.tap(find.widgetWithText(ChoiceChip, 'Clockwise'));
@@ -196,8 +218,9 @@ void main() {
     // ── Around the Clock ──────────────────────────────────────────────────────
 
     group('Around the Clock', () {
-      testWidgets('starts with a single player, unlike the other two modes',
-          (tester) async {
+      testWidgets('starts with a single player, unlike the other two modes', (
+        tester,
+      ) async {
         await pumpSetup(tester, const AroundTheClockSetupScreen());
 
         expect(find.text('Select at least 1 player.'), findsOneWidget);
@@ -209,18 +232,27 @@ void main() {
         expect(canStart(tester), isTrue);
       });
 
-      testWidgets('offers all three variants and describes the picked one',
-          (tester) async {
+      testWidgets('offers all three variants and describes the picked one', (
+        tester,
+      ) async {
         await pumpSetup(tester, const AroundTheClockSetupScreen());
 
-        ChoiceChip chipFor(String label) => tester
-            .widget<ChoiceChip>(find.widgetWithText(ChoiceChip, label).first);
-        expect(chipFor('Basic').selected, isTrue, reason: 'Basic is the default');
+        ChoiceChip chipFor(String label) => tester.widget<ChoiceChip>(
+          find.widgetWithText(ChoiceChip, label).first,
+        );
+        expect(
+          chipFor('Basic').selected,
+          isTrue,
+          reason: 'Basic is the default',
+        );
         expect(find.textContaining('then the Bull'), findsOneWidget);
 
         await tester.tap(find.widgetWithText(ChoiceChip, 'Full Segments'));
         await tester.pumpAndSettle();
-        expect(find.textContaining('Single, Double and Triple'), findsOneWidget);
+        expect(
+          find.textContaining('Single, Double and Triple'),
+          findsOneWidget,
+        );
 
         await tester.tap(find.widgetWithText(ChoiceChip, 'Skip Rules'));
         await tester.pumpAndSettle();
@@ -239,16 +271,20 @@ void main() {
         ('Shanghai', const ShanghaiSetupScreen()),
         ('Around the Clock', const AroundTheClockSetupScreen()),
       ]) {
-        testWidgets('appear in ${mode.$1} only while two players are picked',
-            (tester) async {
+        testWidgets('appear in ${mode.$1} only while two players are picked', (
+          tester,
+        ) async {
           await pumpSetup(tester, mode.$2);
 
           expect(find.text('Team Game'), findsNothing);
           expect(find.text('Starting order'), findsNothing);
 
           await tapPlayer(tester, 0);
-          expect(find.text('Team Game'), findsNothing,
-              reason: 'one player has nobody to team up with');
+          expect(
+            find.text('Team Game'),
+            findsNothing,
+            reason: 'one player has nobody to team up with',
+          );
 
           await tapPlayer(tester, 1);
           expect(find.text('Team Game'), findsOneWidget);
@@ -260,8 +296,9 @@ void main() {
           expect(find.text('Starting order'), findsNothing);
         });
 
-        testWidgets('offer a draggable order in ${mode.$1} once it is fixed',
-            (tester) async {
+        testWidgets('offer a draggable order in ${mode.$1} once it is fixed', (
+          tester,
+        ) async {
           await pumpSetup(tester, mode.$2);
           await tapPlayer(tester, 0);
           await tapPlayer(tester, 1);

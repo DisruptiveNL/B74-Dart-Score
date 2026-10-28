@@ -3,10 +3,16 @@ import '../models/shanghai_game.dart';
 /// The darts of one slot in Shanghai grouped into visits of up to
 /// [dartLimit], oldest first; the last group is the visit in progress when it
 /// is short. Seven in clockwise, three otherwise.
-List<List<ShanghaiThrow>> shanghaiVisits(List<ShanghaiThrow> throws, int dartLimit) => [
-      for (var i = 0; i < throws.length; i += dartLimit)
-        throws.sublist(i, i + dartLimit > throws.length ? throws.length : i + dartLimit),
-    ];
+List<List<ShanghaiThrow>> shanghaiVisits(
+  List<ShanghaiThrow> throws,
+  int dartLimit,
+) => [
+  for (var i = 0; i < throws.length; i += dartLimit)
+    throws.sublist(
+      i,
+      i + dartLimit > throws.length ? throws.length : i + dartLimit,
+    ),
+];
 
 /// The points one dart scored: the ring times the target.
 int shanghaiPointsOf(ShanghaiThrow t) => t.isMiss ? 0 : t.multiplier * t.target;
@@ -24,7 +30,8 @@ bool isShanghaiVisit(List<ShanghaiThrow> visit, ShanghaiVariant variant) {
   if (variant == ShanghaiVariant.classic) {
     if (hits.length < 3) return false;
     final sameTarget = hits.every((d) => d.target == hits.first.target);
-    return sameTarget && hits.map((d) => d.multiplier).toSet().containsAll([1, 2, 3]);
+    return sameTarget &&
+        hits.map((d) => d.multiplier).toSet().containsAll([1, 2, 3]);
   }
   for (var i = 0; i + 2 < visit.length; i++) {
     final a = visit[i], b = visit[i + 1], c = visit[i + 2];
@@ -60,7 +67,10 @@ class ShanghaiStats {
 
   /// Aggregates [throws] of one slot, grouped into visits of [dartLimit].
   factory ShanghaiStats.of(
-      List<ShanghaiThrow> throws, ShanghaiVariant variant, int dartLimit) {
+    List<ShanghaiThrow> throws,
+    ShanghaiVariant variant,
+    int dartLimit,
+  ) {
     final visits = shanghaiVisits(throws, dartLimit);
     var best = 0;
     var shanghais = 0;
@@ -70,12 +80,12 @@ class ShanghaiStats {
       if (isShanghaiVisit(v, variant)) shanghais++;
     }
     return ShanghaiStats(
-      darts:           throws.length,
-      hits:            throws.where((t) => !t.isMiss).length,
-      points:          shanghaiPointsOfVisit(throws),
-      visits:          visits.length,
+      darts: throws.length,
+      hits: throws.where((t) => !t.isMiss).length,
+      points: shanghaiPointsOfVisit(throws),
+      visits: visits.length,
       bestVisitPoints: best,
-      shanghais:       shanghais,
+      shanghais: shanghais,
     );
   }
 }

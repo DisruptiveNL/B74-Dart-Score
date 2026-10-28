@@ -18,13 +18,17 @@ import '../utils/placement.dart';
 class FinalRankingCard extends StatelessWidget {
   /// Every slot's visits, keyed by slot id and in throwing order.
   final Map<int, List<DartThrow>> throwsById;
+
   /// Display name per slot id.
   final Map<int, String> namesById;
+
   /// Legs won per slot id; derived from the throws when null.
   final Map<int, int>? legsWon;
+
   /// Cumulative per-leg finishing positions per slot id, the tie-breaker;
   /// derived from the throws when null.
   final Map<int, int>? placementSum;
+
   /// Points per slot id, what the ranking is decided on; derived from the
   /// throws when null.
   final Map<int, int>? points;
@@ -41,24 +45,24 @@ class FinalRankingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
 
     final maxLeg = throwsById.values
         .expand((t) => t)
         .map((t) => t.leg)
         .fold(0, (a, b) => b > a ? b : a);
 
-    final ranking     = placementRanking(throwsById, maxLeg, 1);
-    final legTable    = legPlacementsTable(throwsById, maxLeg, 1);
-    final pointsOf    = points ?? placementPointsTotal(throwsById, maxLeg, 1);
-    final legsWonOf   = legsWon ?? ranking.legsWon;
+    final ranking = placementRanking(throwsById, maxLeg, 1);
+    final legTable = legPlacementsTable(throwsById, maxLeg, 1);
+    final pointsOf = points ?? placementPointsTotal(throwsById, maxLeg, 1);
+    final legsWonOf = legsWon ?? ranking.legsWon;
     final placementOf = placementSum ?? ranking.placementSum;
 
     final ranked = placementOrder(
       throwsById.keys,
-      points:       pointsOf,
-      legsWon:      legsWonOf,
+      points: pointsOf,
+      legsWon: legsWonOf,
       placementSum: placementOf,
     );
 
@@ -73,13 +77,14 @@ class FinalRankingCard extends StatelessWidget {
           children: [
             Text(
               l.finalRanking,
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
             ),
             const SizedBox(height: 8),
             ...ranked.asMap().entries.map((entry) {
               final rank = entry.key + 1;
-              final id   = entry.value;
+              final id = entry.value;
               return Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
                 child: Row(
@@ -88,24 +93,29 @@ class FinalRankingCard extends StatelessWidget {
                       width: 32,
                       child: Text(
                         '$rank.',
-                        style: theme.textTheme.bodyMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                     Expanded(
-                      child: Text(namesById[id] ?? '?',
-                          style: theme.textTheme.bodyMedium),
+                      child: Text(
+                        namesById[id] ?? '?',
+                        style: theme.textTheme.bodyMedium,
+                      ),
                     ),
                     Text(
                       '${l.legs}: ${legsWonOf[id] ?? 0}',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: cs.onSurfaceVariant),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: cs.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(width: 10),
                     Text(
                       '${l.points}: ${pointsOf[id] ?? 0}',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),
@@ -118,13 +128,16 @@ class FinalRankingCard extends StatelessWidget {
               Text(
                 l.legByLegPlacements,
                 style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: FontWeight.bold, color: cs.onSurfaceVariant),
+                  fontWeight: FontWeight.bold,
+                  color: cs.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 2),
               Text(
                 l.placementPointsHint,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 6),
               SingleChildScrollView(
@@ -136,21 +149,35 @@ class FinalRankingCard extends StatelessWidget {
                     maxLeg + 1: const FixedColumnWidth(56),
                   },
                   border: TableBorder(
-                    horizontalInside:
-                        BorderSide(color: cs.outlineVariant, width: 0.5),
+                    horizontalInside: BorderSide(
+                      color: cs.outlineVariant,
+                      width: 0.5,
+                    ),
                   ),
                   children: [
-                    TableRow(children: [
-                      const SizedBox.shrink(),
-                      for (var leg = 1; leg <= maxLeg; leg++)
-                        _RankCell(l.legAbbr(leg),
-                            bold: true, alignment: Alignment.center),
-                      _RankCell(l.points,
-                          bold: true, alignment: Alignment.center),
-                    ]),
-                    ...ranked.map((id) => TableRow(children: [
-                          _RankCell(namesById[id] ?? '?',
-                              alignment: Alignment.centerLeft),
+                    TableRow(
+                      children: [
+                        const SizedBox.shrink(),
+                        for (var leg = 1; leg <= maxLeg; leg++)
+                          _RankCell(
+                            l.legAbbr(leg),
+                            bold: true,
+                            alignment: Alignment.center,
+                          ),
+                        _RankCell(
+                          l.points,
+                          bold: true,
+                          alignment: Alignment.center,
+                        ),
+                      ],
+                    ),
+                    ...ranked.map(
+                      (id) => TableRow(
+                        children: [
+                          _RankCell(
+                            namesById[id] ?? '?',
+                            alignment: Alignment.centerLeft,
+                          ),
                           for (var leg = 1; leg <= maxLeg; leg++)
                             _RankCell(
                               legTable[leg]?[id] != null
@@ -158,9 +185,14 @@ class FinalRankingCard extends StatelessWidget {
                                   : '-',
                               alignment: Alignment.center,
                             ),
-                          _RankCell('${pointsOf[id] ?? 0}',
-                              bold: true, alignment: Alignment.center),
-                        ])),
+                          _RankCell(
+                            '${pointsOf[id] ?? 0}',
+                            bold: true,
+                            alignment: Alignment.center,
+                          ),
+                        ],
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -178,8 +210,11 @@ class _RankCell extends StatelessWidget {
   final bool bold;
   final Alignment alignment;
 
-  const _RankCell(this.text,
-      {this.bold = false, this.alignment = Alignment.center});
+  const _RankCell(
+    this.text, {
+    this.bold = false,
+    this.alignment = Alignment.center,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -189,10 +224,9 @@ class _RankCell extends StatelessWidget {
         alignment: alignment,
         child: Text(
           text,
-          style: Theme.of(context)
-              .textTheme
-              .bodySmall
-              ?.copyWith(fontWeight: bold ? FontWeight.bold : null),
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontWeight: bold ? FontWeight.bold : null,
+          ),
           overflow: TextOverflow.ellipsis,
         ),
       ),

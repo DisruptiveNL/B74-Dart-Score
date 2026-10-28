@@ -30,9 +30,11 @@ void main() {
       await pumpHome(tester, const Size(375, 812));
 
       final players = tester.getRect(
-          find.widgetWithText(OutlinedButton, 'Manage Players'));
-      final history =
-          tester.getRect(find.widgetWithText(OutlinedButton, 'Game History'));
+        find.widgetWithText(OutlinedButton, 'Manage Players'),
+      );
+      final history = tester.getRect(
+        find.widgetWithText(OutlinedButton, 'Game History'),
+      );
 
       expect(history.top, greaterThan(players.bottom));
     });
@@ -41,9 +43,11 @@ void main() {
       await pumpHome(tester, const Size(820, 1180));
 
       final players = tester.getRect(
-          find.widgetWithText(OutlinedButton, 'Manage Players'));
-      final history =
-          tester.getRect(find.widgetWithText(OutlinedButton, 'Game History'));
+        find.widgetWithText(OutlinedButton, 'Manage Players'),
+      );
+      final history = tester.getRect(
+        find.widgetWithText(OutlinedButton, 'Game History'),
+      );
 
       expect(history.left, greaterThan(players.right));
       expect((history.top - players.top).abs(), lessThan(1));
@@ -52,8 +56,9 @@ void main() {
     testWidgets('uses the wider column on a tablet', (tester) async {
       await pumpHome(tester, const Size(820, 1180));
 
-      final start =
-          tester.getRect(find.widgetWithText(FilledButton, 'New Game'));
+      final start = tester.getRect(
+        find.widgetWithText(FilledButton, 'New Game'),
+      );
 
       // Wider than the phone column it used to be held to, and still short of
       // the full width of the tablet.

@@ -32,9 +32,9 @@ import '../support/test_db.dart';
 /// squeezes the content to nothing.
 Future<double> paneCardWidth(WidgetTester tester, Widget detail) async {
   usePhoneSurface(tester, size: const Size(1180, 820));
-  await tester.pumpWidget(testApp(
-    Center(child: SizedBox(width: 560, height: 800, child: detail)),
-  ));
+  await tester.pumpWidget(
+    testApp(Center(child: SizedBox(width: 560, height: 800, child: detail))),
+  );
   await pumpUntilLoaded(tester);
   return tester.getRect(find.byType(Card).first).width;
 }
@@ -55,10 +55,10 @@ void main() {
       players = await insertPlayers(['Ada', 'Zoe']);
       await provider.startGame(
         Game(
-          startScore:    101,
-          legs:          1,
-          sets:          1,
-          createdAt:     DateTime(2026, 4, 1, 20, 15),
+          startScore: 101,
+          legs: 1,
+          sets: 1,
+          createdAt: DateTime(2026, 4, 1, 20, 15),
           startingOrder: StartingOrder.fixed,
         ),
         players,
@@ -80,15 +80,16 @@ void main() {
       // its finish time.
       final games = await DbHelper.instance.getGames();
       stored = games.firstWhere((g) => g.id == provider.game!.id);
-      empty  = games.firstWhere((g) => g.id == emptyId);
+      empty = games.firstWhere((g) => g.id == emptyId);
     });
 
     Future<void> pumpDetail(WidgetTester tester, {Game? game}) async {
       usePhoneSurface(tester, size: const Size(400, 2400));
-      await tester.pumpWidget(testApp(HistoryGameSummaryScreen(
-        game:    game ?? stored,
-        players: players,
-      )));
+      await tester.pumpWidget(
+        testApp(
+          HistoryGameSummaryScreen(game: game ?? stored, players: players),
+        ),
+      );
       await pumpUntilLoaded(tester);
     }
 
@@ -98,24 +99,30 @@ void main() {
       expect(find.text('01.04.26  20:15'), findsOneWidget);
     });
 
-    testWidgets('offers the rematch on a bar under the game, not inside it',
-        (tester) async {
+    testWidgets('offers the rematch on a bar under the game, not inside it', (
+      tester,
+    ) async {
       await pumpDetail(tester);
 
       final again = tester.getRect(find.text('Replay'));
-      final list  = tester.getRect(find.byType(ListView));
+      final list = tester.getRect(find.byType(ListView));
       expect(again.top, greaterThan(list.bottom));
     });
 
-    testWidgets('rebuilds the winner and the throw log from the stored throws',
-        (tester) async {
-      await pumpDetail(tester);
+    testWidgets(
+      'rebuilds the winner and the throw log from the stored throws',
+      (tester) async {
+        await pumpDetail(tester);
 
-      expect(find.text('🎯 Ada wins!'), findsOneWidget);
-      expect(find.text('All Throws'), findsOneWidget);
-      expect(find.text('101'), findsWidgets,
-          reason: 'the checkout visit belongs in the log');
-    });
+        expect(find.text('🎯 Ada wins!'), findsOneWidget);
+        expect(find.text('All Throws'), findsOneWidget);
+        expect(
+          find.text('101'),
+          findsWidgets,
+          reason: 'the checkout visit belongs in the log',
+        );
+      },
+    );
 
     testWidgets('says so when a game carries no throws at all', (tester) async {
       await pumpDetail(tester, game: empty);
@@ -135,14 +142,20 @@ void main() {
       players = await insertPlayers(['Ada', 'Zoe', 'Kim', 'Rio']);
       await provider.startGame(
         Game(
-          startScore:    101,
-          legs:          1,
-          sets:          1,
-          createdAt:     DateTime(2026, 4, 4, 20, 15),
+          startScore: 101,
+          legs: 1,
+          sets: 1,
+          createdAt: DateTime(2026, 4, 4, 20, 15),
           startingOrder: StartingOrder.fixed,
           teams: [
-            TeamConfig(name: 'Reds',  playerIds: [players[0].id!, players[2].id!]),
-            TeamConfig(name: 'Blues', playerIds: [players[1].id!, players[3].id!]),
+            TeamConfig(
+              name: 'Reds',
+              playerIds: [players[0].id!, players[2].id!],
+            ),
+            TeamConfig(
+              name: 'Blues',
+              playerIds: [players[1].id!, players[3].id!],
+            ),
           ],
         ),
         players,
@@ -156,18 +169,21 @@ void main() {
       stored = games.firstWhere((g) => g.id == provider.game!.id);
     });
 
-    testWidgets('announces the team, not the member who hit the double',
-        (tester) async {
+    testWidgets('announces the team, not the member who hit the double', (
+      tester,
+    ) async {
       usePhoneSurface(tester, size: const Size(400, 2400));
-      await tester.pumpWidget(testApp(HistoryGameSummaryScreen(
-        game:    stored,
-        players: players,
-      )));
+      await tester.pumpWidget(
+        testApp(HistoryGameSummaryScreen(game: stored, players: players)),
+      );
       await pumpUntilLoaded(tester);
 
       expect(find.text('🎯 Reds wins!'), findsOneWidget);
-      expect(find.text('🎯 Ada wins!'), findsNothing,
-          reason: 'the side won the game, not one of its members');
+      expect(
+        find.text('🎯 Ada wins!'),
+        findsNothing,
+        reason: 'the side won the game, not one of its members',
+      );
     });
   });
 
@@ -182,11 +198,11 @@ void main() {
       players = await insertPlayers(['Ada', 'Zoe', 'Kim']);
       await provider.startGame(
         Game(
-          startScore:    101,
-          legs:          1,
-          sets:          1,
+          startScore: 101,
+          legs: 1,
+          sets: 1,
           placementMode: true,
-          createdAt:     DateTime(2026, 4, 3, 20, 15),
+          createdAt: DateTime(2026, 4, 3, 20, 15),
           startingOrder: StartingOrder.fixed,
         ),
         players,
@@ -206,17 +222,19 @@ void main() {
     testWidgets('ranks the player who never threw and scores all three '
         'against the full line-up', (tester) async {
       usePhoneSurface(tester, size: const Size(400, 2400));
-      await tester.pumpWidget(testApp(HistoryGameSummaryScreen(
-        game:    stored,
-        players: players,
-      )));
+      await tester.pumpWidget(
+        testApp(HistoryGameSummaryScreen(game: stored, players: players)),
+      );
       await pumpUntilLoaded(tester);
 
       // Zoe threw the last checkout of the game, but a placement game is won
       // on points, and those are Ada's.
       expect(find.text('🎯 Ada wins!'), findsOneWidget);
-      expect(find.text('Kim'), findsWidgets,
-          reason: 'a participant without a dart is still one of them');
+      expect(
+        find.text('Kim'),
+        findsWidgets,
+        reason: 'a participant without a dart is still one of them',
+      );
       // Three participants, so a leg is worth 4 points to the winner, 2 to the
       // second and 1 to the third. Counting the participants off the throws
       // would take one point off each of them.
@@ -240,12 +258,12 @@ void main() {
       players = await insertPlayers(['Ada', 'Zoe']);
       await provider.startGame(
         CricketGame(
-          variant:       CricketVariant.normal,
-          scoringMode:   CricketScoringMode.standard,
-          legs:          1,
-          sets:          1,
-          createdAt:     DateTime(2026, 4, 1, 20, 15),
-          playerIds:     players.map((p) => p.id!).toList(),
+          variant: CricketVariant.normal,
+          scoringMode: CricketScoringMode.standard,
+          legs: 1,
+          sets: 1,
+          createdAt: DateTime(2026, 4, 1, 20, 15),
+          playerIds: players.map((p) => p.id!).toList(),
           startingOrder: StartingOrder.fixed,
         ),
         players,
@@ -264,20 +282,22 @@ void main() {
 
       // The finish time only exists in the database: the provider writes it
       // without updating its own copy, and the winner is read off it here.
-      stored = (await DbHelper.instance.getCricketGames())
-          .firstWhere((g) => g.id == provider.game!.id);
+      stored = (await DbHelper.instance.getCricketGames()).firstWhere(
+        (g) => g.id == provider.game!.id,
+      );
     });
 
     Future<void> pumpDetail(WidgetTester tester) async {
       usePhoneSurface(tester, size: const Size(400, 2400));
-      await tester.pumpWidget(testApp(CricketHistorySummaryScreen(
-        game:    stored,
-        players: players,
-      )));
+      await tester.pumpWidget(
+        testApp(CricketHistorySummaryScreen(game: stored, players: players)),
+      );
       await pumpUntilLoaded(tester);
     }
 
-    testWidgets('reconstructs the winner and the closed fields', (tester) async {
+    testWidgets('reconstructs the winner and the closed fields', (
+      tester,
+    ) async {
       await pumpDetail(tester);
 
       expect(find.text('🎯 Ada wins!'), findsOneWidget);
@@ -289,7 +309,10 @@ void main() {
       final width = await paneCardWidth(
         tester,
         CricketHistorySummaryScreen(
-            game: stored, players: players, embedded: true),
+          game: stored,
+          players: players,
+          embedded: true,
+        ),
       );
       expect(width, greaterThan(500));
     });
@@ -318,11 +341,11 @@ void main() {
       players = await insertPlayers(['Ada', 'Zoe']);
       await provider.startGame(
         ShanghaiGame(
-          variant:       ShanghaiVariant.classic,
-          legs:          1,
-          sets:          1,
-          createdAt:     DateTime(2026, 4, 1, 20, 15),
-          playerIds:     players.map((p) => p.id!).toList(),
+          variant: ShanghaiVariant.classic,
+          legs: 1,
+          sets: 1,
+          createdAt: DateTime(2026, 4, 1, 20, 15),
+          playerIds: players.map((p) => p.id!).toList(),
           startingOrder: StartingOrder.fixed,
         ),
         players,
@@ -333,16 +356,16 @@ void main() {
         await provider.recordDart(provider.currentPlayerIndex == 0 ? 3 : 0);
       }
 
-      stored = (await DbHelper.instance.getShanghaiGames())
-          .firstWhere((g) => g.id == provider.game!.id);
+      stored = (await DbHelper.instance.getShanghaiGames()).firstWhere(
+        (g) => g.id == provider.game!.id,
+      );
     });
 
     Future<void> pumpDetail(WidgetTester tester) async {
       usePhoneSurface(tester, size: const Size(400, 2400));
-      await tester.pumpWidget(testApp(ShanghaiHistorySummaryScreen(
-        game:    stored,
-        players: players,
-      )));
+      await tester.pumpWidget(
+        testApp(ShanghaiHistorySummaryScreen(game: stored, players: players)),
+      );
       await pumpUntilLoaded(tester);
     }
 
@@ -350,7 +373,10 @@ void main() {
       final width = await paneCardWidth(
         tester,
         ShanghaiHistorySummaryScreen(
-            game: stored, players: players, embedded: true),
+          game: stored,
+          players: players,
+          embedded: true,
+        ),
       );
       expect(width, greaterThan(500));
     });
@@ -361,8 +387,11 @@ void main() {
       await pumpDetail(tester);
 
       expect(find.text('🎯 Ada wins!'), findsOneWidget);
-      expect(find.text('$score'), findsOneWidget,
-          reason: 'the replay has to reach the score the game ended on');
+      expect(
+        find.text('$score'),
+        findsOneWidget,
+        reason: 'the replay has to reach the score the game ended on',
+      );
       expect(find.text('Classic (1-9)'), findsWidgets);
     });
   });
@@ -381,11 +410,11 @@ void main() {
       players = await insertPlayers(['Ada', 'Zoe']);
       await provider.startGame(
         AroundTheClockGame(
-          variant:       AroundTheClockVariant.basic,
-          legs:          1,
-          sets:          1,
-          createdAt:     DateTime(2026, 4, 1, 20, 15),
-          playerIds:     players.map((p) => p.id!).toList(),
+          variant: AroundTheClockVariant.basic,
+          legs: 1,
+          sets: 1,
+          createdAt: DateTime(2026, 4, 1, 20, 15),
+          playerIds: players.map((p) => p.id!).toList(),
           startingOrder: StartingOrder.fixed,
         ),
         players,
@@ -400,16 +429,18 @@ void main() {
         }
       }
 
-      stored = (await DbHelper.instance.getAroundTheClockGames())
-          .firstWhere((g) => g.id == provider.game!.id);
+      stored = (await DbHelper.instance.getAroundTheClockGames()).firstWhere(
+        (g) => g.id == provider.game!.id,
+      );
     });
 
     Future<void> pumpDetail(WidgetTester tester) async {
       usePhoneSurface(tester, size: const Size(400, 2400));
-      await tester.pumpWidget(testApp(AroundTheClockHistorySummaryScreen(
-        game:    stored,
-        players: players,
-      )));
+      await tester.pumpWidget(
+        testApp(
+          AroundTheClockHistorySummaryScreen(game: stored, players: players),
+        ),
+      );
       await pumpUntilLoaded(tester);
     }
 
@@ -417,7 +448,10 @@ void main() {
       final width = await paneCardWidth(
         tester,
         AroundTheClockHistorySummaryScreen(
-            game: stored, players: players, embedded: true),
+          game: stored,
+          players: players,
+          embedded: true,
+        ),
       );
       expect(width, greaterThan(500));
     });

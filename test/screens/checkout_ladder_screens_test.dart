@@ -24,16 +24,15 @@ void main() {
     List<Player> players, {
     CheckoutLadderVariant variant = CheckoutLadderVariant.training,
     int? target,
-  }) =>
-      CheckoutLadderGame(
-        variant:         variant,
-        startNumber:     81,
-        targetNumber:    target,
-        dartsPerAttempt: 6,
-        createdAt:       DateTime(2026, 10, 25),
-        playerIds:       players.map((p) => p.id!).toList(),
-        startingOrder:   StartingOrder.fixed,
-      );
+  }) => CheckoutLadderGame(
+    variant: variant,
+    startNumber: 81,
+    targetNumber: target,
+    dartsPerAttempt: 6,
+    createdAt: DateTime(2026, 10, 25),
+    playerIds: players.map((p) => p.id!).toList(),
+    startingOrder: StartingOrder.fixed,
+  );
 
   /// Enters darts in the board's notation (`T15`, `D10`, `S16`, `M`) for
   /// whoever is on turn.
@@ -43,18 +42,23 @@ void main() {
         await p.tapField(0, 1);
         continue;
       }
-      final m = switch (s[0]) { 'T' => 3, 'D' => 2, _ => 1 };
+      final m = switch (s[0]) {
+        'T' => 3,
+        'D' => 2,
+        _ => 1,
+      };
       await p.tapField(int.parse(s.substring(1)), m);
     }
   }
 
   /// [child] with [provider] above it under its concrete type, so the
   /// screen's Consumer finds it.
-  Widget wrap(CheckoutLadderProvider provider, Widget child) =>
-      testApp(ChangeNotifierProvider<CheckoutLadderProvider>.value(
-        value: provider,
-        child: child,
-      ));
+  Widget wrap(CheckoutLadderProvider provider, Widget child) => testApp(
+    ChangeNotifierProvider<CheckoutLadderProvider>.value(
+      value: provider,
+      child: child,
+    ),
+  );
 
   group('the live screen in training', () {
     useInMemoryDatabase();
@@ -70,20 +74,30 @@ void main() {
 
     tearDown(() => provider.dispose());
 
-    testWidgets('shows the ladders, the rest and the route to it',
-        (tester) async {
+    testWidgets('shows the ladders, the rest and the route to it', (
+      tester,
+    ) async {
       usePhoneSurface(tester);
       await tester.pumpWidget(wrap(provider, const CheckoutLadderScreen()));
       await tester.pumpAndSettle();
 
       expect(find.text('Training from 81'), findsOneWidget);
       expect(find.text('81'), findsNWidgets(2));
-      expect(find.text('20'), findsNWidgets(2),
-          reason: 'the rest of 81, and the 20 of the input grid');
+      expect(
+        find.text('20'),
+        findsNWidgets(2),
+        reason: 'the rest of 81, and the 20 of the input grid',
+      );
       expect(find.text('Floor 81'), findsNWidgets(2));
-      expect(find.text('Attempt 1 of 2'), findsNothing,
-          reason: 'on the floor an attempt costs nothing, so none is counted');
-      expect(find.byType(DartboardInput<CheckoutLadderProvider>), findsOneWidget);
+      expect(
+        find.text('Attempt 1 of 2'),
+        findsNothing,
+        reason: 'on the floor an attempt costs nothing, so none is counted',
+      );
+      expect(
+        find.byType(DartboardInput<CheckoutLadderProvider>),
+        findsOneWidget,
+      );
     });
 
     testWidgets('opens the live info of a slot from its card', (tester) async {
@@ -96,13 +110,17 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Last 3 Visits'), findsOneWidget);
-      expect(find.text('Rest 20'), findsOneWidget,
-          reason: 'the visit being thrown is listed with what it has left');
+      expect(
+        find.text('Rest 20'),
+        findsOneWidget,
+        reason: 'the visit being thrown is listed with what it has left',
+      );
       expect(find.text('Number'), findsOneWidget);
     });
 
-    testWidgets('offers to continue later or to end the training',
-        (tester) async {
+    testWidgets('offers to continue later or to end the training', (
+      tester,
+    ) async {
       usePhoneSurface(tester);
       await tester.pumpWidget(wrap(provider, const CheckoutLadderScreen()));
       await tester.pumpAndSettle();
@@ -124,17 +142,21 @@ void main() {
       expect(find.text('Miss'), findsOneWidget);
     });
 
-    testWidgets('lays the input beside the ladders on a tablet',
-        (tester) async {
+    testWidgets('lays the input beside the ladders on a tablet', (
+      tester,
+    ) async {
       usePhoneSurface(tester, size: const Size(1280, 800));
-      await tester.pumpWidget(ChangeNotifierProvider<TabletLayoutProvider>(
-        create: (_) => TabletLayoutProvider(),
-        child: wrap(provider, const CheckoutLadderScreen()),
-      ));
+      await tester.pumpWidget(
+        ChangeNotifierProvider<TabletLayoutProvider>(
+          create: (_) => TabletLayoutProvider(),
+          child: wrap(provider, const CheckoutLadderScreen()),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final input = tester.getRect(
-          find.byType(DartboardInput<CheckoutLadderProvider>));
+        find.byType(DartboardInput<CheckoutLadderProvider>),
+      );
       expect(input.width, lessThan(1280 * 0.75));
       expect(tester.takeException(), isNull);
     });
@@ -150,12 +172,13 @@ void main() {
       players = await insertPlayers(['Ada', 'Zoe']);
       provider = CheckoutLadderProvider();
       await provider.startGame(
-          game(players, variant: CheckoutLadderVariant.race, target: 82),
-          players);
-      await tap(provider, 'T15 S16 D10');    // Ada: 81
-      await tap(provider, 'T15 S16 D10');    // Zoe: 81
-      await tap(provider, 'T14 M D20');      // Ada: 82, six darts in all
-      await tap(provider, 'T14 D20');        // Zoe: 82, five darts in all
+        game(players, variant: CheckoutLadderVariant.race, target: 82),
+        players,
+      );
+      await tap(provider, 'T15 S16 D10'); // Ada: 81
+      await tap(provider, 'T15 S16 D10'); // Zoe: 81
+      await tap(provider, 'T14 M D20'); // Ada: 82, six darts in all
+      await tap(provider, 'T14 D20'); // Zoe: 82, five darts in all
     });
 
     tearDown(() => provider.dispose());
@@ -163,7 +186,8 @@ void main() {
     testWidgets('names the winner in the summary', (tester) async {
       usePhoneSurface(tester);
       await tester.pumpWidget(
-          wrap(provider, const CheckoutLadderSummaryScreen()));
+        wrap(provider, const CheckoutLadderSummaryScreen()),
+      );
       await tester.pumpAndSettle();
 
       expect(find.textContaining('Zoe wins!'), findsOneWidget);
@@ -173,11 +197,15 @@ void main() {
 
     testWidgets('reads the same in the history detail', (tester) async {
       usePhoneSurface(tester);
-      await tester.pumpWidget(wrap(
-        provider,
-        CheckoutLadderHistorySummaryScreen(
-            game: provider.game!, players: players),
-      ));
+      await tester.pumpWidget(
+        wrap(
+          provider,
+          CheckoutLadderHistorySummaryScreen(
+            game: provider.game!,
+            players: players,
+          ),
+        ),
+      );
       await pumpUntilLoaded(tester);
 
       expect(find.textContaining('Zoe wins!'), findsOneWidget);
@@ -194,7 +222,7 @@ void main() {
       final players = await insertPlayers(['Ada']);
       provider = CheckoutLadderProvider();
       await provider.startGame(game(players), players);
-      await tap(provider, 'T15 S16 D10');    // 81 in three: a safehouse
+      await tap(provider, 'T15 S16 D10'); // 81 in three: a safehouse
       await provider.endTraining();
     });
 
@@ -203,7 +231,8 @@ void main() {
     testWidgets('shows how high it got, without a winner', (tester) async {
       usePhoneSurface(tester);
       await tester.pumpWidget(
-          wrap(provider, const CheckoutLadderSummaryScreen()));
+        wrap(provider, const CheckoutLadderSummaryScreen()),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Highest checked: 81'), findsOneWidget);
@@ -216,10 +245,14 @@ void main() {
 
     testWidgets('asks for a target only in a race', (tester) async {
       usePhoneSurface(tester);
-      await tester.pumpWidget(testApp(ChangeNotifierProvider(
-        create: (_) => CheckoutLadderProvider(),
-        child: const CheckoutLadderSetupScreen(),
-      )));
+      await tester.pumpWidget(
+        testApp(
+          ChangeNotifierProvider(
+            create: (_) => CheckoutLadderProvider(),
+            child: const CheckoutLadderSetupScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       expect(find.text('Target'), findsNothing);
@@ -232,10 +265,14 @@ void main() {
 
     testWidgets('keeps the target at or above the start', (tester) async {
       usePhoneSurface(tester);
-      await tester.pumpWidget(testApp(ChangeNotifierProvider(
-        create: (_) => CheckoutLadderProvider(),
-        child: const CheckoutLadderSetupScreen(),
-      )));
+      await tester.pumpWidget(
+        testApp(
+          ChangeNotifierProvider(
+            create: (_) => CheckoutLadderProvider(),
+            child: const CheckoutLadderSetupScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
       await tester.tap(find.text('Race'));
       await tester.pumpAndSettle();
@@ -257,10 +294,14 @@ void main() {
 
     testWidgets('take a typed number from a tap on it', (tester) async {
       usePhoneSurface(tester);
-      await tester.pumpWidget(testApp(ChangeNotifierProvider(
-        create: (_) => CheckoutLadderProvider(),
-        child: const CheckoutLadderSetupScreen(),
-      )));
+      await tester.pumpWidget(
+        testApp(
+          ChangeNotifierProvider(
+            create: (_) => CheckoutLadderProvider(),
+            child: const CheckoutLadderSetupScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('81'));
@@ -278,10 +319,14 @@ void main() {
 
     testWidgets('refuse a typed number out of range', (tester) async {
       usePhoneSurface(tester);
-      await tester.pumpWidget(testApp(ChangeNotifierProvider(
-        create: (_) => CheckoutLadderProvider(),
-        child: const CheckoutLadderSetupScreen(),
-      )));
+      await tester.pumpWidget(
+        testApp(
+          ChangeNotifierProvider(
+            create: (_) => CheckoutLadderProvider(),
+            child: const CheckoutLadderSetupScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       await tester.tap(find.text('81'));
@@ -290,18 +335,22 @@ void main() {
       await tester.pumpAndSettle();
 
       final ok = tester.widget<FilledButton>(
-          find.widgetWithText(FilledButton, 'OK'));
+        find.widgetWithText(FilledButton, 'OK'),
+      );
       expect(ok.onPressed, isNull);
       expect(find.text('From 2 to 170'), findsOneWidget);
     });
 
-    testWidgets('keep adding ten every 0.8 seconds while held',
-        (tester) async {
+    testWidgets('keep adding ten every 0.8 seconds while held', (tester) async {
       usePhoneSurface(tester);
-      await tester.pumpWidget(testApp(ChangeNotifierProvider(
-        create: (_) => CheckoutLadderProvider(),
-        child: const CheckoutLadderSetupScreen(),
-      )));
+      await tester.pumpWidget(
+        testApp(
+          ChangeNotifierProvider(
+            create: (_) => CheckoutLadderProvider(),
+            child: const CheckoutLadderSetupScreen(),
+          ),
+        ),
+      );
       await tester.pumpAndSettle();
 
       final plus = find.byIcon(Icons.add_rounded).first;

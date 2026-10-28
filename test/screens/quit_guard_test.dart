@@ -32,9 +32,11 @@ void main() {
     useInMemoryDatabase();
 
     late List<Player> players;
+
     /// The screen instance under test, kept so the assertions can look for
     /// exactly this one rather than for its type.
     late Widget screen;
+
     /// That screen with its own provider around it, correctly typed. Typing it
     /// as ChangeNotifier would register it under that type, and the screen's
     /// Consumer would never find it.
@@ -53,8 +55,9 @@ void main() {
 
     /// The three cases, each asserting the same contract on its own screen.
     void sharedCases() {
-      testWidgets('answers the system back with the quit question',
-          (tester) async {
+      testWidgets('answers the system back with the quit question', (
+        tester,
+      ) async {
         await pumpLive(tester);
 
         await tester.binding.handlePopRoute();
@@ -69,17 +72,20 @@ void main() {
 
         // Scoped to the app bar, because the dartboard input below has a Miss
         // button with a close icon of its own.
-        await tester.tap(find.descendant(
-          of: find.byType(AppBar),
-          matching: find.byIcon(Icons.close_rounded),
-        ));
+        await tester.tap(
+          find.descendant(
+            of: find.byType(AppBar),
+            matching: find.byIcon(Icons.close_rounded),
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(AlertDialog), findsOneWidget);
       });
 
-      testWidgets('stays in the game when the question is declined',
-          (tester) async {
+      testWidgets('stays in the game when the question is declined', (
+        tester,
+      ) async {
         await pumpLive(tester);
         await tester.binding.handlePopRoute();
         await tester.pumpAndSettle();
@@ -97,18 +103,20 @@ void main() {
         final p = CricketProvider();
         await p.startGame(
           CricketGame(
-            variant:     CricketVariant.normal,
+            variant: CricketVariant.normal,
             scoringMode: CricketScoringMode.standard,
-            legs:        1,
-            sets:        1,
-            createdAt:   DateTime.now(),
-            playerIds:   players.map((pl) => pl.id!).toList(),
+            legs: 1,
+            sets: 1,
+            createdAt: DateTime.now(),
+            playerIds: players.map((pl) => pl.id!).toList(),
           ),
           players,
         );
-        screen  = const CricketScreen();
+        screen = const CricketScreen();
         wrapped = ChangeNotifierProvider<CricketProvider>.value(
-            value: p, child: screen);
+          value: p,
+          child: screen,
+        );
       });
 
       sharedCases();
@@ -119,17 +127,19 @@ void main() {
         final p = ShanghaiProvider();
         await p.startGame(
           ShanghaiGame(
-            variant:   ShanghaiVariant.classic,
-            legs:      1,
-            sets:      1,
+            variant: ShanghaiVariant.classic,
+            legs: 1,
+            sets: 1,
             createdAt: DateTime.now(),
             playerIds: players.map((pl) => pl.id!).toList(),
           ),
           players,
         );
-        screen  = const ShanghaiScreen();
+        screen = const ShanghaiScreen();
         wrapped = ChangeNotifierProvider<ShanghaiProvider>.value(
-            value: p, child: screen);
+          value: p,
+          child: screen,
+        );
       });
 
       sharedCases();
@@ -140,17 +150,19 @@ void main() {
         final p = AroundTheClockProvider();
         await p.startGame(
           AroundTheClockGame(
-            variant:   AroundTheClockVariant.basic,
-            legs:      1,
-            sets:      1,
+            variant: AroundTheClockVariant.basic,
+            legs: 1,
+            sets: 1,
             createdAt: DateTime.now(),
             playerIds: players.map((pl) => pl.id!).toList(),
           ),
           players,
         );
-        screen  = const AroundTheClockScreen();
+        screen = const AroundTheClockScreen();
         wrapped = ChangeNotifierProvider<AroundTheClockProvider>.value(
-            value: p, child: screen);
+          value: p,
+          child: screen,
+        );
       });
 
       sharedCases();

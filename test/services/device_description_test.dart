@@ -12,9 +12,9 @@ void main() {
   void mockPlatform(Map<String, String>? reply) {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(channel, (call) async {
-      if (reply == null) throw PlatformException(code: 'nope');
-      return reply;
-    });
+          if (reply == null) throw PlatformException(code: 'nope');
+          return reply;
+        });
   }
 
   setUp(() => DeviceDescription.debugSetLabel(null));
@@ -51,9 +51,9 @@ void main() {
       var calls = 0;
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(channel, (call) async {
-        calls++;
-        return {'name': 'iPhone16,1', 'os': 'iOS 18.5'};
-      });
+            calls++;
+            return {'name': 'iPhone16,1', 'os': 'iOS 18.5'};
+          });
 
       await DeviceDescription.label;
       await DeviceDescription.label;
@@ -61,15 +61,17 @@ void main() {
       expect(calls, 1, reason: 'none of what it reads changes while it runs');
     });
 
-    test('falls back to a plain name when the platform cannot answer',
-        () async {
-      // A transfer must not fail over what it is called, so a channel that is
-      // not there is an answer of last resort rather than an exception.
-      mockPlatform(null);
+    test(
+      'falls back to a plain name when the platform cannot answer',
+      () async {
+        // A transfer must not fail over what it is called, so a channel that is
+        // not there is an answer of last resort rather than an exception.
+        mockPlatform(null);
 
-      final label = await DeviceDescription.label;
-      expect(label, anyOf('iPhone', 'Android'));
-    });
+        final label = await DeviceDescription.label;
+        expect(label, anyOf('iPhone', 'Android'));
+      },
+    );
 
     test('falls back when the platform answers with nothing usable', () async {
       mockPlatform({'name': '', 'os': ''});

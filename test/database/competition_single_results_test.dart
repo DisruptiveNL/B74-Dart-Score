@@ -25,47 +25,95 @@ void main() {
       );
     }
 
-    test('result survives reads and can be archived after matching ack',
-        () async {
-      await setupSingle();
-      final helper = DbHelper.instance;
-      await helper.saveCompletedCompetitionSingleResult(
-          'match-1', 1, '{"score":"3-1"}');
-      expect((await helper.competitionSingleResult('match-1', 1))!['status'],
-          'completed');
-      expect(await helper.beginCompetitionSingleResultSend('match-1', 1),
-          isTrue);
-      expect(await helper.acknowledgeCompetitionSingleResult(
-          'match-1', 1, '{"score":"WRONG"}'), isFalse);
-      expect(await helper.acknowledgeCompetitionSingleResult(
-          'match-1', 1, '{"score":"3-1"}'), isTrue);
-      expect((await helper.competitionSingleResult('match-1', 1))!['status'],
-          'archived');
-      expect(await helper.acknowledgeCompetitionSingleResult(
-          'match-1', 1, '{"score":"3-1"}'), isTrue);
-      await expectLater(
-        helper.saveCompletedCompetitionSingleResult(
-            'match-1', 1, '{"score":"3-2"}'),
-        throwsStateError,
-      );
-    });
+    test(
+      'result survives reads and can be archived after matching ack',
+      () async {
+        await setupSingle();
+        final helper = DbHelper.instance;
+        await helper.saveCompletedCompetitionSingleResult(
+          'match-1',
+          1,
+          '{"score":"3-1"}',
+        );
+        expect(
+          (await helper.competitionSingleResult('match-1', 1))!['status'],
+          'completed',
+        );
+        expect(
+          await helper.beginCompetitionSingleResultSend('match-1', 1),
+          isTrue,
+        );
+        expect(
+          await helper.acknowledgeCompetitionSingleResult(
+            'match-1',
+            1,
+            '{"score":"WRONG"}',
+          ),
+          isFalse,
+        );
+        expect(
+          await helper.acknowledgeCompetitionSingleResult(
+            'match-1',
+            1,
+            '{"score":"3-1"}',
+          ),
+          isTrue,
+        );
+        expect(
+          (await helper.competitionSingleResult('match-1', 1))!['status'],
+          'archived',
+        );
+        expect(
+          await helper.acknowledgeCompetitionSingleResult(
+            'match-1',
+            1,
+            '{"score":"3-1"}',
+          ),
+          isTrue,
+        );
+        await expectLater(
+          helper.saveCompletedCompetitionSingleResult(
+            'match-1',
+            1,
+            '{"score":"3-2"}',
+          ),
+          throwsStateError,
+        );
+      },
+    );
 
-    test('failed transfer can retry, but cannot archive before send',
-        () async {
+    test('failed transfer can retry, but cannot archive before send', () async {
       await setupSingle();
       final helper = DbHelper.instance;
       await helper.saveCompletedCompetitionSingleResult(
-          'match-1', 1, '{"score":"3-0"}');
-      expect(await helper.acknowledgeCompetitionSingleResult(
-          'match-1', 1, '{"score":"3-0"}'), isFalse);
-      expect(await helper.beginCompetitionSingleResultSend('match-1', 1),
-          isTrue);
-      expect(await helper.beginCompetitionSingleResultSend('match-1', 1),
-          isFalse);
-      expect(await helper.failCompetitionSingleResultSend('match-1', 1),
-          isTrue);
-      expect(await helper.beginCompetitionSingleResultSend('match-1', 1),
-          isTrue);
+        'match-1',
+        1,
+        '{"score":"3-0"}',
+      );
+      expect(
+        await helper.acknowledgeCompetitionSingleResult(
+          'match-1',
+          1,
+          '{"score":"3-0"}',
+        ),
+        isFalse,
+      );
+      expect(
+        await helper.beginCompetitionSingleResultSend('match-1', 1),
+        isTrue,
+      );
+      expect(
+        await helper.beginCompetitionSingleResultSend('match-1', 1),
+        isFalse,
+      );
+      expect(
+        await helper.failCompetitionSingleResultSend('match-1', 1),
+        isTrue,
+      );
+      expect(
+        await helper.beginCompetitionSingleResultSend('match-1', 1),
+        isTrue,
+      );
     });
   });
 }

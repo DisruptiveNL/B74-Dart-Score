@@ -28,7 +28,9 @@ void main() {
 
     test('counts a busted visit that was one dart away as an attempt', () async {
       await provider.startGame(
-          Game(startScore: 101, legs: 2, createdAt: DateTime.now()), players);
+        Game(startScore: 101, legs: 2, createdAt: DateTime.now()),
+        players,
+      );
 
       // A: 101 left, three single 20s. 101, 81, 61 and 41 are all two darts
       // from the finish, so this visit never was an attempt.
@@ -48,18 +50,26 @@ void main() {
       await DbHelper.instance.snapshotGameStats(provider.game!.id!);
 
       final stats = await statsFor(players.first);
-      expect(stats['checkout_attempts'], 1,
-          reason: 'only the visit that reached 40 with a dart in hand counts');
+      expect(
+        stats['checkout_attempts'],
+        1,
+        reason: 'only the visit that reached 40 with a dart in hand counts',
+      );
       expect(stats['checkout_successes'], 0);
-      expect(stats['co_at_sub60'], 1,
-          reason: 'the busted attempt from 41 lands in the 41 to 60 range');
+      expect(
+        stats['co_at_sub60'],
+        1,
+        reason: 'the busted attempt from 41 lands in the 41 to 60 range',
+      );
       expect(stats['co_ok_sub60'], 0);
       expect(stats['busts'], 1);
     });
 
     test('a checkout counts as attempt and success', () async {
       await provider.startGame(
-          Game(startScore: 101, legs: 2, createdAt: DateTime.now()), players);
+        Game(startScore: 101, legs: 2, createdAt: DateTime.now()),
+        players,
+      );
 
       // T17 plus Bull double finishes 101 straight from the first visit.
       await provider.tapField(17, 3);
@@ -77,7 +87,9 @@ void main() {
 
     test('leaves a visit above 170 out of the checkout ranges', () async {
       await provider.startGame(
-          Game(startScore: 501, legs: 2, createdAt: DateTime.now()), players);
+        Game(startScore: 501, legs: 2, createdAt: DateTime.now()),
+        players,
+      );
 
       await provider.tapField(20, 1);
       await provider.tapField(20, 1);

@@ -29,8 +29,7 @@ void main() {
       // A 7 inch tablet upright is wide enough to divide by the breakpoint and
       // too narrow for two panes of 320. Both sides get what there is instead
       // of a floor that crosses itself, which used to throw.
-      final width =
-          paneWidthFor(total: 600, fraction: 0.5, minPaneWidth: 320);
+      final width = paneWidthFor(total: 600, fraction: 0.5, minPaneWidth: 320);
       expect(width, closeTo((600 - kDividerHitWidth) / 2, 0.01));
       expect(width * 2 + kDividerHitWidth, lessThanOrEqualTo(600));
     });
@@ -40,7 +39,9 @@ void main() {
     test('are shown only where both stay readable', () {
       expect(
         fitsTwoPanes(
-            2 * kMinSetupPaneWidth + kDividerHitWidth, kMinSetupPaneWidth),
+          2 * kMinSetupPaneWidth + kDividerHitWidth,
+          kMinSetupPaneWidth,
+        ),
         isTrue,
       );
       expect(fitsTwoPanes(2 * kMinSetupPaneWidth, kMinSetupPaneWidth), isFalse);

@@ -16,7 +16,8 @@ void main() {
   /// Frames as the sender really produces them, over a payload large enough to
   /// need many blocks.
   SyncFountainEncoder encoder() => SyncFountainEncoder(
-      Uint8List.fromList(List.generate(60000, (i) => (i * 37 + 11) % 256)));
+    Uint8List.fromList(List.generate(60000, (i) => (i * 37 + 11) % 256)),
+  );
 
   group('rendering sync codes', () {
     test('a full frame stays inside version 15', () {
@@ -24,8 +25,11 @@ void main() {
       expect(frame.length, lessThanOrEqualTo(kFrameMaxChars));
 
       final qr = buildQrCode(frame);
-      expect(qr.typeNumber, lessThanOrEqualTo(15),
-          reason: 'a denser code than this stalls while it is moving');
+      expect(
+        qr.typeNumber,
+        lessThanOrEqualTo(15),
+        reason: 'a denser code than this stalls while it is moving',
+      );
       expect(qr.errorCorrectLevel, QrErrorCorrectLevel.M);
     });
 
@@ -65,8 +69,11 @@ void main() {
         fail('byte mode should still fit');
       }();
 
-      expect(alphanumeric.typeNumber, lessThan(byteMode.typeNumber),
-          reason: 'the dense mode is the whole point of base45');
+      expect(
+        alphanumeric.typeNumber,
+        lessThan(byteMode.typeNumber),
+        reason: 'the dense mode is the whole point of base45',
+      );
     });
 
     test('the Wi-Fi connection code falls back to the byte mode', () {

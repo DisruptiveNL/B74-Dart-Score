@@ -24,18 +24,24 @@ import 'bot_runner.dart';
 class AroundTheClockPlayerState implements LabelledSlot {
   @override
   final String displayName;
+
   /// All players in this slot: 1 for individual, N for team.
   @override
   final List<Player> players;
+
   /// Which player in [players] throws NEXT (rotates after each team visit).
   final int currentPlayerIdx;
+
   /// Whether this slot represents a team rather than a single player.
   @override
   final bool isTeamSlot;
+
   /// Index into [aroundTheClockOrder] of the number this slot must hit next.
   final int progress;
+
   /// Full-segment variant only: multipliers (1/2/3) already hit on the current target.
   final Set<int> hitSegments;
+
   /// Total darts thrown once the slot completed the Bull's Eye.
   final int? finishedAtDart;
 
@@ -62,7 +68,8 @@ class AroundTheClockPlayerState implements LabelledSlot {
       winnerId != null && players.any((p) => p.id == winnerId);
 
   /// The number this slot must currently hit.
-  int get currentTarget => aroundTheClockOrder[progress.clamp(0, aroundTheClockOrder.length - 1)];
+  int get currentTarget =>
+      aroundTheClockOrder[progress.clamp(0, aroundTheClockOrder.length - 1)];
 
   /// Whether this slot has completed the final target (the Bull).
   bool get isFinished => finishedAtDart != null;
@@ -74,16 +81,15 @@ class AroundTheClockPlayerState implements LabelledSlot {
     Set<int>? hitSegments,
     int? finishedAtDart,
     int? currentPlayerIdx,
-  }) =>
-      AroundTheClockPlayerState(
-        displayName: displayName,
-        players: players,
-        currentPlayerIdx: currentPlayerIdx ?? this.currentPlayerIdx,
-        isTeamSlot: isTeamSlot,
-        progress: progress ?? this.progress,
-        hitSegments: hitSegments ?? this.hitSegments,
-        finishedAtDart: finishedAtDart ?? this.finishedAtDart,
-      );
+  }) => AroundTheClockPlayerState(
+    displayName: displayName,
+    players: players,
+    currentPlayerIdx: currentPlayerIdx ?? this.currentPlayerIdx,
+    isTeamSlot: isTeamSlot,
+    progress: progress ?? this.progress,
+    hitSegments: hitSegments ?? this.hitSegments,
+    finishedAtDart: finishedAtDart ?? this.finishedAtDart,
+  );
 }
 
 // ── AroundTheClockProvider ────────────────────────────────────────────────────
@@ -106,23 +112,27 @@ class AroundTheClockProvider extends ChangeNotifier
 
   /// Darts thrown so far in the current visit (max 3).
   final List<AroundTheClockThrow> _visitBuffer = [];
+
   /// All persisted throws for undo (newest last).
   final List<AroundTheClockThrow> _throwHistory = [];
 
-  AroundTheClockGame?              get game               => _game;
-  List<AroundTheClockPlayerState>  get playerStates       => _playerStates;
-  int                              get currentPlayerIndex => _currentPlayerIndex;
-  AroundTheClockPlayerState        get currentPlayerState => _playerStates[_currentPlayerIndex];
-  bool                             get gameOver           => _gameOver;
-  int?                             get winnerId           => _winnerId;
-  List<AroundTheClockThrow>        get visitBuffer        => List.unmodifiable(_visitBuffer);
-  int                              get dartsInVisit       => _visitBuffer.length;
+  AroundTheClockGame? get game => _game;
+  List<AroundTheClockPlayerState> get playerStates => _playerStates;
+  int get currentPlayerIndex => _currentPlayerIndex;
+  AroundTheClockPlayerState get currentPlayerState =>
+      _playerStates[_currentPlayerIndex];
+  bool get gameOver => _gameOver;
+  int? get winnerId => _winnerId;
+  List<AroundTheClockThrow> get visitBuffer => List.unmodifiable(_visitBuffer);
+  int get dartsInVisit => _visitBuffer.length;
+
   /// Whether there is a dart to undo. Not while a bot is throwing, and not
   /// when every recorded dart is a bot's: those are never undone on their
   /// own, see [undoLastDart].
   /// Every persisted dart of the game, oldest first.
-  List<AroundTheClockThrow>        get throwHistory       => List.unmodifiable(_throwHistory);
-  bool                             get canUndo            =>
+  List<AroundTheClockThrow> get throwHistory =>
+      List.unmodifiable(_throwHistory);
+  bool get canUndo =>
       !isBotTurn && _throwHistory.any((t) => !_isBotId(t.playerId));
 
   /// The active game's rule variant.
@@ -134,7 +144,8 @@ class AroundTheClockProvider extends ChangeNotifier
   /// Full-segment variant only: multipliers still missing on the active
   /// target before the player can advance.
   List<int>? get neededSegments {
-    if (_game == null || _variant != AroundTheClockVariant.fullSegments) return null;
+    if (_game == null || _variant != AroundTheClockVariant.fullSegments)
+      return null;
     final target = activeTarget;
     final hit = currentPlayerState.hitSegments;
     // The Bull only has Single (25) and Double (50), no Triple.
@@ -146,7 +157,10 @@ class AroundTheClockProvider extends ChangeNotifier
 
   /// Builds one scoreboard slot per team (if [teams] is set) or one slot per
   /// player (individual game), each with fresh progress.
-  List<AroundTheClockPlayerState> _buildSlots(List<Player> players, List<TeamConfig>? teams) {
+  List<AroundTheClockPlayerState> _buildSlots(
+    List<Player> players,
+    List<TeamConfig>? teams,
+  ) {
     if (teams != null && teams.isNotEmpty) {
       return teams.map((team) {
         final teamPlayers = team.playerIds
@@ -154,13 +168,15 @@ class AroundTheClockProvider extends ChangeNotifier
             .toList();
         return AroundTheClockPlayerState(
           displayName: team.name,
-          players:     teamPlayers,
-          isTeamSlot:  true,
+          players: teamPlayers,
+          isTeamSlot: true,
         );
       }).toList();
     }
     return players
-        .map((p) => AroundTheClockPlayerState(displayName: p.name, players: [p]))
+        .map(
+          (p) => AroundTheClockPlayerState(displayName: p.name, players: [p]),
+        )
         .toList();
   }
 
@@ -188,13 +204,13 @@ class AroundTheClockProvider extends ChangeNotifier
   Future<void> startGame(AroundTheClockGame game, List<Player> players) async {
     final gameId = await _db.insertAroundTheClockGame(game);
     _game = AroundTheClockGame(
-      id:        gameId,
-      variant:   game.variant,
-      legs:      game.legs,
-      sets:      game.sets,
+      id: gameId,
+      variant: game.variant,
+      legs: game.legs,
+      sets: game.sets,
       createdAt: game.createdAt,
       playerIds: game.playerIds,
-      teams:     game.teams,
+      teams: game.teams,
       startingOrder: game.startingOrder,
     );
 
@@ -217,20 +233,23 @@ class AroundTheClockProvider extends ChangeNotifier
   /// [StartingOrder]: drawn again for [StartingOrder.random], kept as it is for
   /// a fixed order.
   Future<void> startRematch(
-      AroundTheClockGame template, List<Player> players) async {
+    AroundTheClockGame template,
+    List<Player> players,
+  ) async {
     final isRandom = template.startingOrder == StartingOrder.random;
-    final ordered  = isRandom ? (List.of(players)..shuffle(Random()))
-                              : List.of(players);
-    final teams    = isRandom && template.teams != null
+    final ordered = isRandom
+        ? (List.of(players)..shuffle(Random()))
+        : List.of(players);
+    final teams = isRandom && template.teams != null
         ? (List.of(template.teams!)..shuffle(Random()))
         : template.teams;
     final game = AroundTheClockGame(
-      variant:   template.variant,
-      legs:      template.legs,
-      sets:      template.sets,
+      variant: template.variant,
+      legs: template.legs,
+      sets: template.sets,
       createdAt: DateTime.now(),
       playerIds: ordered.map((p) => p.id!).toList(),
-      teams:     teams,
+      teams: teams,
       startingOrder: template.startingOrder,
     );
     await startGame(game, ordered);
@@ -256,9 +275,9 @@ class AroundTheClockProvider extends ChangeNotifier
   Future<void> throwBotDart() async {
     final level = currentPlayerState.player.botLevel!;
     final aim = aroundTheClockTarget(
-      target:         activeTarget,
-      variant:        _variant,
-      aimTriples:     aimsForTriples(level),
+      target: activeTarget,
+      variant: _variant,
+      aimTriples: aimsForTriples(level),
       neededSegments: neededSegments,
     );
     final hit = botThrower.throwAt(aim, level);
@@ -281,24 +300,24 @@ class AroundTheClockProvider extends ChangeNotifier
     if (_visitBuffer.length >= 3) return;
 
     final t = AroundTheClockThrow(
-      gameId:     _game!.id!,
-      playerId:   currentPlayerState.player.id!,
-      field:      field,
+      gameId: _game!.id!,
+      playerId: currentPlayerState.player.id!,
+      field: field,
       multiplier: multiplier,
-      leg:        1,
-      set_:       1,
-      thrownAt:   DateTime.now(),
+      leg: 1,
+      set_: 1,
+      thrownAt: DateTime.now(),
     );
     final id = await _db.insertAroundTheClockThrow(t);
     final saved = AroundTheClockThrow(
-      id:         id,
-      gameId:     t.gameId,
-      playerId:   t.playerId,
-      field:      t.field,
+      id: id,
+      gameId: t.gameId,
+      playerId: t.playerId,
+      field: t.field,
       multiplier: t.multiplier,
-      leg:        t.leg,
-      set_:       t.set_,
-      thrownAt:   t.thrownAt,
+      leg: t.leg,
+      set_: t.set_,
+      thrownAt: t.thrownAt,
     );
 
     _visitBuffer.add(saved);
@@ -329,19 +348,23 @@ class AroundTheClockProvider extends ChangeNotifier
   /// records the finishing dart when the final target is completed.
   void _applyDart(int playerIdx, AroundTheClockThrow t) {
     final state = _playerStates[playerIdx];
-    final next  = applyAroundTheClockDart(
-      variant:    _variant,
-      position:   (progress: state.progress, hitSegments: state.hitSegments),
-      field:      t.field,
+    final next = applyAroundTheClockDart(
+      variant: _variant,
+      position: (progress: state.progress, hitSegments: state.hitSegments),
+      field: t.field,
       multiplier: t.multiplier,
     );
     final newProgress = next.progress;
 
     var updated = state.copyWith(
-        progress: newProgress, hitSegments: next.hitSegments);
+      progress: newProgress,
+      hitSegments: next.hitSegments,
+    );
     if (newProgress >= aroundTheClockOrder.length) {
       final slotPlayerIds = state.players.map((p) => p.id).toSet();
-      final dartsThrown = _throwHistory.where((h) => slotPlayerIds.contains(h.playerId)).length;
+      final dartsThrown = _throwHistory
+          .where((h) => slotPlayerIds.contains(h.playerId))
+          .length;
       updated = updated.copyWith(finishedAtDart: dartsThrown);
     }
 
@@ -364,7 +387,9 @@ class AroundTheClockProvider extends ChangeNotifier
     final s = _playerStates[_currentPlayerIndex];
     if (s.isTeamSlot) {
       final nextIdx = (s.currentPlayerIdx + 1) % s.players.length;
-      _playerStates[_currentPlayerIndex] = s.copyWith(currentPlayerIdx: nextIdx);
+      _playerStates[_currentPlayerIndex] = s.copyWith(
+        currentPlayerIdx: nextIdx,
+      );
     }
     _currentPlayerIndex = (_currentPlayerIndex + 1) % _playerStates.length;
   }
@@ -373,7 +398,9 @@ class AroundTheClockProvider extends ChangeNotifier
   Future<void> _handleWin(int playerIdx) async {
     _gameOver = true;
     _winnerId = _playerStates[playerIdx].player.id;
-    await _db.updateAroundTheClockGame(_game!.copyWith(finishedAt: DateTime.now()));
+    await _db.updateAroundTheClockGame(
+      _game!.copyWith(finishedAt: DateTime.now()),
+    );
     notifyListeners();
   }
 
@@ -429,11 +456,13 @@ class AroundTheClockProvider extends ChangeNotifier
     final allThrows = await _db.getAroundTheClockThrowsForGame(_game!.id!);
 
     _playerStates = _playerStates
-        .map((s) => AroundTheClockPlayerState(
-              displayName: s.displayName,
-              players:     s.players,
-              isTeamSlot:  s.isTeamSlot,
-            ))
+        .map(
+          (s) => AroundTheClockPlayerState(
+            displayName: s.displayName,
+            players: s.players,
+            isTeamSlot: s.isTeamSlot,
+          ),
+        )
         .toList();
     _currentPlayerIndex = 0;
     _gameOver = false;

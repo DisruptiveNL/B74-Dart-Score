@@ -19,9 +19,12 @@ AroundTheClockPosition applyAroundTheClockDart({
   required int field,
   required int multiplier,
 }) {
-  final target = aroundTheClockOrder[
-      position.progress.clamp(0, aroundTheClockOrder.length - 1)];
-  var progress    = position.progress;
+  final target =
+      aroundTheClockOrder[position.progress.clamp(
+        0,
+        aroundTheClockOrder.length - 1,
+      )];
+  var progress = position.progress;
   var hitSegments = position.hitSegments;
 
   if (field == target) {
@@ -32,11 +35,15 @@ AroundTheClockPosition applyAroundTheClockDart({
         final required = target == 25 ? const [1, 2] : const [1, 2, 3];
         hitSegments = {...hitSegments, multiplier};
         if (hitSegments.containsAll(required)) {
-          progress   += 1;
+          progress += 1;
           hitSegments = const {};
         }
       case AroundTheClockVariant.skipRules:
-        progress += switch (multiplier) { 3 => 3, 2 => 2, _ => 1 };
+        progress += switch (multiplier) {
+          3 => 3,
+          2 => 2,
+          _ => 1,
+        };
     }
   } else if (variant == AroundTheClockVariant.skipRules &&
       field == 25 &&
@@ -46,30 +53,37 @@ AroundTheClockPosition applyAroundTheClockDart({
   }
 
   return (
-    progress:    progress.clamp(0, aroundTheClockOrder.length),
+    progress: progress.clamp(0, aroundTheClockOrder.length),
     hitSegments: hitSegments,
   );
 }
 
 /// The darts of one slot in Around the Clock, three to a visit, oldest first.
-List<List<AroundTheClockThrow>> aroundTheClockVisits(List<AroundTheClockThrow> throws) => [
-      for (var i = 0; i < throws.length; i += 3)
-        throws.sublist(i, i + 3 > throws.length ? throws.length : i + 3),
-    ];
+List<List<AroundTheClockThrow>> aroundTheClockVisits(
+  List<AroundTheClockThrow> throws,
+) => [
+  for (var i = 0; i < throws.length; i += 3)
+    throws.sublist(i, i + 3 > throws.length ? throws.length : i + 3),
+];
 
 /// What one slot's darts add up to in Around the Clock, for the live info,
 /// found by replaying them through [applyAroundTheClockDart].
 class AroundTheClockStats {
   final int darts;
+
   /// Darts that moved the slot on: a number advanced, a ring collected, or a
   /// joker played.
   final int hits;
+
   /// Numbers completed.
   final int progress;
+
   /// Most hits in a row.
   final int longestStreak;
+
   /// Under skip rules, numbers passed without being hit.
   final int fieldsSkipped;
+
   /// Per visit, whether each dart was a hit, oldest visit first.
   final List<List<bool>> visitHits;
 
@@ -90,18 +104,27 @@ class AroundTheClockStats {
 
   /// Replays [throws] of one slot under [variant].
   factory AroundTheClockStats.of(
-      List<AroundTheClockThrow> throws, AroundTheClockVariant variant) {
+    List<AroundTheClockThrow> throws,
+    AroundTheClockVariant variant,
+  ) {
     AroundTheClockPosition position = (progress: 0, hitSegments: const {});
     var hits = 0, streak = 0, longest = 0, onTarget = 0;
     final hitFlags = <bool>[];
 
     for (final t in throws) {
       final next = applyAroundTheClockDart(
-          variant: variant, position: position,
-          field: t.field, multiplier: t.multiplier);
-      final target = aroundTheClockOrder[
-          position.progress.clamp(0, aroundTheClockOrder.length - 1)];
-      final hit = next.progress > position.progress ||
+        variant: variant,
+        position: position,
+        field: t.field,
+        multiplier: t.multiplier,
+      );
+      final target =
+          aroundTheClockOrder[position.progress.clamp(
+            0,
+            aroundTheClockOrder.length - 1,
+          )];
+      final hit =
+          next.progress > position.progress ||
           next.hitSegments.length > position.hitSegments.length;
       if (hit && t.field == target) onTarget++;
       hitFlags.add(hit);
@@ -124,12 +147,12 @@ class AroundTheClockStats {
         : 0;
 
     return AroundTheClockStats(
-      darts:         throws.length,
-      hits:          hits,
-      progress:      position.progress,
+      darts: throws.length,
+      hits: hits,
+      progress: position.progress,
       longestStreak: longest,
       fieldsSkipped: skipped,
-      visitHits:     visitHits,
+      visitHits: visitHits,
     );
   }
 }

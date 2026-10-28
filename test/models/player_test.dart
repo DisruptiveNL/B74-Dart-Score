@@ -5,8 +5,8 @@ void main() {
   group('a computer opponent as a player', () {
     test('round-trips its tier through the row map', () {
       final bot = Player(
-        name:     BotLevel.semiPro.storedName,
-        uuid:     BotLevel.semiPro.uuid,
+        name: BotLevel.semiPro.storedName,
+        uuid: BotLevel.semiPro.uuid,
         botLevel: BotLevel.semiPro,
       );
 
@@ -27,7 +27,11 @@ void main() {
     });
 
     test('keeps its tier and number through copyWith', () {
-      final bot = Player(name: 'Bot Pro 2', botLevel: BotLevel.pro, botOrdinal: 2);
+      final bot = Player(
+        name: 'Bot Pro 2',
+        botLevel: BotLevel.pro,
+        botOrdinal: 2,
+      );
 
       expect(bot.copyWith(id: 7).botLevel, BotLevel.pro);
       expect(bot.copyWith(id: 7).botOrdinal, 2);
@@ -43,10 +47,11 @@ void main() {
 
     test('round-trips its number', () {
       final bot = Player(
-          name: BotLevel.legend.storedNameFor(3),
-          uuid: BotLevel.legend.uuidFor(3),
-          botLevel: BotLevel.legend,
-          botOrdinal: 3);
+        name: BotLevel.legend.storedNameFor(3),
+        uuid: BotLevel.legend.uuidFor(3),
+        botLevel: BotLevel.legend,
+        botOrdinal: 3,
+      );
 
       final back = Player.fromMap(bot.toMap());
 
@@ -56,12 +61,14 @@ void main() {
   });
 
   group('the bot tiers', () {
-    test('store their index, weakest first, so the order is part of the schema',
-        () {
-      expect(BotLevel.values.first, BotLevel.rookie);
-      expect(BotLevel.values.last, BotLevel.legend);
-      expect(BotLevel.pro.index, 3);
-    });
+    test(
+      'store their index, weakest first, so the order is part of the schema',
+      () {
+        expect(BotLevel.values.first, BotLevel.rookie);
+        expect(BotLevel.values.last, BotLevel.legend);
+        expect(BotLevel.pro.index, 3);
+      },
+    );
 
     test('each have a uuid of their own that no generator produces', () {
       final uuids = BotLevel.values.map((l) => l.uuid).toSet();

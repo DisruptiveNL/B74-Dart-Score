@@ -54,8 +54,8 @@ enum SplitPane { game, history, players }
 /// Share of the width the pane holding the input starts with, and the range a
 /// drag of the divider may move it to.
 const double kDefaultSplitFraction = 0.5;
-const double kMinSplitFraction     = 0.3;
-const double kMaxSplitFraction     = 0.7;
+const double kMinSplitFraction = 0.3;
+const double kMaxSplitFraction = 0.7;
 
 /// Narrowest either pane may be dragged to, whatever the share says.
 ///
@@ -78,8 +78,8 @@ const double kMinGamePaneWidth = 420.0;
 /// is exactly what the system asks for, and the range reaches a little below it
 /// for a large tablet that fits more than it needs and well above it for one
 /// read from across the room.
-const double kMinTextScale     = 0.8;
-const double kMaxTextScale     = 1.4;
+const double kMinTextScale = 0.8;
+const double kMaxTextScale = 1.4;
 const double kDefaultTextScale = 1.0;
 
 /// Steps the text size slider snaps to, in units of the factor. Fine enough to
@@ -159,11 +159,12 @@ const double kMinSummaryPaneWidth = 400.0;
 /// than the list under it needs, so the board takes half the height instead and
 /// never more width than there is. The floor is what a phone already gave it.
 double uprightTargetBoardEdge(BuildContext context) {
-  final mq   = MediaQuery.of(context);
+  final mq = MediaQuery.of(context);
   final body = mq.size.height - mq.padding.vertical - kToolbarHeight;
-  return min(mq.size.width - 24, body * 0.5)
-      .clamp(kMaxGameWidth, 720)
-      .toDouble();
+  return min(
+    mq.size.width - 24,
+    body * 0.5,
+  ).clamp(kMaxGameWidth, 720).toDouble();
 }
 
 /// Whether [width] has room for two columns of [minPaneWidth] and the divider
@@ -248,8 +249,8 @@ class SidePaneLayout extends StatelessWidget {
         }
 
         final fixedPane = SizedBox(width: width, child: primary);
-        final restPane  = Expanded(child: secondary);
-        final divider   = _PaneDivider(
+        final restPane = Expanded(child: secondary);
+        final divider = _PaneDivider(
           key: kPaneDividerKey,
           onDrag: onFractionChanged == null ? null : onDrag,
           onDragEnd: onFractionSettled,
@@ -282,10 +283,12 @@ double paneWidthFor({
   // the window is already too much, because the divider is taken out of the
   // same width and the floor would then exceed what is left for the other side.
   final floor = min(minPaneWidth, (total - kDividerHitWidth) / 2);
-  return (total * fraction).clamp(
-    max(total * kMinSplitFraction, floor),
-    min(total * kMaxSplitFraction, total - floor - kDividerHitWidth),
-  ).toDouble();
+  return (total * fraction)
+      .clamp(
+        max(total * kMinSplitFraction, floor),
+        min(total * kMaxSplitFraction, total - floor - kDividerHitWidth),
+      )
+      .toDouble();
 }
 
 /// The line between two panes, and the grip that drags it.
@@ -306,9 +309,7 @@ class _PaneDivider extends StatelessWidget {
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
 
-    final line = Center(
-      child: Container(width: 1, color: cs.outlineVariant),
-    );
+    final line = Center(child: Container(width: 1, color: cs.outlineVariant));
 
     if (onDrag == null) {
       return SizedBox(width: kDividerHitWidth, child: line);

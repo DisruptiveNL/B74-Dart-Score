@@ -24,8 +24,9 @@ void main() {
     /// Taps the double ring at the top of the picker, which is D20.
     Future<void> pickDouble(WidgetTester tester) async {
       final board = tester.getRect(find.byType(FavoriteDoublePicker));
-      await tester.tapAt(Offset(board.center.dx,
-          board.center.dy - board.height * 0.3));
+      await tester.tapAt(
+        Offset(board.center.dx, board.center.dy - board.height * 0.3),
+      );
       await tester.pumpAndSettle();
     }
 
@@ -34,8 +35,9 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('names the missing name rather than doing nothing',
-        (tester) async {
+    testWidgets('names the missing name rather than doing nothing', (
+      tester,
+    ) async {
       await pumpOnboarding(tester);
 
       await tapLetsGo(tester);
@@ -43,8 +45,9 @@ void main() {
       expect(find.text('Please enter a name'), findsOneWidget);
     });
 
-    testWidgets('names the missing double once the name is there',
-        (tester) async {
+    testWidgets('names the missing double once the name is there', (
+      tester,
+    ) async {
       await pumpOnboarding(tester);
 
       await tester.enterText(find.byType(TextField), 'Tester');
@@ -54,8 +57,9 @@ void main() {
       expect(find.text('Please enter a name'), findsNothing);
     });
 
-    testWidgets('closes the keyboard so the message is not behind it',
-        (tester) async {
+    testWidgets('closes the keyboard so the message is not behind it', (
+      tester,
+    ) async {
       await pumpOnboarding(tester);
 
       // The field asks for focus on its own, which is what opens the keyboard
@@ -70,10 +74,12 @@ void main() {
     /// The background the button actually paints, which is the default of the
     /// theme when the screen leaves it alone.
     Color buttonColor(WidgetTester tester) {
-      final material = tester.widget<Material>(find.descendant(
-        of: find.widgetWithText(FilledButton, "Let's go!"),
-        matching: find.byType(Material),
-      ));
+      final material = tester.widget<Material>(
+        find.descendant(
+          of: find.widgetWithText(FilledButton, "Let's go!"),
+          matching: find.byType(Material),
+        ),
+      );
       return material.color!;
     }
 
@@ -84,8 +90,7 @@ void main() {
       expect(find.text('Required: tap a double on the board'), findsOneWidget);
     });
 
-    testWidgets('drops the board hint once a double is picked',
-        (tester) async {
+    testWidgets('drops the board hint once a double is picked', (tester) async {
       await pumpOnboarding(tester);
 
       await pickDouble(tester);
@@ -106,10 +111,11 @@ void main() {
       final ready = buttonColor(tester);
       expect(ready, isNot(empty));
       expect(
-          ready,
-          Theme.of(tester.element(find.byType(OnboardingScreen)))
-              .colorScheme
-              .primary);
+        ready,
+        Theme.of(
+          tester.element(find.byType(OnboardingScreen)),
+        ).colorScheme.primary,
+      );
     });
 
     testWidgets('answers the press while it is still grey', (tester) async {
@@ -133,11 +139,12 @@ void main() {
       await tester.pump();
 
       expect(
-          find.descendant(
-            of: find.byType(FilledButton),
-            matching: find.byType(CircularProgressIndicator),
-          ),
-          findsOneWidget);
+        find.descendant(
+          of: find.byType(FilledButton),
+          matching: find.byType(CircularProgressIndicator),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Please enter a name'), findsNothing);
       expect(find.text('Please select a favorite double'), findsNothing);
     });

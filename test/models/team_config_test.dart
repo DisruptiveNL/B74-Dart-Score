@@ -56,7 +56,9 @@ void main() {
     });
 
     test('reads back a team name that carries JSON punctuation', () {
-      const teams = [TeamConfig(name: 'The "A", {Team}', playerIds: [1])];
+      const teams = [
+        TeamConfig(name: 'The "A", {Team}', playerIds: [1]),
+      ];
 
       final decoded = decodeTeamConfigs(encodeTeamConfigs(teams))!;
 
@@ -64,7 +66,9 @@ void main() {
     });
 
     test('writes the column shape the migrations and the sync expect', () {
-      const teams = [TeamConfig(name: 'Reds', playerIds: [1, 2])];
+      const teams = [
+        TeamConfig(name: 'Reds', playerIds: [1, 2]),
+      ];
 
       final raw = jsonDecode(encodeTeamConfigs(teams)!) as List;
 

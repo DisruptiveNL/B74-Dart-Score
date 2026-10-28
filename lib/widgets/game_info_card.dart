@@ -33,10 +33,11 @@ class GameInfoCard extends StatelessWidget {
           children: [
             Text(
               context.l10n.gameInfo,
-              style: (dense
-                      ? theme.textTheme.titleSmall
-                      : theme.textTheme.titleMedium)
-                  ?.copyWith(fontWeight: FontWeight.bold),
+              style:
+                  (dense
+                          ? theme.textTheme.titleSmall
+                          : theme.textTheme.titleMedium)
+                      ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             const Divider(height: 1),

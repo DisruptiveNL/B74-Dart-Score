@@ -18,12 +18,12 @@ class CricketSummaryScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final provider = context.read<CricketProvider>();
-    final game     = provider.game!;
-    final states   = provider.playerStates;
+    final game = provider.game!;
+    final states = provider.playerStates;
     final winnerId = provider.winnerId;
-    final l        = context.l10n;
-    final theme    = Theme.of(context);
-    final cs       = theme.colorScheme;
+    final l = context.l10n;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
 
     final isCutThroat = game.variant == CricketVariant.cutThroat;
 
@@ -55,8 +55,11 @@ class CricketSummaryScreen extends StatelessWidget {
                     color: cs.primaryContainer,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.emoji_events_rounded,
-                      size: 52, color: cs.primary),
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    size: 52,
+                    color: cs.primary,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -79,12 +82,17 @@ class CricketSummaryScreen extends StatelessWidget {
         bottom: 24,
         result: [
           // ── Game info ────────────────────────────────────────────────────
-          GameInfoCard(rows: [
-            (l.gameLabel, l.modeCricketName),
-            (l.cricketVariant, cricketVariantLabel(l, game.variant)),
-            (l.cricketScoringMode, cricketScoringModeLabel(l, game.scoringMode)),
-            (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
-          ]),
+          GameInfoCard(
+            rows: [
+              (l.gameLabel, l.modeCricketName),
+              (l.cricketVariant, cricketVariantLabel(l, game.variant)),
+              (
+                l.cricketScoringMode,
+                cricketScoringModeLabel(l, game.scoringMode),
+              ),
+              (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
+            ],
+          ),
         ],
         details: [
           // ── Player results ───────────────────────────────────────────────
@@ -95,16 +103,20 @@ class CricketSummaryScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l.cricketSummaryTitle,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    l.cricketSummaryTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   const Divider(height: 1),
                   const SizedBox(height: 8),
                   ...sorted.map((s) {
                     final isWinner = s.isWonBy(winnerId);
-                    final fieldsClosed =
-                        cricketFields.where((f) => s.hasClosedField(f)).length;
+                    final fieldsClosed = cricketFields
+                        .where((f) => s.hasClosedField(f))
+                        .length;
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 12),
                       child: Row(
@@ -112,8 +124,7 @@ class CricketSummaryScreen extends StatelessWidget {
                           if (isWinner)
                             const Padding(
                               padding: EdgeInsets.only(right: 6),
-                              child:
-                                  Icon(Icons.emoji_events_rounded, size: 18),
+                              child: Icon(Icons.emoji_events_rounded, size: 18),
                             )
                           else
                             const SizedBox(width: 24),
@@ -132,7 +143,9 @@ class CricketSummaryScreen extends StatelessWidget {
                                 ),
                                 if (s.isTeamSlot)
                                   Text(
-                                    s.players.map((p) => p.label(l)).join(' & '),
+                                    s.players
+                                        .map((p) => p.label(l))
+                                        .join(' & '),
                                     style: theme.textTheme.bodySmall?.copyWith(
                                       color: cs.onSurfaceVariant,
                                     ),
@@ -181,9 +194,12 @@ class CricketSummaryScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(l.cricketMarks,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  Text(
+                    l.cricketMarks,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   const Divider(height: 1),
                   const SizedBox(height: 8),
@@ -191,27 +207,31 @@ class CricketSummaryScreen extends StatelessWidget {
                   Row(
                     children: [
                       const SizedBox(width: 52),
-                      ...sorted.map((s) => Expanded(
-                            child: Column(
-                              children: [
-                                Text(s.label(l),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelSmall),
-                                if (s.isTeamSlot)
-                                  Text(
-                                    s.players.map((p) => p.label(l)).join(' & '),
-                                    textAlign: TextAlign.center,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.textTheme.labelSmall?.copyWith(
-                                      color: cs.onSurfaceVariant,
-                                    ),
+                      ...sorted.map(
+                        (s) => Expanded(
+                          child: Column(
+                            children: [
+                              Text(
+                                s.label(l),
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: theme.textTheme.labelSmall,
+                              ),
+                              if (s.isTeamSlot)
+                                Text(
+                                  s.players.map((p) => p.label(l)).join(' & '),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.textTheme.labelSmall?.copyWith(
+                                    color: cs.onSurfaceVariant,
                                   ),
-                              ],
-                            ),
-                          )),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -223,10 +243,13 @@ class CricketSummaryScreen extends StatelessWidget {
                         children: [
                           SizedBox(
                             width: 52,
-                            child: Text(label,
-                                textAlign: TextAlign.center,
-                                style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: FontWeight.bold)),
+                            child: Text(
+                              label,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           ...sorted.map((s) {
                             final marks = s.marks[field] ?? 0;
@@ -261,14 +284,20 @@ class CricketSummaryScreen extends StatelessWidget {
               (l.cricketVariant, cricketVariantLabel(l, game.variant)),
               (
                 l.cricketScoringMode,
-                cricketScoringModeLabel(l, game.scoringMode)
+                cricketScoringModeLabel(l, game.scoringMode),
               ),
             ],
             slots: states
-                .map((s) => s.isTeamSlot
-                    ? RematchSlot.team(s.label(l),
-                        s.players.map((p) => RematchSlot.player(p.label(l))).toList())
-                    : RematchSlot.player(s.label(l)))
+                .map(
+                  (s) => s.isTeamSlot
+                      ? RematchSlot.team(
+                          s.label(l),
+                          s.players
+                              .map((p) => RematchSlot.player(p.label(l)))
+                              .toList(),
+                        )
+                      : RematchSlot.player(s.label(l)),
+                )
                 .toList(),
             onRematch: () => provider.startRematch(
               game,

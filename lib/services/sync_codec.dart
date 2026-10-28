@@ -82,9 +82,10 @@ const double kFramesPerBlock = 1.4;
 
 /// Most source blocks an animated transfer may be split into, derived from how
 /// long [kMaxTransferDuration] allows it to run.
-final int kMaxSourceBlocks = (kMaxTransferDuration.inMilliseconds /
-        (kFramesPerBlock * kChunkFrameDuration.inMilliseconds))
-    .floor();
+final int kMaxSourceBlocks =
+    (kMaxTransferDuration.inMilliseconds /
+            (kFramesPerBlock * kChunkFrameDuration.inMilliseconds))
+        .floor();
 
 /// How a packet gets to the other device, chosen from its encoded size.
 enum SyncTransport {
@@ -121,10 +122,10 @@ class SyncTransmission {
 
   /// Roughly how long an animated transfer takes, for the sender to show.
   Duration get estimatedDuration => Duration(
-      milliseconds: (sourceBlocks *
-              kFramesPerBlock *
-              kChunkFrameDuration.inMilliseconds)
-          .round());
+    milliseconds:
+        (sourceBlocks * kFramesPerBlock * kChunkFrameDuration.inMilliseconds)
+            .round(),
+  );
 }
 
 /// Encodes [packet] and works out how it should travel.
@@ -136,8 +137,8 @@ SyncTransmission prepareTransmission(SyncPacket packet) {
   final transport = payload.length <= kStaticQrMaxChars
       ? SyncTransport.staticQr
       : blocks <= kMaxSourceBlocks
-          ? SyncTransport.animatedQr
-          : SyncTransport.server;
+      ? SyncTransport.animatedQr
+      : SyncTransport.server;
 
   return SyncTransmission(
     data: data,
@@ -153,14 +154,15 @@ SyncTransmission prepareTransmission(SyncPacket packet) {
 const int _kBinaryFormatVersion = 2;
 
 /// Bit flags packed into each throw's flag byte.
-const int _kFlagDartsMask      = 0x03; // dartsUsed - 1, two bits
-const int _kFlagBust           = 0x04;
+const int _kFlagDartsMask = 0x03; // dartsUsed - 1, two bits
+const int _kFlagBust = 0x04;
 const int _kFlagExplicitContext = 0x08;
+
 /// How many darts of the visit were thrown at a finish, 0 to 3, in two bits.
 /// A sender that predates them leaves both clear, which reads as "no attempt"
 /// rather than as corrupt data, and an older receiver masks only the bits it
 /// knows and ignores them.
-const int _kFlagCheckoutDartsMask  = 0x30;
+const int _kFlagCheckoutDartsMask = 0x30;
 const int _kFlagCheckoutDartsShift = 4;
 
 /// Encodes [packet] into the string a QR code carries.
@@ -207,15 +209,16 @@ Uint8List encodeSyncBytes(SyncPacket packet) {
 
   for (final t in throws) {
     // Only what cannot be derived from the throw before it goes on the wire.
-    final contextKnown = expectedRemaining == t.remainingBefore &&
+    final contextKnown =
+        expectedRemaining == t.remainingBefore &&
         previousLeg == t.leg &&
         previousSet == t.set;
 
     var flags = (t.dartsUsed - 1) & _kFlagDartsMask;
     if (t.bust) flags |= _kFlagBust;
     if (!contextKnown) flags |= _kFlagExplicitContext;
-    flags |= (t.checkoutDarts << _kFlagCheckoutDartsShift) &
-        _kFlagCheckoutDartsMask;
+    flags |=
+        (t.checkoutDarts << _kFlagCheckoutDartsShift) & _kFlagCheckoutDartsMask;
 
     w.u8(t.score);
     w.u8(flags);
@@ -226,10 +229,12 @@ Uint8List encodeSyncBytes(SyncPacket packet) {
       w.varint(t.remainingBefore);
     }
 
-    previousTime     = t.thrownAt;
-    previousLeg      = t.leg;
-    previousSet      = t.set;
-    expectedRemaining = t.bust ? t.remainingBefore : t.remainingBefore - t.score;
+    previousTime = t.thrownAt;
+    previousLeg = t.leg;
+    previousSet = t.set;
+    expectedRemaining = t.bust
+        ? t.remainingBefore
+        : t.remainingBefore - t.score;
   }
 
   // Who sent this and whose data it holds, appended rather than versioned: an
@@ -252,7 +257,8 @@ Uint8List encodeSyncBytes(SyncPacket packet) {
       for (var i = 0; i < packet.origins.length; i++)
         packet.origins[i].device: i,
     };
-    final attributed = packet.throwOrigins.length == throws.length &&
+    final attributed =
+        packet.throwOrigins.length == throws.length &&
         packet.throwOrigins.any((o) => o != packet.senderDeviceId) &&
         packet.throwOrigins.every(index.containsKey);
 
@@ -273,10 +279,14 @@ Uint8List encodeSyncBytes(SyncPacket packet) {
 /// versions send. Throws a [FormatException] on anything else.
 SyncPacket decodeSyncPayload(String payload) {
   if (payload.startsWith(kSyncPrefixV2)) {
-    return decodeSyncBytes(base45Decode(payload.substring(kSyncPrefixV2.length)));
+    return decodeSyncBytes(
+      base45Decode(payload.substring(kSyncPrefixV2.length)),
+    );
   }
   if (payload.startsWith(kSyncPrefixV1)) {
-    final compressed = base64Url.decode(payload.substring(kSyncPrefixV1.length));
+    final compressed = base64Url.decode(
+      payload.substring(kSyncPrefixV1.length),
+    );
     final json = utf8.decode(_inflateCapped(compressed));
     return SyncPacket.fromJson(jsonDecode(json) as Map<String, dynamic>);
   }
@@ -291,7 +301,7 @@ SyncPacket decodeSyncPayload(String payload) {
 /// chunked converter instead means the ceiling is reached while what has been
 /// allocated is still the size of the ceiling.
 Uint8List _inflateCapped(List<int> compressed) {
-  final out  = BytesBuilder(copy: false);
+  final out = BytesBuilder(copy: false);
   final sink = gzip.decoder.startChunkedConversion(_CappedSink(out));
   try {
     sink.add(compressed);
@@ -338,20 +348,20 @@ SyncPacket decodeSyncBytes(Uint8List compressed) {
     throw FormatException('Unsupported sync format version: $version');
   }
 
-  final rangeDays       = r.varint();
-  final senderDevice    = r.str();
-  final playerUuid      = r.str();
-  final playerName      = r.str();
+  final rangeDays = r.varint();
+  final senderDevice = r.str();
+  final playerUuid = r.str();
+  final playerName = r.str();
   final favoriteDoubles = r.str();
 
   final stats = SyncStats(
-    totalDarts:   r.varint(),
-    totalVisits:  r.varint(),
-    legsWon:      r.varint(),
+    totalDarts: r.varint(),
+    totalVisits: r.varint(),
+    legsWon: r.varint(),
     highestVisit: r.varint(),
-    busts:        r.varint(),
-    count180:     r.varint(),
-    average:      r.varint() / 100,
+    busts: r.varint(),
+    count180: r.varint(),
+    average: r.varint() / 100,
   );
 
   final localStats = r.str();
@@ -366,27 +376,29 @@ SyncPacket decodeSyncBytes(Uint8List compressed) {
   for (var i = 0; i < throwCount; i++) {
     final score = r.u8();
     final flags = r.u8();
-    final bust  = flags & _kFlagBust != 0;
+    final bust = flags & _kFlagBust != 0;
 
     time += r.zigzagVarint();
 
     if (flags & _kFlagExplicitContext != 0) {
-      leg       = r.varint();
-      set       = r.varint();
+      leg = r.varint();
+      set = r.varint();
       remaining = r.varint();
     }
 
-    throws.add(SyncThrow(
-      score:           score,
-      dartsUsed:       (flags & _kFlagDartsMask) + 1,
-      remainingBefore: remaining,
-      thrownAt:        time,
-      bust:            bust,
-      leg:             leg,
-      set:             set,
-      checkoutDarts:   (flags & _kFlagCheckoutDartsMask) >>
-          _kFlagCheckoutDartsShift,
-    ));
+    throws.add(
+      SyncThrow(
+        score: score,
+        dartsUsed: (flags & _kFlagDartsMask) + 1,
+        remainingBefore: remaining,
+        thrownAt: time,
+        bust: bust,
+        leg: leg,
+        set: set,
+        checkoutDarts:
+            (flags & _kFlagCheckoutDartsMask) >> _kFlagCheckoutDartsShift,
+      ),
+    );
 
     remaining = bust ? remaining : remaining - score;
   }
@@ -394,7 +406,7 @@ SyncPacket decodeSyncBytes(Uint8List compressed) {
   // Anything past the throws is the origin trailer, which only newer senders
   // write.
   var senderDeviceId = '';
-  final origins      = <SyncOrigin>[];
+  final origins = <SyncOrigin>[];
   final throwOrigins = <String>[];
 
   if (r.hasMore) {
@@ -418,18 +430,18 @@ SyncPacket decodeSyncBytes(Uint8List compressed) {
   }
 
   return SyncPacket(
-    version:         version,
-    senderDevice:    senderDevice,
-    senderDeviceId:  senderDeviceId,
-    playerUuid:      playerUuid,
-    playerName:      playerName,
+    version: version,
+    senderDevice: senderDevice,
+    senderDeviceId: senderDeviceId,
+    playerUuid: playerUuid,
+    playerName: playerName,
     favoriteDoubles: favoriteDoubles,
-    stats:           stats,
-    throws:          throws,
-    origins:         origins,
-    throwOrigins:    throwOrigins,
-    localStatsJson:  localStats.isEmpty ? null : localStats,
-    rangeDays:       rangeDays == 0 ? null : rangeDays,
+    stats: stats,
+    throws: throws,
+    origins: origins,
+    throwOrigins: throwOrigins,
+    localStatsJson: localStats.isEmpty ? null : localStats,
+    rangeDays: rangeDays == 0 ? null : rangeDays,
   );
 }
 
@@ -468,11 +480,11 @@ class SyncFountainEncoder {
   /// sequence happens to be a poor one would be poor forever. A random start
   /// turns that into luck that differs from transfer to transfer.
   SyncFountainEncoder(Uint8List data, {int? startOffset})
-      : _blocks = _splitIntoBlocks(data),
-        _length = data.length,
-        _checksum = _crc32(data),
-        _degreeCdf = _robustSolitonCdf((data.length / kBlockSizeBytes).ceil()),
-        _origin = startOffset ?? math.Random().nextInt(1 << 30);
+    : _blocks = _splitIntoBlocks(data),
+      _length = data.length,
+      _checksum = _crc32(data),
+      _degreeCdf = _robustSolitonCdf((data.length / kBlockSizeBytes).ceil()),
+      _origin = startOffset ?? math.Random().nextInt(1 << 30);
 
   /// How many blocks the payload was split into.
   int get sourceBlocks => _blocks.length;
@@ -489,7 +501,8 @@ class SyncFountainEncoder {
       }
     }
 
-    final header = '$kSyncFramePrefix${_base36(seed)}:${_blocks.length}:'
+    final header =
+        '$kSyncFramePrefix${_base36(seed)}:${_blocks.length}:'
         '${_base36(_length)}:${_base36(_checksum)}:';
     return '$header${base45Encode(combined)}';
   }
@@ -535,9 +548,9 @@ class SyncFountainDecoder {
     final parts = raw.substring(kSyncFramePrefix.length).split(':');
     if (parts.length < 5) return false;
 
-    final seed     = _parseBase36(parts[0]);
-    final blocks   = int.tryParse(parts[1]);
-    final length   = _parseBase36(parts[2]);
+    final seed = _parseBase36(parts[0]);
+    final blocks = int.tryParse(parts[1]);
+    final length = _parseBase36(parts[2]);
     final checksum = _parseBase36(parts[3]);
     if (seed == null || blocks == null || length == null || checksum == null) {
       return false;
@@ -562,16 +575,18 @@ class SyncFountainDecoder {
     if (_checksum != checksum) {
       _solved.clear();
       _pending.clear();
-      _checksum    = checksum;
+      _checksum = checksum;
       _sourceBlocks = blocks;
-      _length      = length;
-      _degreeCdf   = _robustSolitonCdf(blocks);
+      _length = length;
+      _degreeCdf = _robustSolitonCdf(blocks);
     }
 
-    return _absorb(_PendingFrame(
-      unknowns: _pickBlocks(seed, _sourceBlocks, _degreeCdf!).toSet(),
-      value: value,
-    ));
+    return _absorb(
+      _PendingFrame(
+        unknowns: _pickBlocks(seed, _sourceBlocks, _degreeCdf!).toSet(),
+        value: value,
+      ),
+    );
   }
 
   /// Folds [frame] into what is known, cascading through the frames held back
@@ -657,7 +672,7 @@ List<Uint8List> _splitIntoBlocks(Uint8List data) {
   return List.generate(count, (i) {
     final block = Uint8List(kBlockSizeBytes);
     final start = i * kBlockSizeBytes;
-    final end   = (start + kBlockSizeBytes).clamp(0, data.length);
+    final end = (start + kBlockSizeBytes).clamp(0, data.length);
     if (start < data.length) {
       block.setRange(0, end - start, data, start);
     }
@@ -716,8 +731,9 @@ List<double> _robustSolitonCdf(int blockCount) {
 
   const delta = 0.5;
   const c = 0.1;
-  final spikeAt =
-      (c * math.log(blockCount / delta) * math.sqrt(blockCount)).round().clamp(1, blockCount);
+  final spikeAt = (c * math.log(blockCount / delta) * math.sqrt(blockCount))
+      .round()
+      .clamp(1, blockCount);
 
   final weights = List<double>.filled(blockCount + 1, 0);
   for (var d = 1; d <= blockCount; d++) {
@@ -968,7 +984,7 @@ class _ByteReader {
   /// Reads an LEB128 unsigned integer.
   int varint() {
     var result = 0;
-    var shift  = 0;
+    var shift = 0;
     while (true) {
       final byte = u8();
       result |= (byte & 0x7F) << shift;

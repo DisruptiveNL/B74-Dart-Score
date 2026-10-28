@@ -37,6 +37,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
   // Default matches the previous standard of 3 legs / 1 set (best of 5).
   MatchFormat _format = MatchFormat.bo5;
   final List<Player> _selectedPlayers = [];
+
   /// Whether the computer opponent card is open. Off drops every bot.
   bool _botEnabled = false;
 
@@ -81,14 +82,14 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
 
   /// Short, plain rule description for the selected match format preset.
   String _formatRule(AppLocalizations l, MatchFormat f) => switch (f) {
-        MatchFormat.bo3 => l.formatBo3Rule,
-        MatchFormat.bo5 => l.formatBo5Rule,
-        MatchFormat.bo7 => l.formatBo7Rule,
-        MatchFormat.bo9 => l.formatBo9Rule,
-        MatchFormat.pdcSets => l.formatPdcSetsRule,
-        MatchFormat.premierLeague => l.formatPremierRule,
-        MatchFormat.custom => l.formatCustomRule,
-      };
+    MatchFormat.bo3 => l.formatBo3Rule,
+    MatchFormat.bo5 => l.formatBo5Rule,
+    MatchFormat.bo7 => l.formatBo7Rule,
+    MatchFormat.bo9 => l.formatBo9Rule,
+    MatchFormat.pdcSets => l.formatPdcSetsRule,
+    MatchFormat.premierLeague => l.formatPremierRule,
+    MatchFormat.custom => l.formatCustomRule,
+  };
 
   /// Adds a new, default-named team.
   void _addTeam() {
@@ -121,16 +122,24 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
   /// The draggable entries of the starting-order section: the teams in a team
   /// game, otherwise the selected players.
   List<StartingOrderEntry> _startingOrderEntries() => _teamGameEnabled
-      ? List.generate(_teamNames.length, (ti) => StartingOrderEntry(
+      ? List.generate(
+          _teamNames.length,
+          (ti) => StartingOrderEntry(
             // The controller instance identifies the team across reorders; the
             // index does not, because it is exactly what the drag changes.
-            key:   ObjectKey(_teamNameCtrl[ti]),
+            key: ObjectKey(_teamNameCtrl[ti]),
             label: _teamNames[ti],
             color: teamColor(ti),
-          ))
+          ),
+        )
       : _selectedPlayers
-          .map((p) => StartingOrderEntry(key: ValueKey(p.id), label: p.label(context.l10n)))
-          .toList();
+            .map(
+              (p) => StartingOrderEntry(
+                key: ValueKey(p.id),
+                label: p.label(context.l10n),
+              ),
+            )
+            .toList();
 
   /// Moves the entry at [oldIndex] to [newIndex] in the throwing order: the
   /// teams in a team game, otherwise the selected players.
@@ -164,7 +173,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
     final theme = Theme.of(context);
     final allPlayers = context.watch<PlayersProvider>().players;
 
-    final l    = context.l10n;
+    final l = context.l10n;
     final size = MediaQuery.sizeOf(context);
     // Two columns need a tablet and a window wide enough to divide; a small
     // one upright is neither.
@@ -283,9 +292,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
     return FilledButton.icon(
       onPressed: _selectedPlayers.any((p) => !p.isBot) ? _startGame : null,
       icon: const Icon(Icons.play_arrow),
-      label: Text(
-        _selectedPlayers.length == 1 ? l.startOpenPlay : l.startGame,
-      ),
+      label: Text(_selectedPlayers.length == 1 ? l.startOpenPlay : l.startGame),
       style: FilledButton.styleFrom(
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
         textStyle: theme.textTheme.titleMedium,
@@ -315,15 +322,20 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
         title: l.checkIn,
         child: Wrap(
           spacing: 8,
-          children: [
-            (GameMode.straightIn, l.straight),
-            (GameMode.doubleIn,   l.double_),
-            (GameMode.masterIn,   l.master),
-          ].map((e) => ChoiceChip(
-            label: Text(e.$2),
-            selected: _gameMode == e.$1,
-            onSelected: (_) => setState(() => _gameMode = e.$1),
-          )).toList(),
+          children:
+              [
+                    (GameMode.straightIn, l.straight),
+                    (GameMode.doubleIn, l.double_),
+                    (GameMode.masterIn, l.master),
+                  ]
+                  .map(
+                    (e) => ChoiceChip(
+                      label: Text(e.$2),
+                      selected: _gameMode == e.$1,
+                      onSelected: (_) => setState(() => _gameMode = e.$1),
+                    ),
+                  )
+                  .toList(),
         ),
       ),
       const SizedBox(height: 16),
@@ -331,15 +343,20 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
         title: l.checkOut,
         child: Wrap(
           spacing: 8,
-          children: [
-            (CheckoutMode.straightOut, l.straight),
-            (CheckoutMode.doubleOut,   l.double_),
-            (CheckoutMode.masterOut,   l.master),
-          ].map((e) => ChoiceChip(
-            label: Text(e.$2),
-            selected: _checkoutMode == e.$1,
-            onSelected: (_) => setState(() => _checkoutMode = e.$1),
-          )).toList(),
+          children:
+              [
+                    (CheckoutMode.straightOut, l.straight),
+                    (CheckoutMode.doubleOut, l.double_),
+                    (CheckoutMode.masterOut, l.master),
+                  ]
+                  .map(
+                    (e) => ChoiceChip(
+                      label: Text(e.$2),
+                      selected: _checkoutMode == e.$1,
+                      onSelected: (_) => setState(() => _checkoutMode = e.$1),
+                    ),
+                  )
+                  .toList(),
         ),
       ),
     ];
@@ -366,8 +383,11 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline_rounded,
-                  size: 18, color: theme.colorScheme.onSecondaryContainer),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 18,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
               const SizedBox(width: 8),
               Expanded(
                 child: Text(
@@ -453,10 +473,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
             // Mode toggle: standard match formats vs. placement mode.
             SegmentedButton<bool>(
               segments: [
-                ButtonSegment(
-                  value: false,
-                  label: Text(l.standardMode),
-                ),
+                ButtonSegment(value: false, label: Text(l.standardMode)),
                 ButtonSegment(
                   value: true,
                   label: Text(l.placementMode),
@@ -490,11 +507,13 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                 spacing: 8,
                 runSpacing: 8,
                 children: MatchFormat.values
-                    .map((f) => ChoiceChip(
-                          label: Text(l.matchFormatLabel(f)),
-                          selected: _format == f,
-                          onSelected: (_) => _selectFormat(f),
-                        ))
+                    .map(
+                      (f) => ChoiceChip(
+                        label: Text(l.matchFormatLabel(f)),
+                        selected: _format == f,
+                        onSelected: (_) => _selectFormat(f),
+                      ),
+                    )
                     .toList(),
               ),
               const SizedBox(height: 8),
@@ -596,9 +615,10 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
         while (taken.contains(ordinal)) {
           ordinal++;
         }
-        final bot = await context
-            .read<PlayersProvider>()
-            .botFor(level, ordinal: ordinal);
+        final bot = await context.read<PlayersProvider>().botFor(
+          level,
+          ordinal: ordinal,
+        );
         if (!mounted) return;
         setState(() => _selectedPlayers.add(bot));
       },
@@ -630,7 +650,9 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
                 _handicaps.putIfAbsent(
                   p,
                   () => PlayerHandicap(
-                      checkIn: _gameMode, checkOut: _checkoutMode),
+                    checkIn: _gameMode,
+                    checkOut: _checkoutMode,
+                  ),
                 );
               }
             }
@@ -653,18 +675,16 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
               }
             }
           }),
-          onAssignmentChanged: (p, t) =>
-              setState(() => _teamAssignment[p] = t),
-          onNameChanged: (i, name) =>
-              setState(() => _teamNames[i] = name),
+          onAssignmentChanged: (p, t) => setState(() => _teamAssignment[p] = t),
+          onNameChanged: (i, name) => setState(() => _teamNames[i] = name),
           onAddTeam: _addTeam,
           onRemoveTeam: _removeTeam,
         ),
         // ── Starting order ──────────────────────────────────────────────────
         const SizedBox(height: 16),
         StartingOrderSection(
-          order:    _startingOrder,
-          entries:  _startingOrderEntries(),
+          order: _startingOrder,
+          entries: _startingOrderEntries(),
           teamMode: _teamGameEnabled,
           onOrderChanged: (o) => setState(() => _startingOrder = o),
           onReorder: _reorderStartingOrder,
@@ -716,7 +736,7 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
             .where((p) => (_teamAssignment[p] ?? 0) == ti)
             .toList();
         return TeamConfig(
-          name:      _teamNames[ti],
+          name: _teamNames[ti],
           playerIds: teamPlayers.map((p) => p.id!).toList(),
         );
       }).where((t) => t.playerIds.isNotEmpty).toList();
@@ -737,14 +757,14 @@ class _GameSetupScreenState extends State<GameSetupScreen> {
         : null;
 
     final gameWithTeams = Game(
-      startScore:   game.startScore,
-      gameMode:     game.gameMode,
+      startScore: game.startScore,
+      gameMode: game.gameMode,
       checkoutMode: game.checkoutMode,
-      legs:         game.legs,
-      sets:         game.sets,
-      createdAt:    game.createdAt,
-      teams:        teamConfigs,
-      handicaps:    handicapMap,
+      legs: game.legs,
+      sets: game.sets,
+      createdAt: game.createdAt,
+      teams: teamConfigs,
+      handicaps: handicapMap,
       placementMode: game.placementMode,
       startingOrder: game.startingOrder,
     );
@@ -778,9 +798,9 @@ class _Section extends StatelessWidget {
           children: [
             Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 12),
             child,
@@ -827,8 +847,9 @@ class _Stepper extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.remove),
-              onPressed:
-                  enabled && value > min ? () => onChanged(value - 1) : null,
+              onPressed: enabled && value > min
+                  ? () => onChanged(value - 1)
+                  : null,
             ),
             Text(
               '$value',
@@ -836,8 +857,9 @@ class _Stepper extends StatelessWidget {
             ),
             IconButton(
               icon: const Icon(Icons.add),
-              onPressed:
-                  enabled && value < max ? () => onChanged(value + 1) : null,
+              onPressed: enabled && value < max
+                  ? () => onChanged(value + 1)
+                  : null,
             ),
           ],
         ),
@@ -860,8 +882,10 @@ class _HandicapSection extends StatelessWidget {
   final Map<Player, PlayerHandicap> handicaps;
   final GameMode gameCheckIn;
   final CheckoutMode gameCheckOut;
+
   /// Team index per player, or null when the game is played individually.
   final Map<Player, int>? teamAssignment;
+
   /// Team names, or null when the game is played individually.
   final List<String>? teamNames;
   final ValueChanged<bool> onToggle;
@@ -892,38 +916,43 @@ class _HandicapSection extends StatelessWidget {
     for (var ti = 0; ti < names.length; ti++) {
       // Unassigned players fall back to team 0, mirroring _startGame.
       final members = players
-          .where((p) =>
-              (assignment[p] ?? 0).clamp(0, names.length - 1) == ti)
+          .where((p) => (assignment[p] ?? 0).clamp(0, names.length - 1) == ti)
           .toList();
       if (members.isEmpty) continue;
 
-      blocks.add(Padding(
-        padding: EdgeInsets.only(bottom: 8, top: blocks.isEmpty ? 0 : 4),
-        child: Row(
-          children: [
-            Container(
-              width: 10,
-              height: 10,
-              decoration: BoxDecoration(
-                color: teamColor(ti),
-                shape: BoxShape.circle,
+      blocks.add(
+        Padding(
+          padding: EdgeInsets.only(bottom: 8, top: blocks.isEmpty ? 0 : 4),
+          child: Row(
+            children: [
+              Container(
+                width: 10,
+                height: 10,
+                decoration: BoxDecoration(
+                  color: teamColor(ti),
+                  shape: BoxShape.circle,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              names[ti],
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: teamColor(ti),
+              const SizedBox(width: 8),
+              Text(
+                names[ti],
+                style: theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: teamColor(ti),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ));
-      blocks.addAll(members.map((p) => Padding(
+      );
+      blocks.addAll(
+        members.map(
+          (p) => Padding(
             padding: const EdgeInsets.only(left: 18),
             child: _playerRow(context, theme, p),
-          )));
+          ),
+        ),
+      );
     }
     return blocks;
   }
@@ -931,7 +960,8 @@ class _HandicapSection extends StatelessWidget {
   /// The avatar/name header plus the two mode dropdowns for one player.
   Widget _playerRow(BuildContext context, ThemeData theme, Player p) {
     final cs = theme.colorScheme;
-    final h = handicaps[p] ??
+    final h =
+        handicaps[p] ??
         PlayerHandicap(checkIn: gameCheckIn, checkOut: gameCheckOut);
 
     return Padding(
@@ -945,7 +975,9 @@ class _HandicapSection extends StatelessWidget {
                 radius: 12,
                 backgroundColor: cs.primaryContainer,
                 child: Text(
-                  p.label(context.l10n).isNotEmpty ? p.label(context.l10n)[0].toUpperCase() : '?',
+                  p.label(context.l10n).isNotEmpty
+                      ? p.label(context.l10n)[0].toUpperCase()
+                      : '?',
                   style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.bold,
@@ -954,9 +986,12 @@ class _HandicapSection extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Text(p.label(context.l10n),
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w600)),
+              Text(
+                p.label(context.l10n),
+                style: theme.textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 6),
@@ -968,8 +1003,8 @@ class _HandicapSection extends StatelessWidget {
                   value: h.checkIn,
                   items: [
                     (GameMode.straightIn, context.l10n.straight),
-                    (GameMode.doubleIn,   context.l10n.double_),
-                    (GameMode.masterIn,   context.l10n.master),
+                    (GameMode.doubleIn, context.l10n.double_),
+                    (GameMode.masterIn, context.l10n.master),
                   ],
                   onChanged: (v) => onChanged(p, h.copyWith(checkIn: v)),
                 ),
@@ -981,8 +1016,8 @@ class _HandicapSection extends StatelessWidget {
                   value: h.checkOut,
                   items: [
                     (CheckoutMode.straightOut, context.l10n.straight),
-                    (CheckoutMode.doubleOut,   context.l10n.double_),
-                    (CheckoutMode.masterOut,   context.l10n.master),
+                    (CheckoutMode.doubleOut, context.l10n.double_),
+                    (CheckoutMode.masterOut, context.l10n.master),
                   ],
                   onChanged: (v) => onChanged(p, h.copyWith(checkOut: v)),
                 ),
@@ -1008,14 +1043,14 @@ class _HandicapSection extends StatelessWidget {
             // Toggle row
             Row(
               children: [
-                Icon(Icons.tune_rounded,
-                    size: 20, color: cs.onSurfaceVariant),
+                Icon(Icons.tune_rounded, size: 20, color: cs.onSurfaceVariant),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     context.l10n.handicap,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold),
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 Switch(value: enabled, onChanged: onToggle),
@@ -1024,8 +1059,9 @@ class _HandicapSection extends StatelessWidget {
             if (enabled) ...[
               Text(
                 context.l10n.handicapDesc,
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: cs.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: cs.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 12),
               if (_grouped)
@@ -1060,26 +1096,26 @@ class _ModeDropdown<T> extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label,
-            style: theme.textTheme.labelSmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            )),
+        Text(
+          label,
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
+          ),
+        ),
         const SizedBox(height: 4),
         DropdownButtonFormField<T>(
           initialValue: value,
           isDense: true,
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
-            contentPadding:
-                EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
           ),
           items: items
-              .map((e) => DropdownMenuItem<T>(
-                    value: e.$1,
-                    child: Text(e.$2),
-                  ))
+              .map((e) => DropdownMenuItem<T>(value: e.$1, child: Text(e.$2)))
               .toList(),
-          onChanged: (v) { if (v != null) onChanged(v); },
+          onChanged: (v) {
+            if (v != null) onChanged(v);
+          },
         ),
       ],
     );

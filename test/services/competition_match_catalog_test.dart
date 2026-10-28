@@ -4,11 +4,14 @@ import 'package:dartscore_app/services/competition_sync_contract.dart';
 
 void main() {
   test('singles are ordered by slot, regardless of packet order', () {
-    final singles = List.generate(4, (i) => {
-      'slot': 4 - i,
-      'homePlayer': {'id': 'h$i', 'name': 'Home $i', 'bondNumber': '10$i'},
-      'awayPlayer': {'id': 'a$i', 'name': 'Away $i', 'bondNumber': '20$i'},
-    });
+    final singles = List.generate(
+      4,
+      (i) => {
+        'slot': 4 - i,
+        'homePlayer': {'id': 'h$i', 'name': 'Home $i', 'bondNumber': '10$i'},
+        'awayPlayer': {'id': 'a$i', 'name': 'Away $i', 'bondNumber': '20$i'},
+      },
+    );
     final packet = {
       'type': CompetitionSyncContract.type,
       'version': CompetitionSyncContract.version,

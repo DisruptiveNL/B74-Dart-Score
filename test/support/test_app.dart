@@ -27,9 +27,9 @@ Widget testApp(
   return MultiProvider(
     providers: [
       ChangeNotifierProvider<PlayersProvider>.value(
-          value: players ?? PlayersProvider()),
-      if (game != null)
-        ChangeNotifierProvider<GameProvider>.value(value: game),
+        value: players ?? PlayersProvider(),
+      ),
+      if (game != null) ChangeNotifierProvider<GameProvider>.value(value: game),
     ],
     child: MaterialApp(
       locale: locale,
@@ -55,7 +55,8 @@ Widget testApp(
 Future<void> pumpUntilLoaded(WidgetTester tester) async {
   for (var i = 0; i < 60; i++) {
     await tester.runAsync(
-        () => Future<void>.delayed(const Duration(milliseconds: 50)));
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
     await tester.pump();
     if (find.byType(CircularProgressIndicator).evaluate().isEmpty) break;
   }
@@ -80,12 +81,12 @@ void usePhoneSurface(
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   final padding = FakeViewPadding(
-    top:    safeArea.top,
+    top: safeArea.top,
     bottom: safeArea.bottom,
-    left:   safeArea.left,
-    right:  safeArea.right,
+    left: safeArea.left,
+    right: safeArea.right,
   );
-  tester.view.padding     = padding;
+  tester.view.padding = padding;
   tester.view.viewPadding = padding;
   addTearDown(tester.view.resetPhysicalSize);
   addTearDown(tester.view.resetDevicePixelRatio);

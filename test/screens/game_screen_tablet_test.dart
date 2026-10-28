@@ -15,9 +15,9 @@ import '../support/test_app.dart';
 import '../support/test_db.dart';
 
 /// A 10.9 inch tablet, upright and on its side, with the insets it carries.
-const _tabletPortrait  = Size(820, 1180);
+const _tabletPortrait = Size(820, 1180);
 const _tabletLandscape = Size(1180, 820);
-const _tabletInsets    = EdgeInsets.only(top: 24, bottom: 20);
+const _tabletInsets = EdgeInsets.only(top: 24, bottom: 20);
 
 void main() {
   group('the live X01 screen on a tablet', () {
@@ -54,8 +54,11 @@ void main() {
         if (side != null) await inputSide.setSide(side);
       });
       if (fraction != null) {
-        inputSide.setSplitFraction(SplitPane.game, fraction,
-            landscape: surface.width >= surface.height);
+        inputSide.setSplitFraction(
+          SplitPane.game,
+          fraction,
+          landscape: surface.width >= surface.height,
+        );
       }
 
       usePhoneSurface(tester, size: surface, safeArea: _tabletInsets);
@@ -70,12 +73,13 @@ void main() {
 
     /// The horizontal centre of the input, and of the live stats beside it.
     (double, double) paneCentres(WidgetTester tester) => (
-          tester.getRect(find.byType(B74NumericInput)).center.dx,
-          tester.getRect(find.byType(LivePlayerStatsPanel)).center.dx,
-        );
+      tester.getRect(find.byType(B74NumericInput)).center.dx,
+      tester.getRect(find.byType(LivePlayerStatsPanel)).center.dx,
+    );
 
-    testWidgets('shows the stats of whoever is throwing beside the input',
-        (tester) async {
+    testWidgets('shows the stats of whoever is throwing beside the input', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: _tabletLandscape);
 
       expect(find.byType(LivePlayerStatsPanel), findsOneWidget);
@@ -97,7 +101,8 @@ void main() {
 
       expect(game.currentPlayerIndex, 1);
       final panel = tester.widget<LivePlayerStatsPanel>(
-          find.byType(LivePlayerStatsPanel));
+        find.byType(LivePlayerStatsPanel),
+      );
       expect(panel.slotIndex, 1);
     });
 
@@ -108,8 +113,9 @@ void main() {
       expect(input, lessThan(stats));
     });
 
-    testWidgets('moves the input over when the setting says right',
-        (tester) async {
+    testWidgets('moves the input over when the setting says right', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: _tabletLandscape, side: InputSide.right);
 
       final (input, stats) = paneCentres(tester);
@@ -129,15 +135,17 @@ void main() {
       expect(inputSide.side, InputSide.right);
     });
 
-    testWidgets('offers the swap only where there are two panes',
-        (tester) async {
+    testWidgets('offers the swap only where there are two panes', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: const Size(375, 812));
 
       expect(find.byIcon(Icons.swap_horiz_rounded), findsNothing);
     });
 
-    testWidgets('splits only the space below the scoreboard in portrait',
-        (tester) async {
+    testWidgets('splits only the space below the scoreboard in portrait', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: _tabletPortrait);
 
       final (input, stats) = paneCentres(tester);
@@ -150,8 +158,9 @@ void main() {
       expect(board.bottom, lessThan(inputTop));
     });
 
-    testWidgets('keeps numeric actions visible at the bottom in landscape',
-        (tester) async {
+    testWidgets('keeps numeric actions visible at the bottom in landscape', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: _tabletLandscape);
       final pane = tester.getRect(find.byType(B74NumericInput));
       final accept = tester.getRect(find.text('ACCEPT'));
@@ -171,8 +180,9 @@ void main() {
       expect(find.byType(FinishSuggestionWidget), findsOneWidget);
     });
 
-    testWidgets('keeps numeric actions beneath the keypad in portrait',
-        (tester) async {
+    testWidgets('keeps numeric actions beneath the keypad in portrait', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: _tabletPortrait);
       final accept = tester.getRect(find.text('ACCEPT'));
       final bust = tester.getRect(find.text('BUST'));
@@ -181,13 +191,14 @@ void main() {
       expect(accept.bottom, lessThanOrEqualTo(pane.bottom));
     });
 
-    testWidgets('hangs input, stats and divider off the scoreboard alike',
-        (tester) async {
+    testWidgets('hangs input, stats and divider off the scoreboard alike', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: _tabletPortrait);
 
-      final hint    = tester.getRect(find.byType(FinishSuggestionWidget));
-      final input   = tester.getRect(find.byType(B74NumericInput));
-      final stats   = tester.getRect(find.byType(LivePlayerStatsPanel));
+      final hint = tester.getRect(find.byType(FinishSuggestionWidget));
+      final input = tester.getRect(find.byType(B74NumericInput));
+      final stats = tester.getRect(find.byType(LivePlayerStatsPanel));
       final divider = tester.getRect(find.byKey(kPaneDividerKey));
 
       expect(input.top, closeTo(stats.top, 0.5));
@@ -205,47 +216,65 @@ void main() {
       expect((input.width - stats.width).abs(), lessThan(kDividerHitWidth + 2));
     });
 
-    testWidgets('rebalances the panes when the divider is dragged',
-        (tester) async {
+    testWidgets('rebalances the panes when the divider is dragged', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: _tabletLandscape);
       final before = tester.getRect(find.byType(B74NumericInput)).width;
 
       // The input sits on the left, so dragging the divider right grows it.
       // No touch slop, so the pane moves by exactly what the drag says.
-      await tester.drag(find.byKey(kPaneDividerKey), const Offset(120, 0),
-          touchSlopX: 0);
+      await tester.drag(
+        find.byKey(kPaneDividerKey),
+        const Offset(120, 0),
+        touchSlopX: 0,
+      );
       await tester.pumpAndSettle();
 
       final after = tester.getRect(find.byType(B74NumericInput)).width;
       expect(after - before, closeTo(120, 4));
-      expect(inputSide.splitFraction(SplitPane.game, landscape: true),
-          greaterThan(kDefaultSplitFraction));
+      expect(
+        inputSide.splitFraction(SplitPane.game, landscape: true),
+        greaterThan(kDefaultSplitFraction),
+      );
     });
 
-    testWidgets('keeps ACCEPT pinned when the portrait split grows',
-        (tester) async {
+    testWidgets('keeps ACCEPT pinned when the portrait split grows', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: const Size(1024, 1366), fraction: 0.7);
       final pane = tester.getRect(find.byType(B74NumericInput));
       final accept = tester.getRect(find.text('ACCEPT'));
       expect(pane.bottom - accept.bottom, lessThan(30));
     });
 
-    testWidgets('stops the drag before a pane stops being usable',
-        (tester) async {
+    testWidgets('stops the drag before a pane stops being usable', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: _tabletPortrait);
 
       // Far past the end of the range, in both directions.
-      await tester.drag(find.byKey(kPaneDividerKey), const Offset(-600, 0),
-          touchSlopX: 0);
+      await tester.drag(
+        find.byKey(kPaneDividerKey),
+        const Offset(-600, 0),
+        touchSlopX: 0,
+      );
       await tester.pumpAndSettle();
-      expect(tester.getRect(find.byType(B74NumericInput)).width,
-          greaterThanOrEqualTo(kMinPaneWidth));
+      expect(
+        tester.getRect(find.byType(B74NumericInput)).width,
+        greaterThanOrEqualTo(kMinPaneWidth),
+      );
 
-      await tester.drag(find.byKey(kPaneDividerKey), const Offset(600, 0),
-          touchSlopX: 0);
+      await tester.drag(
+        find.byKey(kPaneDividerKey),
+        const Offset(600, 0),
+        touchSlopX: 0,
+      );
       await tester.pumpAndSettle();
-      expect(tester.getRect(find.byType(LivePlayerStatsPanel)).width,
-          greaterThanOrEqualTo(kMinPaneWidth));
+      expect(
+        tester.getRect(find.byType(LivePlayerStatsPanel)).width,
+        greaterThanOrEqualTo(kMinPaneWidth),
+      );
     });
 
     testWidgets('fits the larger cards on a small tablet', (tester) async {
@@ -258,23 +287,21 @@ void main() {
       expect(find.text('ACCEPT'), findsOneWidget);
     });
 
-    testWidgets('stays a single column on a phone sized window',
-        (tester) async {
+    testWidgets('stays a single column on a phone sized window', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: const Size(375, 812));
 
       expect(find.byType(LivePlayerStatsPanel), findsNothing);
       expect(find.byType(B74NumericInput), findsOneWidget);
     });
 
-    testWidgets('moves the checkout hint over the input once it is wide',
-        (tester) async {
+    testWidgets('moves the checkout hint over the input once it is wide', (
+      tester,
+    ) async {
       // Wide enough for the actions beside the grid, which is where the column
       // above them becomes short enough to carry the hint.
-      await pumpGame(
-        tester,
-        surface: const Size(1024, 1366),
-        fraction: 0.7,
-      );
+      await pumpGame(tester, surface: const Size(1024, 1366), fraction: 0.7);
 
       final hint = tester.getRect(find.byType(FinishSuggestionWidget));
       final board = tester.getRect(find.text('501').first);
@@ -288,8 +315,9 @@ void main() {
       expect(hint.right, lessThanOrEqualTo(input.right + 1));
     });
 
-    testWidgets('keeps the checkout hint under the score while it is narrow',
-        (tester) async {
+    testWidgets('keeps the checkout hint under the score while it is narrow', (
+      tester,
+    ) async {
       await pumpGame(
         tester,
         surface: const Size(1024, 1366),
@@ -303,8 +331,9 @@ void main() {
       expect(hint.width, greaterThan(input.width));
     });
 
-    testWidgets('offers numeric entry without the old S/D/T modifier',
-        (tester) async {
+    testWidgets('offers numeric entry without the old S/D/T modifier', (
+      tester,
+    ) async {
       await pumpGame(tester, surface: _tabletLandscape);
       expect(find.byType(B74NumericInput), findsOneWidget);
       expect(find.text('CLEAR'), findsOneWidget);

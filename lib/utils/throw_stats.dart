@@ -32,7 +32,7 @@ int checkoutDartsInVisit(
   bool checkedOut = false,
 }) {
   var remaining = remainingBefore;
-  var darts     = 0;
+  var darts = 0;
   for (final score in dartScores) {
     if (FinishCalculator.canFinishWithOneDart(remaining, checkoutMode)) {
       darts++;
@@ -66,15 +66,19 @@ int checkoutDartsInVisit(
 class ThrowStats {
   /// Number of committed visits (turns), busts included.
   final int totalVisits;
+
   /// Number of darts thrown across all visits, busts included.
   final int totalDarts;
+
   /// Points scored across all visits; a bust contributes nothing.
   final int totalScored;
+
   /// Number of visits that busted.
   final int busts;
 
   /// Highest score of a single visit; busts are ignored.
   final int highestVisit;
+
   /// Highest score that finished a leg.
   final int highestCheckout;
 
@@ -86,8 +90,10 @@ class ThrowStats {
   /// Decided per visit when it is recorded, see [checkoutDartsInVisit]; being
   /// in checkout range does not by itself make a visit an attempt.
   final int checkoutAttempts;
+
   /// Attempts that actually finished the leg.
   final int checkoutSuccesses;
+
   /// Individual darts thrown at a finish, so a visit that put three darts on a
   /// double counts three. The denominator of the double rate, where
   /// [checkoutAttempts] is the denominator of the check-out rate.
@@ -99,6 +105,7 @@ class ThrowStats {
 
   /// Darts used in the opening three visits of every leg.
   final int first9Darts;
+
   /// Points scored in the opening three visits of every leg.
   final int first9Scored;
 
@@ -139,29 +146,29 @@ class ThrowStats {
 
   /// Stats of a player who has not thrown yet: every counter is zero.
   static const ThrowStats empty = ThrowStats._(
-    totalVisits:       0,
-    totalDarts:        0,
-    totalScored:       0,
-    busts:             0,
-    highestVisit:      0,
-    highestCheckout:   0,
-    count180:          0,
-    count140plus:      0,
-    count100plus:      0,
-    checkoutAttempts:  0,
+    totalVisits: 0,
+    totalDarts: 0,
+    totalScored: 0,
+    busts: 0,
+    highestVisit: 0,
+    highestCheckout: 0,
+    count180: 0,
+    count140plus: 0,
+    count100plus: 0,
+    checkoutAttempts: 0,
     checkoutSuccesses: 0,
-    checkoutDarts:     0,
-    scoreSumSquares:   0,
-    first9Darts:       0,
-    first9Scored:      0,
-    coAttemptSub40:    0,
-    coSuccessSub40:    0,
-    coAttemptSub60:    0,
-    coSuccessSub60:    0,
-    coAttemptSub100:   0,
-    coSuccessSub100:   0,
-    coAttemptSub170:   0,
-    coSuccessSub170:   0,
+    checkoutDarts: 0,
+    scoreSumSquares: 0,
+    first9Darts: 0,
+    first9Scored: 0,
+    coAttemptSub40: 0,
+    coSuccessSub40: 0,
+    coAttemptSub60: 0,
+    coSuccessSub60: 0,
+    coAttemptSub100: 0,
+    coSuccessSub100: 0,
+    coAttemptSub170: 0,
+    coSuccessSub170: 0,
   );
 
   /// Aggregates [throws] into one stats record.
@@ -191,18 +198,18 @@ class ThrowStats {
     for (final t in throws) {
       totalDarts += t.dartsUsed;
 
-      final legKey    = '${t.gameId}-${t.set}-${t.leg}';
+      final legKey = '${t.gameId}-${t.set}-${t.leg}';
       final legVisits = visitsPerLeg[legKey] ?? 0;
       visitsPerLeg[legKey] = legVisits + 1;
       if (legVisits < 3) {
-        first9Darts  += t.dartsUsed;
+        first9Darts += t.dartsUsed;
         first9Scored += t.bust ? 0 : t.score;
       }
 
       if (t.bust) {
         busts++;
       } else {
-        totalScored     += t.score;
+        totalScored += t.score;
         scoreSumSquares += t.score * t.score;
         if (t.score > highestVisit) highestVisit = t.score;
         if (t.score == 180) count180++;
@@ -217,10 +224,19 @@ class ThrowStats {
         checkoutAttempts++;
         checkoutDarts += t.checkoutDarts;
         final success = !t.bust && t.remainingBefore - t.score == 0;
-        if (t.remainingBefore <= 40)        { coAt40++;  if (success) coOk40++;  }
-        else if (t.remainingBefore <= 60)   { coAt60++;  if (success) coOk60++;  }
-        else if (t.remainingBefore <= 100)  { coAt100++; if (success) coOk100++; }
-        else                                { coAt170++; if (success) coOk170++; }
+        if (t.remainingBefore <= 40) {
+          coAt40++;
+          if (success) coOk40++;
+        } else if (t.remainingBefore <= 60) {
+          coAt60++;
+          if (success) coOk60++;
+        } else if (t.remainingBefore <= 100) {
+          coAt100++;
+          if (success) coOk100++;
+        } else {
+          coAt170++;
+          if (success) coOk170++;
+        }
         if (success) {
           checkoutSuccesses++;
           if (t.score > highestCheckout) highestCheckout = t.score;
@@ -229,29 +245,29 @@ class ThrowStats {
     }
 
     return ThrowStats._(
-      totalVisits:       throws.length,
-      totalDarts:        totalDarts,
-      totalScored:       totalScored,
-      busts:             busts,
-      highestVisit:      highestVisit,
-      highestCheckout:   highestCheckout,
-      count180:          count180,
-      count140plus:      count140plus,
-      count100plus:      count100plus,
-      checkoutAttempts:  checkoutAttempts,
+      totalVisits: throws.length,
+      totalDarts: totalDarts,
+      totalScored: totalScored,
+      busts: busts,
+      highestVisit: highestVisit,
+      highestCheckout: highestCheckout,
+      count180: count180,
+      count140plus: count140plus,
+      count100plus: count100plus,
+      checkoutAttempts: checkoutAttempts,
       checkoutSuccesses: checkoutSuccesses,
-      checkoutDarts:     checkoutDarts,
-      scoreSumSquares:   scoreSumSquares,
-      first9Darts:       first9Darts,
-      first9Scored:      first9Scored,
-      coAttemptSub40:    coAt40,
-      coSuccessSub40:    coOk40,
-      coAttemptSub60:    coAt60,
-      coSuccessSub60:    coOk60,
-      coAttemptSub100:   coAt100,
-      coSuccessSub100:   coOk100,
-      coAttemptSub170:   coAt170,
-      coSuccessSub170:   coOk170,
+      checkoutDarts: checkoutDarts,
+      scoreSumSquares: scoreSumSquares,
+      first9Darts: first9Darts,
+      first9Scored: first9Scored,
+      coAttemptSub40: coAt40,
+      coSuccessSub40: coOk40,
+      coAttemptSub60: coAt60,
+      coSuccessSub60: coOk60,
+      coAttemptSub100: coAt100,
+      coSuccessSub100: coOk100,
+      coAttemptSub170: coAt170,
+      coSuccessSub170: coOk170,
     );
   }
 
@@ -282,7 +298,7 @@ class ThrowStats {
 /// Groups by game id, so it works both for the visits of one game, where the
 /// result is simply that game's average, and for a player's whole history.
 double bestGameAverage(List<DartThrow> throws) {
-  final darts  = <int, int>{};
+  final darts = <int, int>{};
   final scored = <int, int>{};
   for (final t in throws) {
     darts[t.gameId] = (darts[t.gameId] ?? 0) + t.dartsUsed;
@@ -309,7 +325,9 @@ double bestGameAverage(List<DartThrow> throws) {
 /// a lifetime of a few tens of thousands of throws is the difference between a
 /// stats screen that opens instantly and one that visibly stalls.
 int perfectLegsFromThrows(
-    List<DartThrow> throws, int? Function(int gameId) minDartsFor) {
+  List<DartThrow> throws,
+  int? Function(int gameId) minDartsFor,
+) {
   final legDarts = <String, int>{};
   for (final t in throws) {
     final key = '${t.gameId}-${t.set}-${t.leg}';

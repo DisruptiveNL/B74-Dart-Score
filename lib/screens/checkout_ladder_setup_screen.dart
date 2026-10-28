@@ -38,17 +38,18 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
   static const double _stepperGap = 14;
 
   CheckoutLadderVariant _variant = CheckoutLadderVariant.training;
-  int _start  = 81;
+  int _start = 81;
   int _target = 100;
-  int _darts  = 6;
+  int _darts = 6;
   bool _stepEnabled = false;
-  int _stepFrom  = 110;
+  int _stepFrom = 110;
   int _stepDarts = 9;
   CheckoutMode _checkOut = CheckoutMode.doubleOut;
   final List<Player> _selectedPlayers = [];
 
   // ── Team game ─────────────────────────────────────────────────────────────
   bool _teamGameEnabled = false;
+
   /// Whether the computer opponent card is open. Off drops every bot.
   bool _botEnabled = false;
   final Map<Player, int> _teamAssignment = {}; // player → team index
@@ -112,16 +113,24 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
   /// The draggable entries of the starting-order section: the teams in a team
   /// game, otherwise the selected players.
   List<StartingOrderEntry> _startingOrderEntries() => _teamGameEnabled
-      ? List.generate(_teamNames.length, (ti) => StartingOrderEntry(
+      ? List.generate(
+          _teamNames.length,
+          (ti) => StartingOrderEntry(
             // The controller instance identifies the team across reorders; the
             // index does not, because it is exactly what the drag changes.
-            key:   ObjectKey(_teamNameCtrl[ti]),
+            key: ObjectKey(_teamNameCtrl[ti]),
             label: _teamNames[ti],
             color: teamColor(ti),
-          ))
+          ),
+        )
       : _selectedPlayers
-          .map((p) => StartingOrderEntry(key: ValueKey(p.id), label: p.label(context.l10n)))
-          .toList();
+            .map(
+              (p) => StartingOrderEntry(
+                key: ValueKey(p.id),
+                label: p.label(context.l10n),
+              ),
+            )
+            .toList();
 
   /// Moves the entry at [oldIndex] to [newIndex] in the throwing order: the
   /// teams in a team game, otherwise the selected players.
@@ -164,10 +173,10 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l          = context.l10n;
-    final theme      = Theme.of(context);
+    final l = context.l10n;
+    final theme = Theme.of(context);
     final allPlayers = context.watch<PlayersProvider>().players;
-    final hintStyle  = theme.textTheme.bodySmall?.copyWith(
+    final hintStyle = theme.textTheme.bodySmall?.copyWith(
       color: theme.colorScheme.onSurfaceVariant,
     );
 
@@ -188,7 +197,7 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                   children: [
                     for (final (v, label) in [
                       (CheckoutLadderVariant.training, l.ladderTraining),
-                      (CheckoutLadderVariant.race,     l.ladderRace),
+                      (CheckoutLadderVariant.race, l.ladderRace),
                     ])
                       ChoiceChip(
                         label: Text(label),
@@ -198,8 +207,10 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                Text(_isRace ? l.ladderRaceDesc : l.ladderTrainingDesc,
-                    style: hintStyle),
+                Text(
+                  _isRace ? l.ladderRaceDesc : l.ladderTrainingDesc,
+                  style: hintStyle,
+                ),
               ],
             ),
           ),
@@ -266,7 +277,10 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                     onChanged: (v) => setState(() => _stepDarts = v),
                   ),
                   const SizedBox(height: 8),
-                  Text(l.ladderStepDesc(_stepFrom, _stepDarts), style: hintStyle),
+                  Text(
+                    l.ladderStepDesc(_stepFrom, _stepDarts),
+                    style: hintStyle,
+                  ),
                 ],
               ],
             ),
@@ -282,8 +296,8 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
               children: [
                 for (final (m, label) in [
                   (CheckoutMode.straightOut, l.straight),
-                  (CheckoutMode.doubleOut,   l.double_),
-                  (CheckoutMode.masterOut,   l.master),
+                  (CheckoutMode.doubleOut, l.double_),
+                  (CheckoutMode.masterOut, l.master),
                 ])
                   ChoiceChip(
                     label: Text(label),
@@ -327,14 +341,14 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
                 _teamGameEnabled = v;
                 if (v) {
                   for (var i = 0; i < _selectedPlayers.length; i++) {
-                    _teamAssignment[_selectedPlayers[i]] = i % _teamNames.length;
+                    _teamAssignment[_selectedPlayers[i]] =
+                        i % _teamNames.length;
                   }
                 }
               }),
               onAssignmentChanged: (p, t) =>
                   setState(() => _teamAssignment[p] = t),
-              onNameChanged: (i, name) =>
-                  setState(() => _teamNames[i] = name),
+              onNameChanged: (i, name) => setState(() => _teamNames[i] = name),
               onAddTeam: _addTeam,
               onRemoveTeam: _removeTeam,
             ),
@@ -344,8 +358,8 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
           if (_selectedPlayers.length >= 2) ...[
             const SizedBox(height: 16),
             StartingOrderSection(
-              order:    _startingOrder,
-              entries:  _startingOrderEntries(),
+              order: _startingOrder,
+              entries: _startingOrderEntries(),
               teamMode: _teamGameEnabled,
               onOrderChanged: (o) => setState(() => _startingOrder = o),
               onReorder: _reorderStartingOrder,
@@ -419,9 +433,10 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
         while (taken.contains(ordinal)) {
           ordinal++;
         }
-        final bot = await context
-            .read<PlayersProvider>()
-            .botFor(level, ordinal: ordinal);
+        final bot = await context.read<PlayersProvider>().botFor(
+          level,
+          ordinal: ordinal,
+        );
         if (!mounted) return;
         setState(() => _selectedPlayers.add(bot));
       },
@@ -446,7 +461,7 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
             .where((p) => (_teamAssignment[p] ?? 0) == ti)
             .toList();
         return TeamConfig(
-          name:      _teamNames[ti],
+          name: _teamNames[ti],
           playerIds: teamPlayers.map((p) => p.id!).toList(),
         );
       }).where((t) => t.playerIds.isNotEmpty).toList();
@@ -456,17 +471,17 @@ class _CheckoutLadderSetupScreenState extends State<CheckoutLadderSetupScreen> {
     }
 
     final game = CheckoutLadderGame(
-      variant:         _variant,
-      startNumber:     _start,
-      targetNumber:    _isRace ? _target : null,
+      variant: _variant,
+      startNumber: _start,
+      targetNumber: _isRace ? _target : null,
       dartsPerAttempt: _darts,
-      stepFrom:        _stepEnabled ? _stepFrom : null,
-      stepDarts:       _stepEnabled ? _stepDarts : null,
-      checkOut:        _checkOut,
-      createdAt:       DateTime.now(),
-      playerIds:       players.map((p) => p.id!).toList(),
-      teams:           teamConfigs,
-      startingOrder:   _startingOrder,
+      stepFrom: _stepEnabled ? _stepFrom : null,
+      stepDarts: _stepEnabled ? _stepDarts : null,
+      checkOut: _checkOut,
+      createdAt: DateTime.now(),
+      playerIds: players.map((p) => p.id!).toList(),
+      teams: teamConfigs,
+      startingOrder: _startingOrder,
     );
 
     await context.read<CheckoutLadderProvider>().startGame(game, players);
@@ -496,11 +511,12 @@ class _Section extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(title,
-                style: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              title,
+              style: Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            ),
             const SizedBox(height: 12),
             child,
           ],
@@ -566,8 +582,8 @@ class _NumberStepper extends StatelessWidget {
   Future<void> _enter(BuildContext context) async {
     final entered = await showDialog<int>(
       context: context,
-      builder: (_) => _NumberDialog(
-          title: label, value: value, min: min, max: max),
+      builder: (_) =>
+          _NumberDialog(title: label, value: value, min: min, max: max),
     );
     if (entered != null) onChanged(entered);
   }
@@ -636,10 +652,12 @@ class _NumberDialog extends StatefulWidget {
 }
 
 class _NumberDialogState extends State<_NumberDialog> {
-  late final TextEditingController _ctrl = TextEditingController(
-      text: '${widget.value}')
-    ..selection = TextSelection(
-        baseOffset: 0, extentOffset: '${widget.value}'.length);
+  late final TextEditingController _ctrl =
+      TextEditingController(text: '${widget.value}')
+        ..selection = TextSelection(
+          baseOffset: 0,
+          extentOffset: '${widget.value}'.length,
+        );
 
   @override
   void dispose() {
@@ -691,8 +709,9 @@ class _NumberDialogState extends State<_NumberDialog> {
               child: Text(l.cancel),
             ),
             FilledButton(
-              onPressed:
-                  valid == null ? null : () => Navigator.pop(context, valid),
+              onPressed: valid == null
+                  ? null
+                  : () => Navigator.pop(context, valid),
               child: Text(l.ok),
             ),
           ],
@@ -769,11 +788,13 @@ class _StepButtonState extends State<_StepButton> {
           onTap: enabled ? widget.onTap : null,
           child: Padding(
             padding: const EdgeInsets.all(8),
-            child: Icon(widget.icon,
-                size: 22,
-                color: enabled
-                    ? cs.onSecondaryContainer
-                    : cs.onSurface.withValues(alpha: 0.38)),
+            child: Icon(
+              widget.icon,
+              size: 22,
+              color: enabled
+                  ? cs.onSecondaryContainer
+                  : cs.onSurface.withValues(alpha: 0.38),
+            ),
           ),
         ),
       ),

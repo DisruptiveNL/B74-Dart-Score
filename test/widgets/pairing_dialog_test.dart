@@ -14,14 +14,15 @@ void main() {
     final calls = <String>[];
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(SystemChannels.platform, (call) async {
-      if (call.method == 'HapticFeedback.vibrate') {
-        calls.add('${call.arguments}');
-      }
-      return null;
-    });
-    addTearDown(() => TestDefaultBinaryMessengerBinding
-        .instance.defaultBinaryMessenger
-        .setMockMethodCallHandler(SystemChannels.platform, null));
+          if (call.method == 'HapticFeedback.vibrate') {
+            calls.add('${call.arguments}');
+          }
+          return null;
+        });
+    addTearDown(
+      () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null),
+    );
     return calls;
   }
 
@@ -37,8 +38,11 @@ void main() {
     // The impact taps travel as an argument naming which one; the plain,
     // strongest vibrate carries none. Anything else here means it was quietly
     // softened back to a tap.
-    expect(haptics.single, 'null',
-        reason: 'the full vibrate, so it carries like a notification');
+    expect(
+      haptics.single,
+      'null',
+      reason: 'the full vibrate, so it carries like a notification',
+    );
   });
 
   testWidgets('does not buzz again on a rebuild', (tester) async {

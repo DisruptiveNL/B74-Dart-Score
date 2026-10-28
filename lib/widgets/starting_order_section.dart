@@ -13,7 +13,11 @@ class StartingOrderEntry {
   /// Team accent color, or null in an individual game.
   final Color? color;
 
-  const StartingOrderEntry({required this.key, required this.label, this.color});
+  const StartingOrderEntry({
+    required this.key,
+    required this.label,
+    this.color,
+  });
 }
 
 /// Section to pick how the throwing order is determined: drawn randomly at the
@@ -44,8 +48,8 @@ class StartingOrderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
 
     return Card(
       child: Padding(
@@ -53,9 +57,12 @@ class StartingOrderSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(l.startingOrder,
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.bold)),
+            Text(
+              l.startingOrder,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
@@ -80,9 +87,12 @@ class StartingOrderSection extends StatelessWidget {
             Text(
               order == StartingOrder.random
                   ? l.startingOrderRandomHint
-                  : (teamMode ? l.startingOrderTeamHint : l.startingOrderFixedHint),
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+                  : (teamMode
+                        ? l.startingOrderTeamHint
+                        : l.startingOrderFixedHint),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
             ),
             if (order == StartingOrder.fixed) ...[
               const SizedBox(height: 4),
@@ -95,7 +105,7 @@ class StartingOrderSection extends StatelessWidget {
                   if (newIndex != oldIndex) onReorder(oldIndex, newIndex);
                 },
                 itemBuilder: (context, i) {
-                  final e     = entries[i];
+                  final e = entries[i];
                   final accent = e.color ?? cs.primary;
                   return Padding(
                     key: e.key,
@@ -126,16 +136,21 @@ class StartingOrderSection extends StatelessWidget {
                         ),
                         const SizedBox(width: 10),
                         Expanded(
-                          child: Text(e.label,
-                              style: theme.textTheme.bodyMedium,
-                              overflow: TextOverflow.ellipsis),
+                          child: Text(
+                            e.label,
+                            style: theme.textTheme.bodyMedium,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                         ReorderableDragStartListener(
                           index: i,
                           child: Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 4),
-                            child: Icon(Icons.drag_handle,
-                                size: 22, color: cs.onSurfaceVariant),
+                            child: Icon(
+                              Icons.drag_handle,
+                              size: 22,
+                              color: cs.onSurfaceVariant,
+                            ),
                           ),
                         ),
                       ],

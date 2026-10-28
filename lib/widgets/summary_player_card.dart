@@ -16,14 +16,18 @@ typedef SummaryMember = (String name, List<DartThrow> throws);
 class SummaryPlayerCard extends StatelessWidget {
   /// Player or team name shown in the header.
   final String name;
+
   /// Every visit of this slot, team members combined.
   final List<DartThrow> throws;
+
   /// Legs won by this slot. Passed in rather than derived, because placement
   /// mode counts legs differently from "a visit that reached zero".
   final int legsWon;
+
   /// Sets won, or null where the source does not track sets per slot; then the
   /// header names the legs only.
   final int? setsWon;
+
   /// The slot's members, empty for an individual player.
   final List<SummaryMember> members;
 
@@ -49,8 +53,8 @@ class SummaryPlayerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
     final stats = ThrowStats.fromThrows(throws);
 
     return Card(
@@ -65,8 +69,11 @@ class SummaryPlayerCard extends StatelessWidget {
                 CircleAvatar(
                   backgroundColor: cs.primaryContainer,
                   child: isTeam
-                      ? Icon(Icons.groups_rounded,
-                          color: cs.onPrimaryContainer, size: 20)
+                      ? Icon(
+                          Icons.groups_rounded,
+                          color: cs.onPrimaryContainer,
+                          size: 20,
+                        )
                       : Text(
                           name.isNotEmpty ? name[0].toUpperCase() : '?',
                           style: TextStyle(
@@ -82,8 +89,9 @@ class SummaryPlayerCard extends StatelessWidget {
                     children: [
                       Text(
                         name,
-                        style: theme.textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.bold),
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       Text(
                         setsWon != null
@@ -105,7 +113,10 @@ class SummaryPlayerCard extends StatelessWidget {
             const SizedBox(height: 8),
             StatRow(label: l.totalDarts, value: '${stats.totalDarts}'),
             StatRow(label: l.visits, value: '${stats.totalVisits}'),
-            StatRow(label: l.threeDartAvg, value: stats.average.toStringAsFixed(2)),
+            StatRow(
+              label: l.threeDartAvg,
+              value: stats.average.toStringAsFixed(2),
+            ),
             StatRow(label: l.highestVisit, value: '${stats.highestVisit}'),
             StatRow(label: l.busts, value: '${stats.busts}'),
             if (isTeam) ...[
@@ -137,7 +148,7 @@ class _Badge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
+    final cs = theme.colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -177,15 +188,15 @@ class _MemberRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
     final stats = ThrowStats.fromThrows(throws);
 
     final summary = stats.totalDarts == 0
         ? l.noThrowData
         : 'Ø ${stats.average.toStringAsFixed(1)}'
-            '  ·  ${l.highAbbr} ${stats.highestVisit}'
-            '  ·  ${l.dartsN(stats.totalDarts)}';
+              '  ·  ${l.highAbbr} ${stats.highestVisit}'
+              '  ·  ${l.dartsN(stats.totalDarts)}';
 
     // Where the second line starts, so it lines up with the name rather than
     // with the avatar in front of it.
@@ -228,8 +239,9 @@ class _MemberRow extends StatelessWidget {
               summary,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: theme.textTheme.labelSmall
-                  ?.copyWith(color: cs.onSurfaceVariant),
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: cs.onSurfaceVariant,
+              ),
             ),
           ),
         ],

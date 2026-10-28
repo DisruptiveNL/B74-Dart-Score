@@ -46,12 +46,12 @@ class _PlayerSelectSectionState extends State<PlayerSelectSection> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cs    = theme.colorScheme;
-    final l     = context.l10n;
+    final cs = theme.colorScheme;
+    final l = context.l10n;
 
-    final total  = widget.allPlayers.length;
+    final total = widget.allPlayers.length;
     final hidden = total - kCollapsedPlayerCount;
-    final shown  = _expanded || hidden <= 0
+    final shown = _expanded || hidden <= 0
         ? widget.allPlayers
         : widget.allPlayers.take(kCollapsedPlayerCount).toList();
 
@@ -64,16 +64,20 @@ class _PlayerSelectSectionState extends State<PlayerSelectSection> {
             Row(
               children: [
                 Expanded(
-                  child: Text(l.players,
-                      style: theme.textTheme.titleMedium
-                          ?.copyWith(fontWeight: FontWeight.bold)),
+                  child: Text(
+                    l.players,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
                 TextButton.icon(
                   onPressed: widget.onAddPlayer,
                   icon: const Icon(Icons.person_add_outlined, size: 18),
                   label: Text(l.addPlayer),
                   style: TextButton.styleFrom(
-                      visualDensity: VisualDensity.compact),
+                    visualDensity: VisualDensity.compact,
+                  ),
                 ),
               ],
             ),
@@ -81,14 +85,18 @@ class _PlayerSelectSectionState extends State<PlayerSelectSection> {
             if (widget.allPlayers.isEmpty)
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 8),
-                child: Text(l.noPlayersAvail,
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: cs.onSurfaceVariant)),
+                child: Text(
+                  l.noPlayersAvail,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: cs.onSurfaceVariant,
+                  ),
+                ),
               )
             else ...[
               ...shown.map((p) {
-                final idx      = widget.selectedPlayers
-                    .indexWhere((s) => s.id == p.id);
+                final idx = widget.selectedPlayers.indexWhere(
+                  (s) => s.id == p.id,
+                );
                 final selected = idx >= 0;
                 return CheckboxListTile(
                   contentPadding: EdgeInsets.zero,
@@ -101,8 +109,11 @@ class _PlayerSelectSectionState extends State<PlayerSelectSection> {
                         const SizedBox(width: 6),
                         Tooltip(
                           message: l.alreadyMainProfile,
-                          child: Icon(Icons.star_rounded,
-                              size: 16, color: cs.primary),
+                          child: Icon(
+                            Icons.star_rounded,
+                            size: 16,
+                            color: cs.primary,
+                          ),
                         ),
                       ],
                     ],
@@ -118,13 +129,15 @@ class _PlayerSelectSectionState extends State<PlayerSelectSection> {
                   child: TextButton.icon(
                     onPressed: () => setState(() => _expanded = !_expanded),
                     icon: Icon(
-                        _expanded ? Icons.expand_less : Icons.expand_more,
-                        size: 18),
-                    label: Text(_expanded
-                        ? l.fewerPlayers
-                        : l.morePlayers(hidden)),
+                      _expanded ? Icons.expand_less : Icons.expand_more,
+                      size: 18,
+                    ),
+                    label: Text(
+                      _expanded ? l.fewerPlayers : l.morePlayers(hidden),
+                    ),
                     style: TextButton.styleFrom(
-                        visualDensity: VisualDensity.compact),
+                      visualDensity: VisualDensity.compact,
+                    ),
                   ),
                 ),
             ],

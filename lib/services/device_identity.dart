@@ -36,7 +36,9 @@ class DeviceIdentity {
     if (stored == null || stored.isEmpty) {
       final random = Random.secure();
       stored = List.generate(
-          _kLength, (_) => _kAlphabet[random.nextInt(_kAlphabet.length)]).join();
+        _kLength,
+        (_) => _kAlphabet[random.nextInt(_kAlphabet.length)],
+      ).join();
       await prefs.setString(_kPrefsKey, stored);
     }
 

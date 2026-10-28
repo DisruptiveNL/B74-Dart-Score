@@ -40,27 +40,37 @@ void main() {
       expect(await _indexNames(db), containsAll(_expectedIndexes));
     });
 
-    test('answers a throw lookup by player from the index, not by scanning',
-        () async {
-      final db = await DbHelper.instance.db;
+    test(
+      'answers a throw lookup by player from the index, not by scanning',
+      () async {
+        final db = await DbHelper.instance.db;
 
-      final plan = await db.rawQuery(
-          'EXPLAIN QUERY PLAN SELECT * FROM dart_throws WHERE player_id = 1');
+        final plan = await db.rawQuery(
+          'EXPLAIN QUERY PLAN SELECT * FROM dart_throws WHERE player_id = 1',
+        );
 
-      expect(plan.map((r) => r['detail']).join(' '),
-          contains('idx_dart_throws_player'));
-    });
+        expect(
+          plan.map((r) => r['detail']).join(' '),
+          contains('idx_dart_throws_player'),
+        );
+      },
+    );
 
-    test('answers a throw lookup by game from the index, not by scanning',
-        () async {
-      final db = await DbHelper.instance.db;
+    test(
+      'answers a throw lookup by game from the index, not by scanning',
+      () async {
+        final db = await DbHelper.instance.db;
 
-      final plan = await db.rawQuery(
-          'EXPLAIN QUERY PLAN SELECT * FROM dart_throws WHERE game_id = 1');
+        final plan = await db.rawQuery(
+          'EXPLAIN QUERY PLAN SELECT * FROM dart_throws WHERE game_id = 1',
+        );
 
-      expect(plan.map((r) => r['detail']).join(' '),
-          contains('idx_dart_throws_game'));
-    });
+        expect(
+          plan.map((r) => r['detail']).join(' '),
+          contains('idx_dart_throws_game'),
+        );
+      },
+    );
   });
 
   group('upgrading a database that predates the indexes', () {
@@ -141,61 +151,75 @@ void main() {
       expect(players.map((p) => p.name), ['Nik']);
     });
 
-    test('moves what an earlier sync left behind into its own bucket',
-        () async {
-      // A player that was synced under a version that kept one snapshot
-      // column, which the import of the day overwrote outright.
-      final fresh = await DbHelper.instance.db;
-      final playerId = await fresh.insert('players', {
-        'name':             'Nik',
-        'uuid':             'u-1',
-        'last_synced_at':   1000,
-        'local_stats_json': '{"total_darts":9}',
-      });
-      final ownId = await fresh.insert('players', {
-        'name':             'Own',
-        'uuid':             'u-2',
-        'local_stats_json': '{"total_darts":3}',
-      });
-      await windBackTo18(fresh);
-      await DbHelper.debugReset();
+    test(
+      'moves what an earlier sync left behind into its own bucket',
+      () async {
+        // A player that was synced under a version that kept one snapshot
+        // column, which the import of the day overwrote outright.
+        final fresh = await DbHelper.instance.db;
+        final playerId = await fresh.insert('players', {
+          'name': 'Nik',
+          'uuid': 'u-1',
+          'last_synced_at': 1000,
+          'local_stats_json': '{"total_darts":9}',
+        });
+        final ownId = await fresh.insert('players', {
+          'name': 'Own',
+          'uuid': 'u-2',
+          'local_stats_json': '{"total_darts":3}',
+        });
+        await windBackTo18(fresh);
+        await DbHelper.debugReset();
 
-      final db = DbHelper.instance;
+        final db = DbHelper.instance;
 
-      // What the import wrote is no longer this device's own history, it is
-      // one unnamed device's.
-      expect((await db.getPlayer(playerId))!.localStatsJson, isNull);
-      expect(await db.getOriginSnapshots(playerId), {'': '{"total_darts":9}'});
+        // What the import wrote is no longer this device's own history, it is
+        // one unnamed device's.
+        expect((await db.getPlayer(playerId))!.localStatsJson, isNull);
+        expect(await db.getOriginSnapshots(playerId), {
+          '': '{"total_darts":9}',
+        });
 
-      // A player that was never synced is left exactly as they were.
-      expect((await db.getPlayer(ownId))!.localStatsJson, '{"total_darts":3}');
-      expect(await db.getOriginSnapshots(ownId), isEmpty);
+        // A player that was never synced is left exactly as they were.
+        expect(
+          (await db.getPlayer(ownId))!.localStatsJson,
+          '{"total_darts":3}',
+        );
+        expect(await db.getOriginSnapshots(ownId), isEmpty);
 
-      // Either way the lifetime numbers still add up to the same thing.
-      expect(await db.combinedSnapshotJson(playerId),
-          contains('"total_darts":9'));
-    });
+        // Either way the lifetime numbers still add up to the same thing.
+        expect(
+          await db.combinedSnapshotJson(playerId),
+          contains('"total_darts":9'),
+        );
+      },
+    );
 
-    test('files throws from an earlier sync under the unnamed device',
-        () async {
-      final fresh = await DbHelper.instance.db;
-      final synced = await fresh.insert('games', {
-        'start_score': 501,
-        'created_at':  1000,
-        'is_synced':   1,
-      });
-      final own = await fresh.insert('games', {
-        'start_score': 501,
-        'created_at':  1000,
-      });
-      await windBackTo18(fresh);
-      await DbHelper.debugReset();
+    test(
+      'files throws from an earlier sync under the unnamed device',
+      () async {
+        final fresh = await DbHelper.instance.db;
+        final synced = await fresh.insert('games', {
+          'start_score': 501,
+          'created_at': 1000,
+          'is_synced': 1,
+        });
+        final own = await fresh.insert('games', {
+          'start_score': 501,
+          'created_at': 1000,
+        });
+        await windBackTo18(fresh);
+        await DbHelper.debugReset();
 
-      final rows = await (await DbHelper.instance.db).query('games',
-          columns: ['id', 'origin_device'], orderBy: 'id');
+        final rows = await (await DbHelper.instance.db).query(
+          'games',
+          columns: ['id', 'origin_device'],
+          orderBy: 'id',
+        );
 
-      expect(rows.firstWhere((r) => r['id'] == synced)['origin_device'], '');
-      expect(rows.firstWhere((r) => r['id'] == own)['origin_device'], isNull);
-    });
+        expect(rows.firstWhere((r) => r['id'] == synced)['origin_device'], '');
+        expect(rows.firstWhere((r) => r['id'] == own)['origin_device'], isNull);
+      },
+    );
   });
 }

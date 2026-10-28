@@ -36,29 +36,37 @@ void main() {
       return pace;
     }
 
-    testWidgets('keeps what it does behind an info icon until asked',
-        (tester) async {
+    testWidgets('keeps what it does behind an info icon until asked', (
+      tester,
+    ) async {
       await pumpSettings(tester);
 
       expect(find.text('Game pace'), findsOneWidget);
-      expect(find.textContaining('how quickly a computer opponent throws'),
-          findsNothing);
+      expect(
+        find.textContaining('how quickly a computer opponent throws'),
+        findsNothing,
+      );
 
       await tester.tap(find.byTooltip('What it does'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('how quickly a computer opponent throws'),
-          findsOneWidget);
+      expect(
+        find.textContaining('how quickly a computer opponent throws'),
+        findsOneWidget,
+      );
 
       await tester.tap(find.byTooltip('What it does'));
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('how quickly a computer opponent throws'),
-          findsNothing);
+      expect(
+        find.textContaining('how quickly a computer opponent throws'),
+        findsNothing,
+      );
     });
 
-    testWidgets('offers the three paces and hands the pick to the games',
-        (tester) async {
+    testWidgets('offers the three paces and hands the pick to the games', (
+      tester,
+    ) async {
       final pace = await pumpSettings(tester);
 
       await tester.tap(find.text('Game pace'));
@@ -68,8 +76,11 @@ void main() {
 
       expect(pace.pace, GamePace.slow);
       expect(TurnPacing.pace, GamePace.slow);
-      expect(find.text('Slow'), findsOneWidget,
-          reason: 'the row now shows the pick');
+      expect(
+        find.text('Slow'),
+        findsOneWidget,
+        reason: 'the row now shows the pick',
+      );
     });
   });
 }

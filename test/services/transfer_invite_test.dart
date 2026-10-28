@@ -12,35 +12,41 @@ void main() {
     List<String> addresses = const ['192.168.1.42'],
     HotspotCredentials? hotspot,
     Duration age = Duration.zero,
-  }) =>
-      TransferInvite(
-        addresses: addresses,
-        port: 54321,
-        token: 'K7M3PQRSTUVWXYZ2',
-        hotspot: hotspot,
-        expiresAt: DateTime.now().add(kInviteLifetime).subtract(age),
-      );
+  }) => TransferInvite(
+    addresses: addresses,
+    port: 54321,
+    token: 'K7M3PQRSTUVWXYZ2',
+    hotspot: hotspot,
+    expiresAt: DateTime.now().add(kInviteLifetime).subtract(age),
+  );
 
   group('there and back', () {
     test('an ordinary invitation survives the round trip', () {
       final original = invite();
-      final read = TransferInvite.parse(original.qrPayload(kSyncWifiPrefix),
-          prefix: kSyncWifiPrefix);
+      final read = TransferInvite.parse(
+        original.qrPayload(kSyncWifiPrefix),
+        prefix: kSyncWifiPrefix,
+      );
 
       expect(read, isNotNull);
       expect(read!.addresses, original.addresses);
       expect(read.port, original.port);
       expect(read.token, original.token);
       expect(read.hotspot, isNull);
-      expect(read.expiresAt.millisecondsSinceEpoch,
-          original.expiresAt.millisecondsSinceEpoch);
+      expect(
+        read.expiresAt.millisecondsSinceEpoch,
+        original.expiresAt.millisecondsSinceEpoch,
+      );
     });
 
     test('several addresses travel in order', () {
-      final original =
-          invite(addresses: ['192.168.49.1', '192.168.1.42', '10.0.0.7']);
-      final read = TransferInvite.parse(original.qrPayload(kSyncWifiPrefix),
-          prefix: kSyncWifiPrefix);
+      final original = invite(
+        addresses: ['192.168.49.1', '192.168.1.42', '10.0.0.7'],
+      );
+      final read = TransferInvite.parse(
+        original.qrPayload(kSyncWifiPrefix),
+        prefix: kSyncWifiPrefix,
+      );
 
       expect(read!.addresses, ['192.168.49.1', '192.168.1.42', '10.0.0.7']);
     });
@@ -48,24 +54,34 @@ void main() {
     test('hotspot credentials travel with the endpoint', () {
       // One scan has to both join the network and reach the server on it.
       final original = invite(
-          addresses: ['192.168.49.1'],
-          hotspot: const HotspotCredentials(
-              ssid: 'AndroidShare_4711', passphrase: 'k9x:vm/2 Q'));
-      final read = TransferInvite.parse(original.qrPayload(kSyncWifiPrefix),
-          prefix: kSyncWifiPrefix);
+        addresses: ['192.168.49.1'],
+        hotspot: const HotspotCredentials(
+          ssid: 'AndroidShare_4711',
+          passphrase: 'k9x:vm/2 Q',
+        ),
+      );
+      final read = TransferInvite.parse(
+        original.qrPayload(kSyncWifiPrefix),
+        prefix: kSyncWifiPrefix,
+      );
 
       expect(read!.hotspot!.ssid, 'AndroidShare_4711');
-      expect(read.hotspot!.passphrase, 'k9x:vm/2 Q',
-          reason: 'a colon or a space in the passphrase used to split the code');
+      expect(
+        read.hotspot!.passphrase,
+        'k9x:vm/2 Q',
+        reason: 'a colon or a space in the passphrase used to split the code',
+      );
     });
 
     test('the code stays in the QR alphanumeric set', () {
       // Byte mode holds about a third less, and these codes are read across a
       // table in whatever light the room has.
       final payload = invite(
-              hotspot: const HotspotCredentials(
-                  ssid: 'AndroidShare_4711', passphrase: 'lower Case+ü'))
-          .qrPayload(kSyncWifiPrefix);
+        hotspot: const HotspotCredentials(
+          ssid: 'AndroidShare_4711',
+          passphrase: 'lower Case+ü',
+        ),
+      ).qrPayload(kSyncWifiPrefix);
 
       expect(isAlphanumericSafe(payload), isTrue);
     });
@@ -75,26 +91,40 @@ void main() {
     test('a code of the other kind is not read', () {
       final payload = invite().qrPayload(kBackupWifiPrefix);
 
-      expect(TransferInvite.parse(payload, prefix: kSyncWifiPrefix), isNull,
-          reason: 'a backup replaces the device, a sync merges into it');
-      expect(TransferInvite.parse(payload, prefix: kBackupWifiPrefix),
-          isNotNull);
+      expect(
+        TransferInvite.parse(payload, prefix: kSyncWifiPrefix),
+        isNull,
+        reason: 'a backup replaces the device, a sync merges into it',
+      );
+      expect(
+        TransferInvite.parse(payload, prefix: kBackupWifiPrefix),
+        isNotNull,
+      );
     });
 
     test('anything else the camera saw is one null', () {
-      for (final raw in ['', 'DSW:', 'DSW:!!!!', 'https://example.com', 'DS2:AB']) {
-        expect(TransferInvite.parse(raw, prefix: kSyncWifiPrefix), isNull,
-            reason: 'refused: $raw');
+      for (final raw in [
+        '',
+        'DSW:',
+        'DSW:!!!!',
+        'https://example.com',
+        'DS2:AB',
+      ]) {
+        expect(
+          TransferInvite.parse(raw, prefix: kSyncWifiPrefix),
+          isNull,
+          reason: 'refused: $raw',
+        );
       }
     });
 
     test('an invitation without an address is not one', () {
       final payload = TransferInvite(
-              addresses: const [],
-              port: 54321,
-              token: 'K7M3PQRSTUVWXYZ2',
-              expiresAt: DateTime.now())
-          .qrPayload(kSyncWifiPrefix);
+        addresses: const [],
+        port: 54321,
+        token: 'K7M3PQRSTUVWXYZ2',
+        expiresAt: DateTime.now(),
+      ).qrPayload(kSyncWifiPrefix);
 
       expect(TransferInvite.parse(payload, prefix: kSyncWifiPrefix), isNull);
     });
@@ -106,17 +136,21 @@ void main() {
     });
 
     test('an old one is named as expired rather than left to time out', () {
-      expect(invite(age: kInviteLifetime + const Duration(seconds: 1)).isExpired,
-          isTrue);
+      expect(
+        invite(age: kInviteLifetime + const Duration(seconds: 1)).isExpired,
+        isTrue,
+      );
     });
 
     test('expiry survives the round trip', () {
-      final payload = invite(age: kInviteLifetime + const Duration(minutes: 1))
-          .qrPayload(kSyncWifiPrefix);
+      final payload = invite(
+        age: kInviteLifetime + const Duration(minutes: 1),
+      ).qrPayload(kSyncWifiPrefix);
 
       expect(
-          TransferInvite.parse(payload, prefix: kSyncWifiPrefix)!.isExpired,
-          isTrue);
+        TransferInvite.parse(payload, prefix: kSyncWifiPrefix)!.isExpired,
+        isTrue,
+      );
     });
   });
 

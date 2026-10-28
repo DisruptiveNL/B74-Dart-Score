@@ -69,8 +69,10 @@ class _B74NumericInputState extends State<B74NumericInput> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: const Text('CHECKOUT BEVESTIGEN'),
-          content: Text('Bevestig de finish van $score punten met dart $finishDart. '
-              'Pas na bevestiging wordt de leg opgeslagen.'),
+          content: Text(
+            'Bevestig de finish van $score punten met dart $finishDart. '
+            'Pas na bevestiging wordt de leg opgeslagen.',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext, false),

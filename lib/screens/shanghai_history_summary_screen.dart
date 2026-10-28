@@ -36,7 +36,8 @@ class ShanghaiHistorySummaryScreen extends StatefulWidget {
       _ShanghaiHistorySummaryScreenState();
 }
 
-class _ShanghaiHistorySummaryScreenState extends State<ShanghaiHistorySummaryScreen> {
+class _ShanghaiHistorySummaryScreenState
+    extends State<ShanghaiHistorySummaryScreen> {
   /// Started once and kept, not started again on every build.
   ///
   /// A read begun inside `build` is begun again by every rebuild, and a pane
@@ -68,7 +69,11 @@ class _ShanghaiHistorySummaryScreenState extends State<ShanghaiHistorySummaryScr
               if (provider == null) {
                 return Center(child: Text(context.l10n.noThrowData));
               }
-              return _Body(game: widget.game, players: widget.players, provider: provider);
+              return _Body(
+                game: widget.game,
+                players: widget.players,
+                provider: provider,
+              );
             },
           ),
         ),
@@ -82,7 +87,9 @@ class _ShanghaiHistorySummaryScreenState extends State<ShanghaiHistorySummaryScr
       ? content
       : Scaffold(
           appBar: AppBar(
-            title: Text(DateFormat('dd.MM.yy  HH:mm').format(widget.game.createdAt)),
+            title: Text(
+              DateFormat('dd.MM.yy  HH:mm').format(widget.game.createdAt),
+            ),
           ),
           body: content,
         );
@@ -110,9 +117,9 @@ class _Body extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme  = Theme.of(context);
-    final cs     = theme.colorScheme;
-    final l      = context.l10n;
+    final theme = Theme.of(context);
+    final cs = theme.colorScheme;
+    final l = context.l10n;
     final states = provider.playerStates;
     final winnerId = provider.winnerId;
     final isSequential = game.variant == ShanghaiVariant.sequential;
@@ -136,14 +143,18 @@ class _Body extends StatelessWidget {
 
     final rematch = RematchButton(
       modeName: l.modeShanghaiName,
-      details: [
-        (l.shanghaiVariant, shanghaiVariantLabel(l, game.variant)),
-      ],
+      details: [(l.shanghaiVariant, shanghaiVariantLabel(l, game.variant))],
       slots: states
-          .map((s) => s.isTeamSlot
-              ? RematchSlot.team(s.label(l),
-                  s.players.map((p) => RematchSlot.player(p.label(l))).toList())
-              : RematchSlot.player(s.label(l)))
+          .map(
+            (s) => s.isTeamSlot
+                ? RematchSlot.team(
+                    s.label(l),
+                    s.players
+                        .map((p) => RematchSlot.player(p.label(l)))
+                        .toList(),
+                  )
+                : RematchSlot.player(s.label(l)),
+          )
           .toList(),
       onRematch: () =>
           context.read<ShanghaiProvider>().startRematch(game, players),
@@ -166,7 +177,11 @@ class _Body extends StatelessWidget {
                     color: cs.primaryContainer,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.emoji_events_rounded, size: 52, color: cs.primary),
+                  child: Icon(
+                    Icons.emoji_events_rounded,
+                    size: 52,
+                    color: cs.primary,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -184,14 +199,16 @@ class _Body extends StatelessWidget {
         ],
 
         // Game info
-        GameInfoCard(dense: true, rows: [
-          (l.gameLabel, l.modeShanghaiName),
-          (l.shanghaiVariant, shanghaiVariantLabel(l, game.variant)),
-          (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
-        ]),
+        GameInfoCard(
+          dense: true,
+          rows: [
+            (l.gameLabel, l.modeShanghaiName),
+            (l.shanghaiVariant, shanghaiVariantLabel(l, game.variant)),
+            (l.startingOrder, startingOrderLabel(l, game.startingOrder)),
+          ],
+        ),
 
         // ── Rematch ────────────────────────────────────────────────────────
-
         Card(
           margin: const EdgeInsets.only(bottom: 12),
           child: Padding(
@@ -199,9 +216,12 @@ class _Body extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(l.shanghaiSummaryTitle,
-                    style: theme.textTheme.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.bold)),
+                Text(
+                  l.shanghaiSummaryTitle,
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 const Divider(height: 1),
                 const SizedBox(height: 8),
@@ -222,18 +242,21 @@ class _Body extends StatelessWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(s.label(l),
-                                  style: theme.textTheme.titleSmall?.copyWith(
-                                    fontWeight: isWinner
-                                        ? FontWeight.bold
-                                        : FontWeight.normal,
-                                    color: isWinner ? cs.primary : null,
-                                  )),
+                              Text(
+                                s.label(l),
+                                style: theme.textTheme.titleSmall?.copyWith(
+                                  fontWeight: isWinner
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                  color: isWinner ? cs.primary : null,
+                                ),
+                              ),
                               if (s.isTeamSlot)
                                 Text(
                                   s.players.map((p) => p.label(l)).join(' & '),
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                      color: cs.onSurfaceVariant),
+                                    color: cs.onSurfaceVariant,
+                                  ),
                                 ),
                               if (isSequential)
                                 Text(
@@ -241,16 +264,19 @@ class _Body extends StatelessWidget {
                                       ? l.shanghaiDartsUsed(s.finishedAtDart!)
                                       : '${l.shanghaiTarget}: ${s.progress}',
                                   style: theme.textTheme.bodySmall?.copyWith(
-                                      color: cs.onSurfaceVariant),
+                                    color: cs.onSurfaceVariant,
+                                  ),
                                 ),
                             ],
                           ),
                         ),
-                        Text('${s.score}',
-                            style: theme.textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                              color: isWinner ? cs.primary : null,
-                            )),
+                        Text(
+                          '${s.score}',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                            color: isWinner ? cs.primary : null,
+                          ),
+                        ),
                       ],
                     ),
                   );
@@ -270,4 +296,3 @@ class _Body extends StatelessWidget {
     );
   }
 }
-

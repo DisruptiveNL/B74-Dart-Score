@@ -43,7 +43,10 @@ void main() {
 
   /// Writes a backup of the current database to its own file and returns the
   /// path, the way the export does.
-  Future<String> writeBackup(String deviceId, {String name = 'backup.db'}) async {
+  Future<String> writeBackup(
+    String deviceId, {
+    String name = 'backup.db',
+  }) async {
     final source = await DbHelper.instance.prepareBackup(deviceId, 'iPhone');
     final target = '${dir.path}/$name';
     await File(source).copy(target);
@@ -54,20 +57,29 @@ void main() {
     test('reports the device, the time and what it holds', () async {
       await DbHelper.instance.insertPlayer(Player(name: 'Ann'));
       await DbHelper.instance.insertPlayer(Player(name: 'Bob'));
-      await DbHelper.instance.insertPlayer(Player(
+      await DbHelper.instance.insertPlayer(
+        Player(
           name: BotLevel.pro.storedName,
           uuid: BotLevel.pro.uuid,
-          botLevel: BotLevel.pro));
+          botLevel: BotLevel.pro,
+        ),
+      );
 
       final path = await writeBackup('DEVICE0000000001');
       final info = await DbHelper.instance.inspectBackup(path);
 
       expect(info, isNotNull);
       expect(info!.deviceId, 'DEVICE0000000001');
-      expect(info.deviceLabel, 'iPhone',
-          reason: 'the receiving screen names where the data comes from');
-      expect(info.playerCount, 2,
-          reason: 'a bot is a row, not a person the backup holds');
+      expect(
+        info.deviceLabel,
+        'iPhone',
+        reason: 'the receiving screen names where the data comes from',
+      );
+      expect(
+        info.playerCount,
+        2,
+        reason: 'a bot is a row, not a person the backup holds',
+      );
       expect(info.gameCount, 0);
       expect(info.schemaVersion, DbHelper.schemaVersion);
       expect(info.createdAt, isNotNull);
@@ -127,41 +139,51 @@ void main() {
     test('refuses a backup whose marker was tampered with', () async {
       final path = await writeBackup('DEVICE0000000001');
       final file = await databaseFactory.openDatabase(path);
-      await file.update('app_meta', {'value': 'something-else'},
-          where: 'key = ?', whereArgs: ['format']);
+      await file.update(
+        'app_meta',
+        {'value': 'something-else'},
+        where: 'key = ?',
+        whereArgs: ['format'],
+      );
       await file.close();
 
       expect(await DbHelper.instance.inspectBackup(path), isNull);
     });
 
-    test('describes a file from a newer app version instead of failing',
-        () async {
-      final path = await writeBackup('DEVICE0000000001');
-      final newer = await databaseFactory.openDatabase(path);
-      await newer.execute('PRAGMA user_version = ${DbHelper.schemaVersion + 5}');
-      await newer.close();
+    test(
+      'describes a file from a newer app version instead of failing',
+      () async {
+        final path = await writeBackup('DEVICE0000000001');
+        final newer = await databaseFactory.openDatabase(path);
+        await newer.execute(
+          'PRAGMA user_version = ${DbHelper.schemaVersion + 5}',
+        );
+        await newer.close();
 
-      final info = await DbHelper.instance.inspectBackup(path);
+        final info = await DbHelper.instance.inspectBackup(path);
 
-      expect(info, isNotNull);
-      expect(info!.schemaVersion, greaterThan(DbHelper.schemaVersion));
-    });
+        expect(info, isNotNull);
+        expect(info!.schemaVersion, greaterThan(DbHelper.schemaVersion));
+      },
+    );
   });
 
   group('restoring', () {
-    test('brings back what the backup held and drops what came after',
-        () async {
-      await DbHelper.instance.insertPlayer(Player(name: 'Ann'));
-      final path = await writeBackup('DEVICE0000000001');
+    test(
+      'brings back what the backup held and drops what came after',
+      () async {
+        await DbHelper.instance.insertPlayer(Player(name: 'Ann'));
+        final path = await writeBackup('DEVICE0000000001');
 
-      await DbHelper.instance.insertPlayer(Player(name: 'Later'));
-      expect((await DbHelper.instance.getPlayers()).length, 2);
+        await DbHelper.instance.insertPlayer(Player(name: 'Later'));
+        expect((await DbHelper.instance.getPlayers()).length, 2);
 
-      await DbHelper.instance.replaceDatabase(path);
+        await DbHelper.instance.replaceDatabase(path);
 
-      final players = await DbHelper.instance.getPlayers();
-      expect(players.map((p) => p.name), ['Ann']);
-    });
+        final players = await DbHelper.instance.getPlayers();
+        expect(players.map((p) => p.name), ['Ann']);
+      },
+    );
 
     test('leaves nothing of the old database beside the new one', () async {
       await DbHelper.instance.insertPlayer(Player(name: 'Ann'));
@@ -187,7 +209,9 @@ void main() {
         throwsA(isA<Exception>()),
       );
 
-      expect((await DbHelper.instance.getPlayers()).map((p) => p.name), ['Ann']);
+      expect((await DbHelper.instance.getPlayers()).map((p) => p.name), [
+        'Ann',
+      ]);
     });
   });
 
@@ -195,8 +219,9 @@ void main() {
     /// The origin every game of [playerId] is filed under, `null` meaning the
     /// device believes it played the game itself.
     Future<Set<String?>> originsOf(int playerId) async {
-      final byOrigin =
-          await DbHelper.instance.getThrowsForPlayerByOrigin(playerId);
+      final byOrigin = await DbHelper.instance.getThrowsForPlayerByOrigin(
+        playerId,
+      );
       return byOrigin.keys.toSet();
     }
 
@@ -212,56 +237,79 @@ void main() {
       expect(await originsOf(id), {'DEVICE0000000001'});
     });
 
-    test('moves the source\'s own snapshot into the source\'s bucket',
-        () async {
-      final id = await DbHelper.instance.insertPlayer(Player(name: 'Ann'));
-      final db = await DbHelper.instance.db;
-      await db.update('players',
+    test(
+      'moves the source\'s own snapshot into the source\'s bucket',
+      () async {
+        final id = await DbHelper.instance.insertPlayer(Player(name: 'Ann'));
+        final db = await DbHelper.instance.db;
+        await db.update(
+          'players',
           {'local_stats_json': '{"total_darts":300,"legs_won":4}'},
-          where: 'id = ?', whereArgs: [id]);
+          where: 'id = ?',
+          whereArgs: [id],
+        );
 
-      await DbHelper.instance.attributeRestoredHistory('DEVICE0000000001');
+        await DbHelper.instance.attributeRestoredHistory('DEVICE0000000001');
 
-      final snapshots = await DbHelper.instance.getOriginSnapshots(id);
-      expect(snapshots.keys, ['DEVICE0000000001']);
-      expect(snapshots['DEVICE0000000001'], contains('300'));
+        final snapshots = await DbHelper.instance.getOriginSnapshots(id);
+        expect(snapshots.keys, ['DEVICE0000000001']);
+        expect(snapshots['DEVICE0000000001'], contains('300'));
 
-      // Nothing may be left claiming to be this device's own history, or a
-      // third device would count the same games twice, once from each.
-      final rows = await db.query('players',
-          columns: ['local_stats_json'], where: 'id = ?', whereArgs: [id]);
-      expect(rows.first['local_stats_json'], isNull);
+        // Nothing may be left claiming to be this device's own history, or a
+        // third device would count the same games twice, once from each.
+        final rows = await db.query(
+          'players',
+          columns: ['local_stats_json'],
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        expect(rows.first['local_stats_json'], isNull);
 
-      // And the lifetime numbers are untouched by the move.
-      expect(await DbHelper.instance.combinedSnapshotJson(id), contains('300'));
-    });
+        // And the lifetime numbers are untouched by the move.
+        expect(
+          await DbHelper.instance.combinedSnapshotJson(id),
+          contains('300'),
+        );
+      },
+    );
 
-    test('adds to a snapshot the backup already held for that device',
-        () async {
-      final id = await DbHelper.instance.insertPlayer(Player(name: 'Ann'));
-      final db = await DbHelper.instance.db;
-      await db.update('players',
+    test(
+      'adds to a snapshot the backup already held for that device',
+      () async {
+        final id = await DbHelper.instance.insertPlayer(Player(name: 'Ann'));
+        final db = await DbHelper.instance.db;
+        await db.update(
+          'players',
           {'local_stats_json': '{"total_darts":300}'},
-          where: 'id = ?', whereArgs: [id]);
-      await db.insert('player_origin_stats', {
-        'player_id':     id,
-        'origin_device': 'DEVICE0000000001',
-        'snapshot_json': '{"total_darts":45}',
-      });
+          where: 'id = ?',
+          whereArgs: [id],
+        );
+        await db.insert('player_origin_stats', {
+          'player_id': id,
+          'origin_device': 'DEVICE0000000001',
+          'snapshot_json': '{"total_darts":45}',
+        });
 
-      await DbHelper.instance.attributeRestoredHistory('DEVICE0000000001');
+        await DbHelper.instance.attributeRestoredHistory('DEVICE0000000001');
 
-      final snapshots = await DbHelper.instance.getOriginSnapshots(id);
-      expect(snapshots['DEVICE0000000001'], contains('345'),
-          reason: 'both cover games of the same device and neither may be lost');
-    });
+        final snapshots = await DbHelper.instance.getOriginSnapshots(id);
+        expect(
+          snapshots['DEVICE0000000001'],
+          contains('345'),
+          reason: 'both cover games of the same device and neither may be lost',
+        );
+      },
+    );
 
     test('leaves this device its own identity', () async {
       final before = await DeviceIdentity.id;
       await DbHelper.instance.attributeRestoredHistory('DEVICE0000000001');
 
-      expect(await DeviceIdentity.id, before,
-          reason: 'two live devices on one id can never sync again');
+      expect(
+        await DeviceIdentity.id,
+        before,
+        reason: 'two live devices on one id can never sync again',
+      );
     });
 
     test('can still sync profiles with the device it came from', () async {
@@ -273,8 +321,9 @@ void main() {
       /// two batches on the same millisecond would look like one.
       Future<void> ageEverything() async {
         final d = await DbHelper.instance.db;
-        await d.rawUpdate('UPDATE dart_throws SET thrown_at = thrown_at - ?',
-            [const Duration(days: 1).inMilliseconds]);
+        await d.rawUpdate('UPDATE dart_throws SET thrown_at = thrown_at - ?', [
+          const Duration(days: 1).inMilliseconds,
+        ]);
       }
 
       // ── The old phone plays, and its database is handed over ──────────────
@@ -288,7 +337,10 @@ void main() {
       // And then plays some more, after the hand-over.
       await seedThrows(annOnA, 10);
       final packetFromA = await buildSyncPacket(
-          (await DbHelper.instance.getPlayers()).first, 'Test', SyncRange.all);
+        (await DbHelper.instance.getPlayers()).first,
+        'Test',
+        SyncRange.all,
+      );
 
       // ── The new phone comes up on that database ───────────────────────────
       await DbHelper.debugReset();
@@ -306,15 +358,23 @@ void main() {
       await applySyncedData(packetFromA, annOnB, localDevice: deviceB);
 
       onB = await DbHelper.instance.getThrowsForPlayerByOrigin(annOnB);
-      expect(onB[deviceA], hasLength(40),
-          reason: 'the ten legs played after the hand-over have to arrive, and '
-              'the thirty from before it must not arrive a second time');
-      expect(onB.keys, [deviceA],
-          reason: 'none of it was played on this phone');
+      expect(
+        onB[deviceA],
+        hasLength(40),
+        reason:
+            'the ten legs played after the hand-over have to arrive, and '
+            'the thirty from before it must not arrive a second time',
+      );
+      expect(onB.keys, [
+        deviceA,
+      ], reason: 'none of it was played on this phone');
 
       // ── And the way back changes nothing on the old phone ─────────────────
       final packetFromB = await buildSyncPacket(
-          (await DbHelper.instance.getPlayers()).first, 'Test', SyncRange.all);
+        (await DbHelper.instance.getPlayers()).first,
+        'Test',
+        SyncRange.all,
+      );
 
       await DbHelper.debugReset();
       DbHelper.debugDatabasePath = dbPath;
@@ -323,8 +383,11 @@ void main() {
 
       final onA = await DbHelper.instance.getThrowsForPlayerByOrigin(annOnA);
       expect(onA.keys, [null], reason: 'the old phone still owns its games');
-      expect(onA[null], hasLength(40),
-          reason: 'its own history must not come back to it as somebody else\'s');
+      expect(
+        onA[null],
+        hasLength(40),
+        reason: 'its own history must not come back to it as somebody else\'s',
+      );
     });
   });
 }

@@ -125,31 +125,40 @@ void main() {
   group('placementOrder', () {
     test('puts the most points first', () {
       expect(
-          placementOrder(const [1, 2, 3],
-              points:       const {1: 4, 2: 9, 3: 6},
-              legsWon:      const {1: 2, 2: 1, 3: 0},
-              placementSum: const {1: 3, 2: 4, 3: 8}),
-          [2, 3, 1]);
+        placementOrder(
+          const [1, 2, 3],
+          points: const {1: 4, 2: 9, 3: 6},
+          legsWon: const {1: 2, 2: 1, 3: 0},
+          placementSum: const {1: 3, 2: 4, 3: 8},
+        ),
+        [2, 3, 1],
+      );
     });
 
     test('breaks a tie on points by legs won, and that one by the lowest sum '
         'of finishing positions', () {
       expect(
-          placementOrder(const [1, 2, 3],
-              points:       const {1: 6, 2: 6, 3: 6},
-              legsWon:      const {1: 1, 2: 2, 3: 1},
-              placementSum: const {1: 7, 2: 9, 3: 5}),
-          [2, 3, 1],
-          reason: 'player 2 leads on legs, then 3 on the lower sum');
+        placementOrder(
+          const [1, 2, 3],
+          points: const {1: 6, 2: 6, 3: 6},
+          legsWon: const {1: 1, 2: 2, 3: 1},
+          placementSum: const {1: 7, 2: 9, 3: 5},
+        ),
+        [2, 3, 1],
+        reason: 'player 2 leads on legs, then 3 on the lower sum',
+      );
     });
 
     test('leaves slots that tie on everything in the order they came in', () {
       expect(
-          placementOrder(const [3, 1, 2],
-              points:       const {1: 0, 2: 0, 3: 0},
-              legsWon:      const {1: 0, 2: 0, 3: 0},
-              placementSum: const {1: 0, 2: 0, 3: 0}),
-          [3, 1, 2]);
+        placementOrder(
+          const [3, 1, 2],
+          points: const {1: 0, 2: 0, 3: 0},
+          legsWon: const {1: 0, 2: 0, 3: 0},
+          placementSum: const {1: 0, 2: 0, 3: 0},
+        ),
+        [3, 1, 2],
+      );
     });
   });
 }

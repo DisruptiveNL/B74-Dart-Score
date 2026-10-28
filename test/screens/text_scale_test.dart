@@ -14,7 +14,7 @@ import '../support/test_app.dart';
 
 /// A 10.9 inch tablet held upright, and a phone.
 const _tablet = Size(820, 1180);
-const _phone  = Size(390, 844);
+const _phone = Size(390, 844);
 
 void main() {
   group('the text size the reader sets', () {
@@ -96,21 +96,24 @@ void main() {
       expect(reloaded.factor, 1.2);
     });
 
-    testWidgets('multiplies the text of a subtree by what it is given',
-        (tester) async {
+    testWidgets('multiplies the text of a subtree by what it is given', (
+      tester,
+    ) async {
       /// The height one line of text takes at [factor].
       Future<double> lineHeight(double factor) async {
-        await tester.pumpWidget(MaterialApp(
-          home: TextScaleBy(
-            factor: factor,
-            child: const Center(child: Text('501')),
+        await tester.pumpWidget(
+          MaterialApp(
+            home: TextScaleBy(
+              factor: factor,
+              child: const Center(child: Text('501')),
+            ),
           ),
-        ));
+        );
         await tester.pumpAndSettle();
         return tester.getRect(find.text('501')).height;
       }
 
-      final plain  = await lineHeight(1.0);
+      final plain = await lineHeight(1.0);
       final larger = await lineHeight(1.4);
 
       expect(larger, greaterThan(plain));

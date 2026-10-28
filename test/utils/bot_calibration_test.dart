@@ -17,7 +17,7 @@ const _tolerance = 4.0;
 ({double average, int darts}) _play(BotLevel level, int legs, Random rng) {
   final thrower = BotThrower(rng: rng);
   var scored = 0;
-  var darts  = 0;
+  var darts = 0;
 
   for (var leg = 0; leg < legs; leg++) {
     var remaining = 501;
@@ -26,9 +26,10 @@ const _tolerance = 4.0;
       var bust = false;
       for (var dart = 0; dart < 3; dart++) {
         final target = x01Target(
-            remaining: remaining - visitScore,
-            dartsLeft: 3 - dart,
-            checkedIn: true);
+          remaining: remaining - visitScore,
+          dartsLeft: 3 - dart,
+          checkedIn: true,
+        );
         final hit = thrower.throwAt(target, level);
         darts++;
         visitScore += scoreOf(hit);
@@ -40,7 +41,7 @@ const _tolerance = 4.0;
         if (left == 0) break;
       }
       if (!bust) {
-        scored    += visitScore;
+        scored += visitScore;
         remaining -= visitScore;
       }
     }
@@ -54,8 +55,11 @@ void main() {
       test('${level.name} averages about ${expectedAverageOf(level)}', () {
         final result = _play(level, 300, Random(20260910));
 
-        expect(result.average, closeTo(expectedAverageOf(level), _tolerance),
-            reason: '${level.name} over ${result.darts} darts');
+        expect(
+          result.average,
+          closeTo(expectedAverageOf(level), _tolerance),
+          reason: '${level.name} over ${result.darts} darts',
+        );
       });
     }
 
