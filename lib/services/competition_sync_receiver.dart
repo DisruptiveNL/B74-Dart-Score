@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
+import 'dart:async';
 
 import 'competition_match_inbox.dart';
 import 'b74_pairing_security.dart';
@@ -24,6 +25,10 @@ class CompetitionSyncReceiver {
   String? _pendingTabletNonce;
   List<int>? _pendingKey;
   final B74PairingNonceRegistry _pairingUsed = B74PairingNonceRegistry();
+  Timer? _heartbeatWatchdog;
+  DateTime? _lastHeartbeatUtc;
+  final Set<String> _heartbeatNonces = <String>{};
+  DateTime? _heartbeatSessionExpiry;
   static const int maxPayloadBytes = 256 * 1024;
 
   int? get port => _server?.port;
@@ -32,7 +37,8 @@ class CompetitionSyncReceiver {
   /// Only a connectivity check. A successful probe never grants permission
   /// to import a match or creates a trusted device.
   void setProbeChallenge(B74PairingChallenge challenge) {
-    if (_server == null || challenge.port != _server!.port ||
+    if (_server == null ||
+        challenge.port != _server!.port ||
         !challenge.validAt(DateTime.now().toUtc())) {
       throw StateError('Ongeldige of verlopen QR-code');
     }
@@ -54,6 +60,14 @@ class CompetitionSyncReceiver {
     _approved = false;
     _probeChallenge = null;
     _server = await HttpServer.bind(bindAddress ?? InternetAddress.anyIPv4, 0);
+    _heartbeatWatchdog = Timer.periodic(const Duration(seconds: 5), (_) {
+      final last = _lastHeartbeatUtc;
+      if (last != null &&
+          DateTime.now().toUtc().difference(last) >=
+              const Duration(seconds: 15)) {
+        b74Session.markReachable(false);
+      }
+    });
     _server!.listen((request) async {
       try {
         await _handle(request);
@@ -73,13 +87,59 @@ class CompetitionSyncReceiver {
   Future<void> _handle(HttpRequest request) async {
     final response = request.response;
     response.headers.contentType = ContentType.json;
-    if (request.uri.path == '/b74/session/revoke' &&
+    if (request.uri.path == '/b74/session/heartbeat' &&
+        request.method == 'POST') {
+      final nonce = request.headers.value('x-b74-heartbeat-nonce');
+      final proof = request.headers.value('x-b74-session-proof');
+      final expiry = b74Session.expiresAtUtc;
+      if (_heartbeatSessionExpiry != expiry) {
+        _heartbeatNonces.clear();
+        _heartbeatSessionExpiry = expiry;
+      }
+      if (nonce == null ||
+          nonce.length < 24 ||
+          nonce.length > 128 ||
+          !RegExp(r'^[A-Za-z0-9_-]+={0,2}$').hasMatch(nonce) ||
+          proof == null ||
+          !b74Session.verifyOperation(
+            'dashboard',
+            'b74-heartbeat-request-v1:$nonce',
+            proof,
+          ) ||
+          !_heartbeatNonces.add(nonce)) {
+        response.statusCode = HttpStatus.forbidden;
+      } else {
+        // Keep the replay cache bounded. A session accepts at most 48 hours
+        // of heartbeats at five-second intervals; refuse if exhausted.
+        if (_heartbeatNonces.length > 40000) {
+          response.statusCode = HttpStatus.tooManyRequests;
+        } else {
+          _lastHeartbeatUtc = DateTime.now().toUtc();
+          b74Session.markReachable(true);
+          response.statusCode = HttpStatus.ok;
+          response.write(
+            jsonEncode({
+              'status': 'alive',
+              'nonce': nonce,
+              'proof': b74Session.operationProof(
+                'tablet',
+                'b74-heartbeat-response-v1:$nonce',
+              ),
+            }),
+          );
+        }
+      }
+    } else if (request.uri.path == '/b74/session/revoke' &&
         request.method == 'POST') {
       // Fixed-operation MAC is sufficient for revocation: successful replay
       // after revocation is impossible because the session key is erased.
       final proof = request.headers.value('x-b74-session-proof');
-      if (proof == null || !b74Session.verifyOperation(
-          'dashboard', 'b74-session-revoke-v1', proof)) {
+      if (proof == null ||
+          !b74Session.verifyOperation(
+            'dashboard',
+            'b74-session-revoke-v1',
+            proof,
+          )) {
         response.statusCode = HttpStatus.forbidden;
       } else {
         b74Session.revoke();
@@ -89,7 +149,8 @@ class CompetitionSyncReceiver {
     } else if (request.uri.path == '/b74/pairing/start' &&
         request.method == 'POST') {
       final challenge = _probeChallenge;
-      if (challenge == null || !challenge.validAt(DateTime.now().toUtc()) ||
+      if (challenge == null ||
+          !challenge.validAt(DateTime.now().toUtc()) ||
           _pendingKey != null) {
         response.statusCode = HttpStatus.gone;
       } else {
@@ -97,7 +158,8 @@ class CompetitionSyncReceiver {
           final raw = await utf8.decoder.bind(request).join();
           if (raw.length > 4096) throw const FormatException('Te groot');
           final body = jsonDecode(raw);
-          if (body is! Map || body['deviceId'] != challenge.deviceId ||
+          if (body is! Map ||
+              body['deviceId'] != challenge.deviceId ||
               body['dashboardNonce'] is! String ||
               (body['dashboardNonce'] as String).length < 24) {
             throw const FormatException('Ongeldige start');
@@ -105,16 +167,24 @@ class CompetitionSyncReceiver {
           final dashboardNonce = body['dashboardNonce'] as String;
           final tabletNonce = B74PairingProof.newNonce();
           final key = B74PairingProof.deriveKey(
-              challenge.nonce, dashboardNonce, tabletNonce);
+            challenge.nonce,
+            dashboardNonce,
+            tabletNonce,
+          );
           _pendingDashboardNonce = dashboardNonce;
           _pendingTabletNonce = tabletNonce;
           _pendingKey = key;
           response.statusCode = HttpStatus.ok;
-          response.write(jsonEncode({
-            'tabletNonce': tabletNonce,
-            'tabletProof': B74PairingProof.proof(
-                key, 'tablet', challenge.deviceId),
-          }));
+          response.write(
+            jsonEncode({
+              'tabletNonce': tabletNonce,
+              'tabletProof': B74PairingProof.proof(
+                key,
+                'tablet',
+                challenge.deviceId,
+              ),
+            }),
+          );
         } catch (_) {
           response.statusCode = HttpStatus.badRequest;
         }
@@ -123,7 +193,8 @@ class CompetitionSyncReceiver {
         request.method == 'POST') {
       final challenge = _probeChallenge;
       final key = _pendingKey;
-      if (challenge == null || key == null ||
+      if (challenge == null ||
+          key == null ||
           !challenge.validAt(DateTime.now().toUtc())) {
         response.statusCode = HttpStatus.gone;
       } else {
@@ -135,22 +206,33 @@ class CompetitionSyncReceiver {
               body['dashboardNonce'] != _pendingDashboardNonce ||
               body['tabletNonce'] != _pendingTabletNonce ||
               body['dashboardProof'] is! String ||
-              !B74PairingProof.verify(key, 'dashboard', 'b74-dashboard',
-                  body['dashboardProof'] as String) ||
+              !B74PairingProof.verify(
+                key,
+                'dashboard',
+                'b74-dashboard',
+                body['dashboardProof'] as String,
+              ) ||
               !_pairingUsed.consume(challenge.nonce)) {
             response.statusCode = HttpStatus.forbidden;
           } else {
+            _lastHeartbeatUtc = DateTime.now().toUtc();
             b74Session.activateVerified(
-                peerId: 'b74-dashboard',
-                sessionKey: key,
-                verifiedAtUtc: DateTime.now().toUtc());
+              peerId: 'b74-dashboard',
+              sessionKey: key,
+              verifiedAtUtc: DateTime.now().toUtc(),
+            );
             _probeChallenge = null;
             response.statusCode = HttpStatus.ok;
-            response.write(jsonEncode({
-              'status': 'paired',
-              'ack': B74PairingProof.proof(
-                  key, 'tablet', 'b74-pairing-complete'),
-            }));
+            response.write(
+              jsonEncode({
+                'status': 'paired',
+                'ack': B74PairingProof.proof(
+                  key,
+                  'tablet',
+                  'b74-pairing-complete',
+                ),
+              }),
+            );
           }
         } catch (_) {
           response.statusCode = HttpStatus.badRequest;
@@ -166,8 +248,7 @@ class CompetitionSyncReceiver {
       // Never echo a secret, never accept arbitrary JSON and never grant trust.
       // Single-use and a strict 2-minute expiry. QR nonce is a bearer
       // capability for this harmless reachability test ONLY.
-      if (challenge == null ||
-          !challenge.validAt(DateTime.now().toUtc())) {
+      if (challenge == null || !challenge.validAt(DateTime.now().toUtc())) {
         response.statusCode = HttpStatus.gone;
       } else {
         final raw = await utf8.decoder.bind(request).join();
@@ -181,11 +262,13 @@ class CompetitionSyncReceiver {
                 payload['deviceId'] == challenge.deviceId) {
               _probeChallenge = null;
               response.statusCode = HttpStatus.ok;
-              response.write(jsonEncode({
-                'status': 'reachable',
-                'deviceId': challenge.deviceId,
-                'trusted': false,
-              }));
+              response.write(
+                jsonEncode({
+                  'status': 'reachable',
+                  'deviceId': challenge.deviceId,
+                  'trusted': false,
+                }),
+              );
             } else {
               response.statusCode = HttpStatus.forbidden;
             }
@@ -239,6 +322,9 @@ class CompetitionSyncReceiver {
     _token = null;
     _approved = false;
     _probeChallenge = null;
+    _heartbeatWatchdog?.cancel();
+    _heartbeatWatchdog = null;
+    _lastHeartbeatUtc = null;
     b74Session.revoke();
     await server?.close(force: true);
   }

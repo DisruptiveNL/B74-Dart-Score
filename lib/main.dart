@@ -209,7 +209,7 @@ class _OrientationLockState extends State<_OrientationLock> {
 class DartScoreApp extends StatelessWidget {
   const DartScoreApp({super.key});
 
-  // B74 Blue Edition v0.1 — application chrome only.
+  // B74 Blue Edition v0.1 â€” application chrome only.
   // Dartboard segment and team identity colors remain unchanged.
   static final _lightScheme = const ColorScheme(
     brightness: Brightness.light,
@@ -327,6 +327,7 @@ class DartScoreApp extends StatelessWidget {
       ],
       child: Consumer2<ThemeProvider, LanguageProvider>(
         builder: (context, tp, lp, child) => MaterialApp(
+          navigatorKey: b74NavigatorKey,
           title: 'B74 Dart Score',
           debugShowCheckedModeBanner: false,
           themeMode: tp.mode,
@@ -350,7 +351,7 @@ class DartScoreApp extends StatelessWidget {
               factor: isTabletLayout(context)
                   ? context.watch<TextScaleProvider>().factor
                   : 1.0,
-              child: wrapped, //child: B74LinkOverlay(child: wrapped),
+              child: B74LinkOverlay(child: wrapped),
             );
           },
           localizationsDelegates: const [

@@ -1,7 +1,6 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import '../widgets/b74_link_indicator.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../services/b74_pairing_security.dart';
 
@@ -32,11 +31,17 @@ class _CompetitionReceiveScreenState extends State<CompetitionReceiveScreen> {
 
   Future<void> _loadAddresses() async {
     final interfaces = await NetworkInterface.list(
-      type: InternetAddressType.IPv4, includeLoopback: false);
+      type: InternetAddressType.IPv4,
+      includeLoopback: false,
+    );
     if (!mounted) return;
-    setState(() => _addresses = interfaces
-      .expand((i) => i.addresses.map((a) => a.address)).toList());
+    setState(
+      () => _addresses = interfaces
+          .expand((i) => i.addresses.map((a) => a.address))
+          .toList(),
+    );
   }
+
   bool _approved = false;
   bool _busy = false;
   String? _error;
@@ -97,13 +102,9 @@ class _CompetitionReceiveScreenState extends State<CompetitionReceiveScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Wedstrijden ontvangen'),
-      actions: const [B74LinkIndicator()],
-    ),
+    appBar: AppBar(title: const Text('Wedstrijden ontvangen')),
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [

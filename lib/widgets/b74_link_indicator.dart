@@ -6,12 +6,15 @@ enum B74LinkState { unpaired, connected, offline, expired }
 
 class B74LinkStatus {
   B74LinkStatus._();
-  static final ValueNotifier<B74LinkState> state =
-      ValueNotifier<B74LinkState>(B74LinkState.unpaired);
+  static final ValueNotifier<B74LinkState> state = ValueNotifier<B74LinkState>(
+    B74LinkState.unpaired,
+  );
 }
 
 /// App-wide indicator. The actual authenticated session will drive this
 /// notifier in the next integration step; until then it stays grey.
+final GlobalKey<NavigatorState> b74NavigatorKey = GlobalKey<NavigatorState>();
+
 class B74LinkIndicator extends StatelessWidget {
   const B74LinkIndicator({super.key});
 
@@ -46,14 +49,18 @@ class B74LinkIndicator extends StatelessWidget {
               tooltip: 'B74 verbinding: $description',
               icon: Icon(Icons.link, color: color),
               onPressed: () => showDialog<void>(
-                context: context,
+                context: b74NavigatorKey.currentContext ?? context,
                 builder: (dialogContext) => AlertDialog(
                   title: const Text('B74 apparaatverbinding'),
-                  content: Text('$description\n\nDe koppeling is maximaal 48 uur geldig zolang beide app-processen actief blijven. Na herstart opnieuw QR scannen.'),
-                  actions: [TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('Sluiten'),
-                  )],
+                  content: Text(
+                    '$description\n\nDe koppeling is maximaal 48 uur geldig zolang beide app-processen actief blijven. Na herstart opnieuw QR scannen.',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      child: const Text('Sluiten'),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -64,13 +71,46 @@ class B74LinkIndicator extends StatelessWidget {
   );
 }
 
-/// Keeps the indicator above all navigator routes, including match screens.
-class B74LinkOverlay extends StatelessWidget {
+/// Provides a real Overlay ancestor for the indicator's IconButton tooltip.
+/// The navigator stays below the indicator, and dialogs use b74NavigatorKey.
+class B74LinkOverlay extends StatefulWidget {
   const B74LinkOverlay({super.key, required this.child});
   final Widget child;
+
   @override
-  Widget build(BuildContext context) => Stack(children: [
-    child,
-    const Positioned(top: 0, right: 0, child: B74LinkIndicator()),
-  ]);
+  State<B74LinkOverlay> createState() => _B74LinkOverlayState();
+}
+
+class _B74LinkOverlayState extends State<B74LinkOverlay> {
+  late final OverlayEntry _appEntry;
+  late final OverlayEntry _indicatorEntry;
+
+  @override
+  void initState() {
+    super.initState();
+    _appEntry = OverlayEntry(builder: (context) => widget.child);
+    _indicatorEntry = OverlayEntry(
+      builder: (context) =>
+          const Positioned(top: 0, right: 0, child: B74LinkIndicator()),
+    );
+  }
+
+  @override
+  void didUpdateWidget(covariant B74LinkOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.child != widget.child) {
+      _appEntry.markNeedsBuild();
+    }
+  }
+
+  @override
+  void dispose() {
+    _appEntry.dispose();
+    _indicatorEntry.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) =>
+      Overlay(initialEntries: [_appEntry, _indicatorEntry]);
 }

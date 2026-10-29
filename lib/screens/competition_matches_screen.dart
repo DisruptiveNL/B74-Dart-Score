@@ -48,6 +48,9 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
           icon: const Icon(Icons.refresh),
           onPressed: () => setState(_reload),
         ),
+        // Reserveer de rechterbovenhoek voor de permanente B74-indicator.
+        // Deze staat in de Navigator-overlay (Patch D).
+        const SizedBox(width: 56),
       ],
     ),
     body: FutureBuilder<List<CompetitionMatchSummary>>(
