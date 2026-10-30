@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
 import 'dart:async';
+import 'package:crypto/crypto.dart';
 
 import 'competition_match_inbox.dart';
 import 'b74_pairing_security.dart';
@@ -28,6 +29,7 @@ class CompetitionSyncReceiver {
   Timer? _heartbeatWatchdog;
   DateTime? _lastHeartbeatUtc;
   final Set<String> _heartbeatNonces = <String>{};
+  final Set<String> _importNonces = <String>{};
   DateTime? _heartbeatSessionExpiry;
   static const int maxPayloadBytes = 256 * 1024;
 
@@ -216,6 +218,8 @@ class CompetitionSyncReceiver {
             response.statusCode = HttpStatus.forbidden;
           } else {
             _lastHeartbeatUtc = DateTime.now().toUtc();
+            // Nieuwe geverifieerde sessie: oude import-nonces zijn niet meer geldig.
+            _importNonces.clear();
             b74Session.activateVerified(
               peerId: 'b74-dashboard',
               sessionKey: key,
@@ -277,6 +281,61 @@ class CompetitionSyncReceiver {
           }
         }
       }
+    } else if (request.uri.path == '/b74/competition/import' &&
+        request.method == 'POST') {
+      // Import requires an authenticated session, body MAC and unique nonce.
+      final nonce = request.headers.value('x-b74-import-nonce');
+      final proof = request.headers.value('x-b74-import-proof');
+      if (!b74Session.hasKey ||
+          nonce == null ||
+          proof == null ||
+          !RegExp(r'^[A-Za-z0-9_-]{32}$').hasMatch(nonce) ||
+          _importNonces.contains(nonce)) {
+        response.statusCode = HttpStatus.forbidden;
+      } else {
+        try {
+          final bytes = BytesBuilder(copy: false);
+          await for (final chunk in request) {
+            if (bytes.length + chunk.length > maxPayloadBytes) {
+              throw const _PayloadTooLarge();
+            }
+            bytes.add(chunk);
+          }
+          final payload = utf8.decode(bytes.takeBytes());
+          final digest = sha256.convert(utf8.encode(payload)).toString();
+          if (!b74Session.verifyOperation(
+            'dashboard',
+            'competition-import-v1\n$nonce\n$digest',
+            proof,
+          )) {
+            response.statusCode = HttpStatus.forbidden;
+          } else {
+            _importNonces.add(nonce);
+            if (_importNonces.length > 10000) {
+              // Fail closed: require a new receiver/session before the cache fills.
+              response.statusCode = HttpStatus.serviceUnavailable;
+            } else {
+              final created = await _inbox.receive(payload);
+              response.statusCode = HttpStatus.ok;
+              response.write(
+                jsonEncode({'status': created ? 'stored' : 'already_stored'}),
+              );
+            }
+          }
+        } on _PayloadTooLarge {
+          response.statusCode = HttpStatus.requestEntityTooLarge;
+        } on FormatException {
+          response.statusCode = HttpStatus.badRequest;
+        } on StateError catch (error) {
+          response.statusCode = HttpStatus.conflict;
+          response.write(
+            jsonEncode({
+              'error': 'competition_import_conflict',
+              'message': error.message.toString(),
+            }),
+          );
+        }
+      }
     } else if (request.uri.path != '/competition/$_token' ||
         request.method != 'POST') {
       response.statusCode = HttpStatus.forbidden;
@@ -326,6 +385,7 @@ class CompetitionSyncReceiver {
     _heartbeatWatchdog = null;
     _lastHeartbeatUtc = null;
     b74Session.revoke();
+    _importNonces.clear();
     await server?.close(force: true);
   }
 }
