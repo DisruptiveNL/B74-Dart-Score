@@ -32,67 +32,109 @@ class CompetitionMatchInbox {
         }
         return false;
       }
+
       final slots = packet['singles'] as List;
       final participants = <String, Map<String, dynamic>>{};
       for (final slot in slots) {
         final row = slot as Map<String, dynamic>;
         for (final side in ['homePlayer', 'awayPlayer']) {
           final player = row[side] as Map<String, dynamic>;
-          participants[player['id'] as String] = player;
+          final externalId = player['id'] as String;
+          final previous = participants[externalId];
+          if (previous != null &&
+              ((previous['bondNumber'] as String?)?.trim() !=
+                      (player['bondNumber'] as String?)?.trim() ||
+                  previous['name'] != player['name'])) {
+            throw StateError('Tegenstrijdige spelergegevens: $externalId');
+          }
+          participants[externalId] = player;
         }
       }
+
       for (final entry in participants.entries) {
         final externalId = entry.key;
         final data = entry.value;
-        final links = await txn.query(
+        final bondValue = (data['bondNumber'] as String?)?.trim();
+        final bond = bondValue == null || bondValue.isEmpty ? null : bondValue;
+        final name = (data['name'] as String).trim();
+
+        final byExternal = await txn.query(
           'competition_player_links',
           where: 'external_player_id = ?',
           whereArgs: [externalId],
         );
-        if (links.isNotEmpty) continue;
-        final bond = (data['bondNumber'] as String?)?.trim();
-        // Do not merge based on a name or an unverified bond number.
-        // An existing unlinked profile must be resolved explicitly.
-        if (bond != null && bond.isNotEmpty) {
-          final conflicts = await txn.query(
+        final byBond = bond == null
+            ? <Map<String, Object?>>[]
+            : await txn.query(
+                'competition_player_links',
+                where: 'bond_number = ?',
+                whereArgs: [bond],
+              );
+
+        int? playerId;
+        if (byExternal.isNotEmpty) {
+          playerId = byExternal.single['player_id'] as int;
+          // An alias stores a NULL bond number. Resolve its canonical bond
+          // through the shared local player, rather than trusting the name.
+          final canonical = await txn.query(
             'competition_player_links',
-            where: 'bond_number = ?',
-            whereArgs: [bond],
+            columns: ['bond_number'],
+            where: 'player_id = ? AND bond_number IS NOT NULL',
+            whereArgs: [playerId],
           );
-          if (conflicts.isNotEmpty) {
-            throw StateError(
-              'Bondsnummer is gekoppeld aan een andere speler: $bond',
+          final registeredBond = canonical.isNotEmpty
+              ? canonical.single['bond_number'] as String
+              : null;
+          if (registeredBond != null && bond != registeredBond) {
+            throw StateError('Bondsnummer gewijzigd voor speler $externalId');
+          }
+          if (byBond.isNotEmpty && byBond.single['player_id'] != playerId) {
+            throw StateError('Bondsnummer hoort bij een andere speler: $bond');
+          }
+          if (registeredBond == null && bond != null) {
+            if (byBond.isNotEmpty) {
+              throw StateError(
+                'Bondsnummer hoort bij een andere speler: $bond',
+              );
+            }
+            await txn.update(
+              'competition_player_links',
+              {'bond_number': bond},
+              where: 'external_player_id = ?',
+              whereArgs: [externalId],
             );
           }
+        } else if (byBond.isNotEmpty) {
+          playerId = byBond.single['player_id'] as int;
+          // Preserve the original external ID for historical matches.
+          // Only the canonical link carries the unique bond number.
+          await txn.insert('competition_player_links', {
+            'external_player_id': externalId,
+            'player_id': playerId,
+            'bond_number': null,
+            'source': 'competition_sync',
+          });
+        } else {
+          final player = Player(name: name, favoriteDoubles: 'Bull');
+          playerId = await txn.insert('players', player.toMap());
+          await txn.insert('competition_player_links', {
+            'external_player_id': externalId,
+            'player_id': playerId,
+            'bond_number': bond,
+            'source': 'competition_sync',
+          });
         }
-        final name = (data['name'] as String).trim();
-        final existingProfiles = await txn.query(
+
+        // Updating a display name must never replace the local player row:
+        // existing game references, preferences and statistics stay intact.
+        await txn.update(
           'players',
-          columns: ['id', 'name'],
-          where: 'is_deleted = 0 AND bot_level IS NULL',
+          {'name': name},
+          where: 'id = ? AND is_deleted = 0 AND bot_level IS NULL',
+          whereArgs: [playerId],
         );
-        if (existingProfiles.any(
-          (row) =>
-              (row['name'] as String).trim().toLowerCase() ==
-              name.toLowerCase(),
-        )) {
-          throw StateError(
-            'Bestaande speler met dezelfde naam: $name. '
-            'Koppel deze speler eerst handmatig om duplicaten te voorkomen.',
-          );
-        }
-        final player = Player(
-          name: data['name'] as String,
-          favoriteDoubles: 'Bull',
-        );
-        final playerId = await txn.insert('players', player.toMap());
-        await txn.insert('competition_player_links', {
-          'external_player_id': externalId,
-          'player_id': playerId,
-          'bond_number': bond?.isEmpty == true ? null : bond,
-          'source': 'competition_sync',
-        });
       }
+
       await txn.insert('competition_inbox', {
         'match_id': id,
         'payload': jsonEncode(packet),
