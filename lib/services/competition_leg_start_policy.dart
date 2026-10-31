@@ -53,4 +53,60 @@ class CompetitionLegStartPolicy {
     final threshold = bestOf ~/ 2;
     return homeLegs == threshold && awayLegs == threshold;
   }
+
+  /// Team match slots follow the official B74 competition order:
+  /// away, home, away, home. Beer game starts away.
+  /// Returns 'bull' when the first-leg bull option is enabled.
+  static String teamStartPolicy({
+    required String kind,
+    required int slot,
+    bool bullStart = false,
+  }) {
+    if (kind == 'beer1001') {
+      if (slot != 1) throw RangeError.range(slot, 1, 1, 'slot');
+      return bullStart ? 'bull' : 'away';
+    }
+    if (kind != 'doubles701') {
+      throw ArgumentError.value(kind, 'kind', 'Unsupported team game');
+    }
+    if (slot < 1 || slot > 4) {
+      throw RangeError.range(slot, 1, 4, 'slot');
+    }
+    return bullStart ? 'bull' : (slot.isOdd ? 'away' : 'home');
+  }
+
+  /// Competition deciding legs always require a bull; no opt-out for teams.
+  /// Slot 0 is home and slot 1 is away, independent of who started leg one.
+  static int? teamLegStarter({
+    required int legNumber,
+    required int bestOf,
+    required int homeLegs,
+    required int awayLegs,
+    required int firstLegStarterSlot,
+    int? decidingBullWinnerSlot,
+  }) {
+    if (firstLegStarterSlot != 0 && firstLegStarterSlot != 1) {
+      throw ArgumentError.value(firstLegStarterSlot, 'firstLegStarterSlot');
+    }
+    if (!{3, 5, 7}.contains(bestOf)) {
+      throw ArgumentError.value(bestOf, 'bestOf');
+    }
+    if (homeLegs < 0 || awayLegs < 0 ||
+        homeLegs >= (bestOf + 1) ~/ 2 ||
+        awayLegs >= (bestOf + 1) ~/ 2) {
+      throw ArgumentError('Invalid unfinished team match score');
+    }
+    if (decidingBullWinnerSlot != null &&
+        decidingBullWinnerSlot != 0 && decidingBullWinnerSlot != 1) {
+      throw ArgumentError.value(decidingBullWinnerSlot, 'decidingBullWinnerSlot');
+    }
+    if (requiresBull(
+      bestOf: bestOf, homeLegs: homeLegs, awayLegs: awayLegs, enabled: true,
+    )) {
+      return decidingBullWinnerSlot;
+    }
+    return (legNumber - 1).isEven
+        ? firstLegStarterSlot
+        : 1 - firstLegStarterSlot;
+  }
 }

@@ -13,6 +13,8 @@ import '../models/around_the_clock_game.dart';
 import '../models/checkout_ladder_game.dart'
     show CheckoutLadderGame, CheckoutLadderThrow;
 import '../services/competition_single_result_lifecycle.dart';
+import '../services/b74_team_match_contract.dart';
+import '../services/b74_team_revision_policy.dart';
 import '../services/sync_service.dart' show SyncOrigin, kLegacyOrigin;
 import '../utils/finish_calculator.dart';
 import '../utils/game_winner.dart';
@@ -30,7 +32,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 28;
+  static const int schemaVersion = 30;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -299,6 +301,12 @@ class DbHelper {
     }
     if (oldVersion < 28) {
       await _createCompetitionSingleResults(db);
+    }
+    if (oldVersion < 29) {
+      await _createCompetitionTeamInbox(db);
+    }
+    if (oldVersion < 30) {
+      await _createCompetitionDoublesEvents(db);
     }
   }
 
@@ -574,6 +582,191 @@ class DbHelper {
     );
   }
 
+  /// C1B4.2B.2b: teamwedstrijd-inbox is gescheiden van singles en game-links.
+  /// De feitelijke X01-game wordt in een volgende stap aangemaakt.
+  Future<void> _createCompetitionTeamInbox(Database db) async {
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS competition_team_inbox ('
+      'game_id TEXT PRIMARY KEY, match_id TEXT NOT NULL, '
+      'kind TEXT NOT NULL, slot INTEGER NOT NULL, '
+      'revision INTEGER NOT NULL, payload TEXT NOT NULL, '
+      'started INTEGER NOT NULL DEFAULT 0, '
+      'received_at INTEGER NOT NULL, '
+      'UNIQUE(match_id, kind, slot))',
+    );
+  }
+
+  /// C1B4.3e: immutable event journal for doubles 701. Replay events through
+  /// the scoring core to restore the exact starter, scores and turn order.
+  Future<void> _createCompetitionDoublesEvents(Database database) async {
+    await database.execute(
+      'CREATE TABLE IF NOT EXISTS competition_doubles_events ('
+      'game_id TEXT NOT NULL, sequence INTEGER NOT NULL, '
+      'event_json TEXT NOT NULL, created_at INTEGER NOT NULL, '
+      'PRIMARY KEY(game_id, sequence), '
+      'FOREIGN KEY(game_id) REFERENCES competition_team_inbox(game_id))',
+    );
+  }
+
+  Future<List<String>> competitionDoublesEvents(String gameId) async {
+    final database = await db;
+    final rows = await database.query(
+      'competition_doubles_events',
+      columns: ['event_json'],
+      where: 'game_id = ?',
+      whereArgs: [gameId],
+      orderBy: 'sequence ASC',
+    );
+    return rows.map((row) => row['event_json'] as String).toList();
+  }
+
+  /// Optimistic append: expectedSequence prevents concurrent score writes.
+  /// The inbox is locked against revisions on the first actual visit, not
+  /// merely when a starter is selected.
+  Future<void> appendCompetitionDoublesEvent({
+    required String gameId,
+    required int expectedSequence,
+    required String eventJson,
+    required bool isVisit,
+  }) async {
+    if (expectedSequence < 0 || eventJson.trim().isEmpty) {
+      throw ArgumentError('Ongeldige event-invoer');
+    }
+    final database = await db;
+    await database.transaction((txn) async {
+      final inbox = await txn.query(
+        'competition_team_inbox',
+        columns: ['kind'],
+        where: 'game_id = ?',
+        whereArgs: [gameId],
+        limit: 1,
+      );
+      if (inbox.length != 1 || inbox.single['kind'] != 'doubles701') {
+        throw StateError('701-koppelwedstrijd ontbreekt');
+      }
+      final count = Sqflite.firstIntValue(
+        await txn.rawQuery(
+          'SELECT COUNT(*) FROM competition_doubles_events WHERE game_id = ?',
+          [gameId],
+        ),
+      );
+      if (count != expectedSequence) {
+        throw StateError('Wedstrijd gewijzigd: opnieuw laden');
+      }
+      await txn.insert('competition_doubles_events', {
+        'game_id': gameId,
+        'sequence': expectedSequence,
+        'event_json': eventJson,
+        'created_at': DateTime.now().millisecondsSinceEpoch,
+      });
+      if (isVisit) {
+        await txn.update(
+          'competition_team_inbox',
+          {'started': 1},
+          where: 'game_id = ?',
+          whereArgs: [gameId],
+        );
+      }
+    });
+  }
+
+  /// Slaat een gevalideerde teamwedstrijd atomair op.
+  /// Return: create, unchanged, replace of reject.
+  /// Geen ontvangstbevestiging versturen bij reject.
+  Future<B74TeamRevisionDecision> receiveCompetitionTeamMatch(
+    String payload,
+  ) async {
+    final packet = B74TeamMatchContract.decode(payload);
+    final gameId = packet['gameId'] as String;
+    final matchId = packet['matchId'] as String;
+    final kind = packet['kind'] as String;
+    final slot = packet['slot'] as int;
+    final revision = packet['revision'] as int;
+    final database = await db;
+    return database.transaction((txn) async {
+      final rows = await txn.query(
+        'competition_team_inbox',
+        where: 'game_id = ?',
+        whereArgs: [gameId],
+        limit: 1,
+      );
+      final slotRows = await txn.query(
+        'competition_team_inbox',
+        columns: ['game_id'],
+        where: 'match_id = ? AND kind = ? AND slot = ?',
+        whereArgs: [matchId, kind, slot],
+        limit: 1,
+      );
+      if (slotRows.isNotEmpty && slotRows.single['game_id'] != gameId) {
+        return B74TeamRevisionDecision.reject;
+      }
+      final stored = rows.isEmpty ? null : rows.single;
+      if (stored != null &&
+          (stored['match_id'] != matchId ||
+              stored['kind'] != kind ||
+              stored['slot'] != slot)) {
+        return B74TeamRevisionDecision.reject;
+      }
+      final decision = B74TeamRevisionPolicy.decide(
+        incomingRevision: revision,
+        incomingPayload: payload,
+        storedRevision: stored?['revision'] as int?,
+        storedPayload: stored?['payload'] as String?,
+        hasStarted: (stored?['started'] as int? ?? 0) != 0,
+      );
+      if (decision == B74TeamRevisionDecision.create) {
+        await txn.insert('competition_team_inbox', {
+          'game_id': gameId,
+          'match_id': matchId,
+          'kind': kind,
+          'slot': slot,
+          'revision': revision,
+          'payload': payload,
+          'started': 0,
+          'received_at': DateTime.now().millisecondsSinceEpoch,
+        });
+      } else if (decision == B74TeamRevisionDecision.replace) {
+        await txn.update(
+          'competition_team_inbox',
+          {
+            'revision': revision,
+            'payload': payload,
+            'received_at': DateTime.now().millisecondsSinceEpoch,
+          },
+          where: 'game_id = ? AND revision = ? AND started = 0',
+          whereArgs: [gameId, stored!['revision']],
+        );
+      }
+      return decision;
+    });
+  }
+
+  Future<Map<String, Object?>?> competitionTeamMatch(String gameId) async {
+    final database = await db;
+    final rows = await database.query(
+      'competition_team_inbox',
+      where: 'game_id = ?',
+      whereArgs: [gameId],
+      limit: 1,
+    );
+    return rows.isEmpty ? null : rows.single;
+  }
+
+  /// Tijdelijke lifecycle-haak voor de integratietests.
+  /// Later wordt deze status transactioneel aan de eerste geregistreerde
+  /// worp gekoppeld. Niet gebruiken als vervanging van de echte spelstart.
+  @visibleForTesting
+  Future<void> debugMarkCompetitionTeamStarted(String gameId) async {
+    final database = await db;
+    final count = await database.update(
+      'competition_team_inbox',
+      {'started': 1},
+      where: 'game_id = ?',
+      whereArgs: [gameId],
+    );
+    if (count != 1) throw StateError('Teamwedstrijd ontbreekt');
+  }
+
   /// Persists a completed result, without allowing an already submitted
   /// or archived result to be silently replaced.
   Future<void> saveCompletedCompetitionSingleResult(
@@ -710,6 +903,8 @@ class DbHelper {
     await _createCompetitionInbox(db);
     await _createCompetitionGameLinks(db);
     await _createCompetitionSingleResults(db);
+    await _createCompetitionTeamInbox(db);
+    await _createCompetitionDoublesEvents(db);
     await db.execute('''
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

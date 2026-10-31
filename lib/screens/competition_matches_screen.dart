@@ -5,8 +5,10 @@ import '../database/db_helper.dart';
 import '../services/competition_single_result_contract.dart';
 
 import '../services/competition_match_catalog.dart';
+import '../services/b74_doubles_session.dart';
 import '../services/competition_sync_contract.dart';
 import 'competition_single_screen.dart';
+import 'competition_doubles_screen.dart';
 import 'competition_receive_screen.dart';
 
 /// Imported competition matches. Scoring integration follows in Patch 02E.
@@ -20,6 +22,7 @@ class CompetitionMatchesScreen extends StatefulWidget {
 
 class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
   late Future<List<CompetitionMatchSummary>> _matches;
+  late Future<List<CompetitionDoublesSummary>> _doubles;
   Timer? _refreshTimer;
 
   @override
@@ -37,7 +40,11 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
     super.dispose();
   }
 
-  void _reload() => _matches = CompetitionMatchCatalog().load();
+  void _reload() {
+    final catalog = CompetitionMatchCatalog();
+    _matches = catalog.load();
+    _doubles = catalog.loadDoubles();
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -67,8 +74,8 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
         const SizedBox(width: 56),
       ],
     ),
-    body: FutureBuilder<List<CompetitionMatchSummary>>(
-      future: _matches,
+    body: FutureBuilder<List<Object>>(
+      future: Future.wait<Object>([_matches, _doubles]),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(
@@ -78,8 +85,9 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
-        final matches = snapshot.data!;
-        if (matches.isEmpty) {
+        final matches = snapshot.data![0] as List<CompetitionMatchSummary>;
+        final doubles = snapshot.data![1] as List<CompetitionDoublesSummary>;
+        if (matches.isEmpty && doubles.isEmpty) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(24),
@@ -102,6 +110,63 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
               ),
             ),
             for (final match in matches) _MatchCard(match: match),
+            if (doubles.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text(
+                  'Ontvangen koppels 701',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
+              ),
+              for (final match in doubles)
+                FutureBuilder<B74DoublesSession?>(
+                  key: ValueKey('doubles-result-${match.gameId}'),
+                  future: B74DoublesSession.load(match.gameId),
+                  builder: (context, resultSnapshot) {
+                    final session = resultSnapshot.data;
+                    final engine = session?.engine;
+                    final winner = engine?.winner;
+                    final finished = winner != null;
+                    final score = engine == null
+                        ? ''
+                        : '${engine.legsWon[0]}–${engine.legsWon[1]}';
+                    return Card(
+                      color: finished
+                          ? Colors.green.withValues(alpha: 0.14)
+                          : null,
+                      child: ListTile(
+                        key: ValueKey('doubles-${match.gameId}'),
+                        title: Text(
+                          'Koppel ${match.slot} — ${match.homeTeam} vs ${match.awayTeam}'
+                          '${finished ? '  •  $score' : ''}',
+                        ),
+                        subtitle: Text(
+                          '${match.homePlayers.join(' + ')}  vs  ${match.awayPlayers.join(' + ')}\n'
+                          '701 · Best of ${match.bestOf} · Revisie ${match.revision}'
+                          '${finished ? '\nGespeeld · Winnaar: ${winner == 0 ? match.homeTeam : match.awayTeam}' : (match.started ? ' · Gestart' : ' · Ontvangen')}'
+                          '${resultSnapshot.hasError ? '\nUitslag laden mislukt' : ''}',
+                        ),
+                        isThreeLine: true,
+                        trailing: Icon(
+                          finished ? Icons.emoji_events : Icons.chevron_right,
+                        ),
+                        onTap: () async {
+                          await Navigator.push(
+                            context,
+                            MaterialPageRoute<void>(
+                              builder: (_) =>
+                                  CompetitionDoublesScreen(match: match),
+                            ),
+                          );
+                          if (context.mounted) {
+                            (context as Element).markNeedsBuild();
+                          }
+                        },
+                      ),
+                    );
+                  },
+                ),
+            ],
           ],
         );
       },

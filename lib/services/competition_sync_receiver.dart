@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:crypto/crypto.dart';
 
 import 'competition_match_inbox.dart';
+import '../database/db_helper.dart';
+import 'b74_team_revision_policy.dart';
 import 'b74_pairing_security.dart';
 import 'b74_pairing_proof.dart';
 import 'b74_session_manager.dart';
@@ -14,10 +16,13 @@ import 'b74_session_manager.dart';
 /// separate from profile/statistics sync, which has a different wire contract.
 /// A 200 response means the database transaction has committed.
 class CompetitionSyncReceiver {
-  CompetitionSyncReceiver({CompetitionMatchInbox? inbox})
-    : _inbox = inbox ?? CompetitionMatchInbox();
+  CompetitionSyncReceiver({CompetitionMatchInbox? inbox, DbHelper? teamDb})
+    : _inbox = inbox ?? CompetitionMatchInbox(),
+      _teamDb = teamDb ?? DbHelper.instance;
 
   final CompetitionMatchInbox _inbox;
+  final DbHelper _teamDb;
+  final Set<String> _teamImportNonces = <String>{};
   HttpServer? _server;
   String? _token;
   bool _approved = false;
@@ -329,6 +334,55 @@ class CompetitionSyncReceiver {
           }
         }
       }
+    } else if (request.uri.path == '/b74/competition/team-import' &&
+        request.method == 'POST') {
+      // Separate protocol and domain-separated MAC; singles route untouched.
+      final nonce = request.headers.value('x-b74-team-nonce');
+      final proof = request.headers.value('x-b74-team-proof');
+      if (!b74Session.hasKey ||
+          nonce == null || proof == null ||
+          !RegExp(r'^[A-Za-z0-9_-]{32}$').hasMatch(nonce) ||
+          _teamImportNonces.contains(nonce)) {
+        response.statusCode = HttpStatus.forbidden;
+      } else if (_teamImportNonces.length >= 10000) {
+        response.statusCode = HttpStatus.serviceUnavailable;
+      } else {
+        try {
+          final bytes = BytesBuilder(copy: false);
+          await for (final chunk in request) {
+            if (bytes.length + chunk.length > maxPayloadBytes) {
+              throw const _PayloadTooLarge();
+            }
+            bytes.add(chunk);
+          }
+          final payload = utf8.decode(bytes.takeBytes());
+          final digest = sha256.convert(utf8.encode(payload)).toString();
+          if (!b74Session.verifyOperation(
+            'dashboard', 'competition-team-import-v1\n$nonce\n$digest', proof,
+          )) {
+            response.statusCode = HttpStatus.forbidden;
+          } else {
+            // Nonce consumed before database access: failed imports need
+            // a new nonce, but retries of the same packet remain idempotent.
+            _teamImportNonces.add(nonce);
+            final decision = await _teamDb.receiveCompetitionTeamMatch(payload);
+            if (decision == B74TeamRevisionDecision.reject) {
+              response.statusCode = HttpStatus.conflict;
+              response.write(jsonEncode({'status': 'rejected'}));
+            } else {
+              // 200 only after successful transaction commit.
+              response.statusCode = HttpStatus.ok;
+              response.write(jsonEncode({'status': decision.name}));
+            }
+          }
+        } on _PayloadTooLarge {
+          response.statusCode = HttpStatus.requestEntityTooLarge;
+        } on FormatException {
+          response.statusCode = HttpStatus.badRequest;
+        } on StateError {
+          response.statusCode = HttpStatus.conflict;
+        }
+      }
     } else if (request.uri.path == '/b74/competition/import' &&
         request.method == 'POST') {
       // Import requires an authenticated session, body MAC and unique nonce.
@@ -434,6 +488,7 @@ class CompetitionSyncReceiver {
     _lastHeartbeatUtc = null;
     b74Session.revoke();
     _importNonces.clear();
+    _teamImportNonces.clear();
     await server?.close(force: true);
   }
 }

@@ -1,11 +1,32 @@
 import '../database/db_helper.dart';
 import 'competition_sync_contract.dart';
+import 'b74_team_match_contract.dart';
 
 /// Read-only projection of durable, validated competition imports.
 class CompetitionMatchCatalog {
   CompetitionMatchCatalog({DbHelper? helper})
     : _helper = helper ?? DbHelper.instance;
   final DbHelper _helper;
+
+  /// Ontvangen 701-opdrachten, los van de bestaande singles-inbox.
+  Future<List<CompetitionDoublesSummary>> loadDoubles() async {
+    final database = await _helper.db;
+    final rows = await database.query(
+      'competition_team_inbox',
+      columns: [
+        'game_id',
+        'match_id',
+        'slot',
+        'revision',
+        'payload',
+        'started',
+      ],
+      where: 'kind = ?',
+      whereArgs: ['doubles701'],
+      orderBy: 'received_at DESC',
+    );
+    return rows.map(CompetitionDoublesSummary.fromRow).toList();
+  }
 
   Future<List<CompetitionMatchSummary>> load() async {
     final db = await _helper.db;
@@ -99,6 +120,54 @@ class CompetitionSingleSummary {
       away['name'] as String,
       home['bondNumber'] as String?,
       away['bondNumber'] as String?,
+    );
+  }
+}
+
+/// Read-only samenvatting van een ontvangen 701-opdracht.
+class CompetitionDoublesSummary {
+  const CompetitionDoublesSummary({
+    required this.gameId,
+    required this.matchId,
+    required this.slot,
+    required this.revision,
+    required this.bestOf,
+    required this.homeTeam,
+    required this.awayTeam,
+    required this.homePlayers,
+    required this.awayPlayers,
+    required this.started,
+  });
+
+  final String gameId;
+  final String matchId;
+  final int slot;
+  final int revision;
+  final int bestOf;
+  final String homeTeam;
+  final String awayTeam;
+  final List<String> homePlayers;
+  final List<String> awayPlayers;
+  final bool started;
+
+  factory CompetitionDoublesSummary.fromRow(Map<String, Object?> row) {
+    final packet = B74TeamMatchContract.decode(row['payload'] as String);
+    final home = packet['home'] as Map<String, dynamic>;
+    final away = packet['away'] as Map<String, dynamic>;
+    List<String> names(Map<String, dynamic> side) => (side['players'] as List)
+        .map((p) => (p as Map)['name'] as String)
+        .toList();
+    return CompetitionDoublesSummary(
+      gameId: row['game_id'] as String,
+      matchId: row['match_id'] as String,
+      slot: row['slot'] as int,
+      revision: row['revision'] as int,
+      bestOf: packet['bestOf'] as int,
+      homeTeam: home['teamName'] as String,
+      awayTeam: away['teamName'] as String,
+      homePlayers: names(home),
+      awayPlayers: names(away),
+      started: row['started'] == 1,
     );
   }
 }
