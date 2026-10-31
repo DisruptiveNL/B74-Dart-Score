@@ -8,6 +8,7 @@ import '../services/competition_match_catalog.dart';
 import '../services/competition_single_launcher.dart';
 import '../services/competition_single_result_builder.dart';
 import '../services/competition_single_result_sender.dart';
+import '../services/b74_session_manager.dart';
 import 'game_screen.dart';
 
 /// Competition X01 entry point. Existing games are resumed, never duplicated.
@@ -35,6 +36,31 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
   final _builder = CompetitionSingleResultBuilder();
   final _sender = CompetitionSingleResultSender();
   String? _sendMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    // An already finished single is queued for return automatically when
+    // this entry page is opened. Failed delivery remains retryable.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || b74Session.peerHost == null ||
+          b74Session.peerPort == null) return;
+      try {
+        final existing = await DbHelper.instance.competitionSingleResult(
+            widget.match.id, widget.single.slot);
+        if (!mounted || existing?['status'] == 'archived') return;
+        final gameId = await _launcher.existingGameId(
+            widget.match.id, widget.single.slot);
+        if (gameId == null) return;
+        final game = await DbHelper.instance.getGame(gameId);
+        if (mounted && game?.finishedAt != null) {
+          await _sendPairedResult();
+        }
+      } catch (_) {
+        // Keep manual retry available if the automatic attempt fails.
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -69,6 +95,22 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
               'Dashboard heeft het resultaat opgeslagen ($status).',
         );
       }
+    } catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _sendPairedResult() async {
+    if (_busy) return;
+    setState(() { _busy = true; _error = null; _sendMessage = null; });
+    try {
+      await _builder.prepare(widget.match, widget.single);
+      final status = await _sender.sendPaired(
+          matchId: widget.match.id, slot: widget.single.slot);
+      if (mounted) setState(() => _sendMessage =
+          'Dashboard heeft het resultaat beveiligd opgeslagen ($status).');
     } catch (error) {
       if (mounted) setState(() => _error = '$error');
     } finally {
@@ -214,6 +256,19 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
                                 children: [
+                                  if (b74Session.peerHost != null &&
+                                      b74Session.peerPort != null) ...[
+                                    const Text('QR-verbinding beschikbaar. '
+                                        'Verzend het resultaat beveiligd naar het Dashboard.'),
+                                    const SizedBox(height: 12),
+                                    FilledButton.icon(
+                                      onPressed: _busy ? null : _sendPairedResult,
+                                      icon: const Icon(Icons.sync),
+                                      label: const Text('VERZEND VIA QR-KOPPELING'),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text('Alternatief: handmatig verzenden'),
+                                  ],
                                   const Text(
                                     'Single uitgespeeld. Vul de gegevens in '
                                     'die het Dashboard toont bij Single-resultaten ontvangen.',

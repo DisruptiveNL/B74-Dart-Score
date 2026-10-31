@@ -1,4 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import '../database/db_helper.dart';
+import '../services/competition_single_result_contract.dart';
 
 import '../services/competition_match_catalog.dart';
 import '../services/competition_sync_contract.dart';
@@ -16,11 +20,21 @@ class CompetitionMatchesScreen extends StatefulWidget {
 
 class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
   late Future<List<CompetitionMatchSummary>> _matches;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _reload();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) setState(_reload);
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   void _reload() => _matches = CompetitionMatchCatalog().load();
@@ -119,24 +133,65 @@ class _MatchCard extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           for (final single in match.singles)
-            Card(
-              clipBehavior: Clip.antiAlias,
-              child: ListTile(
-                title: Text('Single ${single.slot}'),
-                subtitle: Text(
-                  '${match.home}: ${single.homePlayer}${_bond(single.homeBond)}\n'
-                  'VS\n${match.away}: ${single.awayPlayer}${_bond(single.awayBond)}',
-                ),
-                isThreeLine: true,
-                trailing: const Icon(Icons.chevron_right),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute<void>(
-                    builder: (_) =>
-                        CompetitionSingleScreen(match: match, single: single),
-                  ),
-                ),
+            FutureBuilder<Map<String, Object?>?>(
+              future: DbHelper.instance.competitionSingleResult(
+                match.id,
+                single.slot,
               ),
+              builder: (context, snapshot) {
+                final row = snapshot.data;
+                Map<String, dynamic>? result;
+                if (row?['payload'] is String) {
+                  try {
+                    result = CompetitionSingleResultContract.decode(
+                      row!['payload'] as String,
+                    );
+                  } catch (_) {
+                    /* Keep the list usable if a row is malformed. */
+                  }
+                }
+                final finished = result != null;
+                final archived = row?['status'] == 'archived';
+                final winner = result?['winnerPlayerId'] == single.homeId
+                    ? single.homePlayer
+                    : single.awayPlayer;
+                return Card(
+                  clipBehavior: Clip.antiAlias,
+                  color: finished ? Colors.green.withValues(alpha: 0.14) : null,
+                  child: ListTile(
+                    title: Text(
+                      'Single ${single.slot}${finished ? '  •  ${result['homeLegs']}–${result['awayLegs']}' : ''}',
+                    ),
+                    subtitle: Text(
+                      '${match.home}: ${single.homePlayer}${_bond(single.homeBond)}\n'
+                      'VS\n${match.away}: ${single.awayPlayer}${_bond(single.awayBond)}'
+                      '${finished ? '\nWinnaar: $winner  •  ${archived ? 'Gesynchroniseerd' : 'Wacht op synchronisatie'}' : ''}',
+                    ),
+                    isThreeLine: true,
+                    trailing: Icon(
+                      finished
+                          ? (archived
+                                ? Icons.cloud_done
+                                : Icons.cloud_upload_outlined)
+                          : Icons.chevron_right,
+                    ),
+                    onTap: () async {
+                      await Navigator.push(
+                        context,
+                        MaterialPageRoute<void>(
+                          builder: (_) => CompetitionSingleScreen(
+                            match: match,
+                            single: single,
+                          ),
+                        ),
+                      );
+                      if (context.mounted) {
+                        (context as Element).markNeedsBuild();
+                      }
+                    },
+                  ),
+                );
+              },
             ),
         ],
       ),

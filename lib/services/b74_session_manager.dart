@@ -24,6 +24,21 @@ class B74SessionManager extends ChangeNotifier {
   String? _peerId;
   DateTime? _expiresAtUtc;
   List<int>? _sessionKey;
+  String? _peerHost;
+  int? _peerPort;
+
+  String? get peerHost => hasKey ? _peerHost : null;
+  int? get peerPort => hasKey ? _peerPort : null;
+
+  /// Only called after an authenticated, nonce-bound endpoint registration.
+  void registerVerifiedEndpoint(String host, int port) {
+    if (!hasKey || host.trim().isEmpty || port < 1 || port > 65535) {
+      throw StateError('Geen geldige geverifieerde retourverbinding');
+    }
+    _peerHost = host;
+    _peerPort = port;
+    notifyListeners();
+  }
 
   B74ConnectionPhase get phase {
     _expireIfNeeded();
@@ -104,6 +119,8 @@ class B74SessionManager extends ChangeNotifier {
       }
     }
     _sessionKey = null;
+    _peerHost = null;
+    _peerPort = null;
     _peerId = null;
     _expiresAtUtc = null;
     _phase = B74ConnectionPhase.unpaired;
@@ -121,6 +138,8 @@ class B74SessionManager extends ChangeNotifier {
         }
       }
       _sessionKey = null;
+      _peerHost = null;
+      _peerPort = null;
       _phase = B74ConnectionPhase.expired;
       notifyListeners();
     }

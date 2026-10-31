@@ -30,6 +30,7 @@ class CompetitionSyncReceiver {
   DateTime? _lastHeartbeatUtc;
   final Set<String> _heartbeatNonces = <String>{};
   final Set<String> _importNonces = <String>{};
+  final Set<String> _endpointNonces = <String>{};
   DateTime? _heartbeatSessionExpiry;
   static const int maxPayloadBytes = 256 * 1024;
 
@@ -131,6 +132,52 @@ class CompetitionSyncReceiver {
           );
         }
       }
+    } else if (request.uri.path == '/b74/session/register-return' &&
+        request.method == 'POST') {
+      // The host is taken from the authenticated TCP peer, never from JSON.
+      final nonce = request.headers.value('x-b74-return-nonce');
+      final proof = request.headers.value('x-b74-return-proof');
+      final host = request.connectionInfo?.remoteAddress.address;
+      final raw = await utf8.decoder.bind(request).join();
+      int? port;
+      try {
+        if (raw.length > 256) throw const FormatException('Too large');
+        final body = jsonDecode(raw);
+        if (body is Map && body['port'] is int) port = body['port'] as int;
+      } catch (_) {
+        /* Invalid registration. */
+      }
+      if (nonce == null ||
+          !RegExp(r'^[A-Za-z0-9_-]{43}=$').hasMatch(nonce) ||
+          proof == null ||
+          host == null ||
+          port == null ||
+          port < 1 ||
+          port > 65535 ||
+          _endpointNonces.contains(nonce) ||
+          !b74Session.verifyOperation(
+            'dashboard',
+            'b74-return-register-v1\n$nonce\n$port',
+            proof,
+          )) {
+        response.statusCode = HttpStatus.forbidden;
+      } else if (_endpointNonces.length >= 1000) {
+        response.statusCode = HttpStatus.serviceUnavailable;
+      } else {
+        _endpointNonces.add(nonce);
+        b74Session.registerVerifiedEndpoint(host, port);
+        response.statusCode = HttpStatus.ok;
+        response.write(
+          jsonEncode({
+            'status': 'registered',
+            'nonce': nonce,
+            'proof': b74Session.operationProof(
+              'tablet',
+              'b74-return-registered-v1:$nonce:$port',
+            ),
+          }),
+        );
+      }
     } else if (request.uri.path == '/b74/session/revoke' &&
         request.method == 'POST') {
       // Fixed-operation MAC is sufficient for revocation: successful replay
@@ -220,6 +267,7 @@ class CompetitionSyncReceiver {
             _lastHeartbeatUtc = DateTime.now().toUtc();
             // Nieuwe geverifieerde sessie: oude import-nonces zijn niet meer geldig.
             _importNonces.clear();
+            _endpointNonces.clear();
             b74Session.activateVerified(
               peerId: 'b74-dashboard',
               sessionKey: key,
