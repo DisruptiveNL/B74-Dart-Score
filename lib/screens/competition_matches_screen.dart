@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import '../services/b74_live_tv.dart';
+import '../widgets/wifi_pairing.dart';
 import '../database/db_helper.dart';
 import '../services/competition_single_result_contract.dart';
 
@@ -53,6 +55,56 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
     appBar: AppBar(
       title: const Text('Competities & Toernooien'),
       actions: [
+        IconButton(
+          tooltip: 'B74 Live TV koppelen of ontkoppelen',
+          icon: Icon(B74LiveTv.instance.connected ? Icons.tv : Icons.tv_outlined),
+          onPressed: () async {
+            if (B74LiveTv.instance.connected) {
+              final shouldDisconnect = await showDialog<bool>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  title: const Text('B74 Live TV'),
+                  content: const Text('De TV is verbonden. Verbinding verbreken?'),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(dialogContext, false),
+                        child: const Text('Annuleren')),
+                    TextButton(onPressed: () => Navigator.pop(dialogContext, true),
+                        child: const Text('Ontkoppelen')),
+                  ],
+                ),
+              );
+              if (shouldDisconnect == true) {
+                await B74LiveTv.instance.disconnect();
+              }
+            } else {
+              var busy = false;
+              await showDialog<void>(
+                context: context,
+                builder: (dialogContext) => Dialog(
+                  child: SizedBox(width: 420, height: 480, child: Column(children: [
+                    const Padding(padding: EdgeInsets.all(12),
+                        child: Text('Scan de QR-code op de B74 Live TV')),
+                    Expanded(child: QrScanner(onScanned: (qr) async {
+                      if (busy || !qr.startsWith('b74-live://')) return;
+                      busy = true;
+                      try {
+                        await B74LiveTv.instance.connect(qr);
+                        if (dialogContext.mounted) Navigator.pop(dialogContext);
+                      } catch (e) {
+                        busy = false;
+                        if (dialogContext.mounted) {
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            SnackBar(content: Text('TV-koppeling mislukt: $e')));
+                        }
+                      }
+                    })),
+                  ])),
+                ),
+              );
+            }
+            if (mounted) setState(() {});
+          },
+        ),
         IconButton(
           tooltip: 'Wedstrijden ontvangen',
           icon: const Icon(Icons.wifi_tethering),
