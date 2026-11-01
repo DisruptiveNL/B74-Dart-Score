@@ -2,6 +2,11 @@ import 'dart:async';
 
 import '../database/db_helper.dart';
 import 'b74_session_manager.dart';
+import 'b74_team_match_contract.dart';
+import 'b74_doubles_session.dart';
+import 'b74_doubles_live_stats.dart';
+import 'b74_doubles_result_builder.dart';
+import 'competition_doubles_result_sender.dart';
 import 'competition_match_catalog.dart';
 import 'competition_single_result_builder.dart';
 import 'competition_single_result_sender.dart';
@@ -14,16 +19,19 @@ class CompetitionResultSyncService {
     CompetitionMatchCatalog? catalog,
     CompetitionSingleResultBuilder? builder,
     CompetitionSingleResultSender? sender,
+    CompetitionDoublesResultSender? doublesSender,
     this._interval = const Duration(seconds: 12),
   }) : _db = database ?? DbHelper.instance,
        _catalog = catalog ?? CompetitionMatchCatalog(),
        _builder = builder ?? CompetitionSingleResultBuilder(),
-       _sender = sender ?? CompetitionSingleResultSender();
+       _sender = sender ?? CompetitionSingleResultSender(),
+       _doublesSender = doublesSender ?? CompetitionDoublesResultSender();
 
   final DbHelper _db;
   final CompetitionMatchCatalog _catalog;
   final CompetitionSingleResultBuilder _builder;
   final CompetitionSingleResultSender _sender;
+  final CompetitionDoublesResultSender _doublesSender;
   final Duration _interval;
   Timer? _timer;
   bool _busy = false;
@@ -51,6 +59,7 @@ class CompetitionResultSyncService {
     await db.update('competition_single_results', {
       'status': 'completed',
     }, where: "status = 'sending'");
+    await _db.recoverInterruptedCompetitionDoublesSends();
   }
 
   Future<void> syncOnce() async {
@@ -88,6 +97,39 @@ class CompetitionResultSyncService {
           }
         }
       }
+      // Doubles share the same session, timer, retries and result endpoint.
+      // A failed 701 result never blocks the next match or singles.
+      final database = await _db.db;
+      final doubles = await database.query('competition_team_inbox',
+          where: 'kind = ?', whereArgs: ['doubles701']);
+      for (final row in doubles) {
+        try {
+          final gameId = row['game_id'] as String;
+          var result = await _db.competitionDoublesResult(gameId);
+          if (result?['status'] == 'archived') continue;
+          if (result == null) {
+            final session = await B74DoublesSession.load(gameId);
+            if (session.engine.winner == null) continue;
+            final packet = B74TeamMatchContract.decode(row['payload'] as String);
+            final stats = B74DoublesLiveStats.fromEvents(session.events,
+                startTeam: session.startTeam,
+                bestOf: session.bestOf,
+                openingBullRequired: session.openingBullRequired);
+            final payload = B74DoublesResultBuilder.build(
+                packet: packet, engine: session.engine, stats: stats);
+            await _db.saveCompletedCompetitionDoublesResult(
+                gameId: gameId, matchId: packet['matchId'] as String,
+                slot: packet['slot'] as int,
+                revision: packet['revision'] as int, payload: payload);
+            result = await _db.competitionDoublesResult(gameId);
+          }
+          if (result?['status'] != 'completed') continue;
+          if (b74Session.peerHost == null || b74Session.peerPort == null) continue;
+          await _doublesSender.sendPaired(gameId);
+        } catch (_) {
+          // Preserve retryable SQLite payload; never block scoring.
+        }
+      }
     } catch (_) {
       // Startup/migration or transient database errors are retried later.
     } finally {
@@ -99,6 +141,7 @@ class CompetitionResultSyncService {
     _timer?.cancel();
     b74Session.removeListener(_onSessionChanged);
     _sender.close();
+    _doublesSender.close();
     _started = false;
   }
 }

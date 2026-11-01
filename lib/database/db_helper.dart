@@ -32,7 +32,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 30;
+  static const int schemaVersion = 31;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -307,6 +307,9 @@ class DbHelper {
     }
     if (oldVersion < 30) {
       await _createCompetitionDoublesEvents(db);
+    }
+    if (oldVersion < 31) {
+      await _createCompetitionDoublesResults(db);
     }
   }
 
@@ -594,6 +597,95 @@ class DbHelper {
       'received_at INTEGER NOT NULL, '
       'UNIQUE(match_id, kind, slot))',
     );
+  }
+
+  /// C1B4.5b2b: durable 701 outbox. The same state machine as singles,
+  /// with a foreign key to the existing team-match inbox rather than singles.
+  Future<void> _createCompetitionDoublesResults(Database database) async {
+    await database.execute(
+      'CREATE TABLE IF NOT EXISTS competition_doubles_results ('
+      'game_id TEXT PRIMARY KEY, match_id TEXT NOT NULL, '
+      'slot INTEGER NOT NULL, revision INTEGER NOT NULL, '
+      "status TEXT NOT NULL DEFAULT 'completed', "
+      'payload TEXT NOT NULL, acknowledged_at INTEGER, '
+      'UNIQUE(match_id, slot), '
+      'FOREIGN KEY(game_id) REFERENCES competition_team_inbox(game_id))',
+    );
+  }
+
+  /// Store the exact validated wire payload; never replace an in-flight or
+  /// acknowledged result. Corrections after ACK need a separate revision flow.
+  Future<void> saveCompletedCompetitionDoublesResult({
+    required String gameId,
+    required String matchId,
+    required int slot,
+    required int revision,
+    required String payload,
+  }) async {
+    if (gameId.isEmpty || matchId.isEmpty || slot < 1 || slot > 4 ||
+        revision < 1 || payload.trim().isEmpty) {
+      throw ArgumentError('Ongeldig 701-resultaat');
+    }
+    final database = await db;
+    await database.transaction((txn) async {
+      final inbox = await txn.query('competition_team_inbox',
+          where: 'game_id = ? AND match_id = ? AND kind = ? AND slot = ? AND revision = ?',
+          whereArgs: [gameId, matchId, 'doubles701', slot, revision], limit: 1);
+      if (inbox.length != 1) throw StateError('701-wedstrijdidentiteit komt niet overeen');
+      final existing = await txn.query('competition_doubles_results',
+          where: 'game_id = ?', whereArgs: [gameId], limit: 1);
+      if (existing.isNotEmpty && existing.single['status'] != 'completed') {
+        throw StateError('701-resultaat wordt verzonden of is al bevestigd');
+      }
+      await txn.insert('competition_doubles_results', {
+        'game_id': gameId, 'match_id': matchId, 'slot': slot,
+        'revision': revision, 'status': 'completed',
+        'payload': payload, 'acknowledged_at': null,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+  }
+
+  Future<Map<String, Object?>?> competitionDoublesResult(String gameId) async {
+    final database = await db;
+    final rows = await database.query('competition_doubles_results',
+        where: 'game_id = ?', whereArgs: [gameId], limit: 1);
+    return rows.isEmpty ? null : rows.single;
+  }
+
+  Future<bool> beginCompetitionDoublesResultSend(String gameId) async {
+    final database = await db;
+    return await database.update('competition_doubles_results',
+        {'status': 'sending'},
+        where: "game_id = ? AND status = 'completed'", whereArgs: [gameId]) == 1;
+  }
+
+  Future<bool> failCompetitionDoublesResultSend(String gameId) async {
+    final database = await db;
+    return await database.update('competition_doubles_results',
+        {'status': 'completed'},
+        where: "game_id = ? AND status = 'sending'", whereArgs: [gameId]) == 1;
+  }
+
+  Future<bool> acknowledgeCompetitionDoublesResult(
+      String gameId, String acknowledgedPayload) async {
+    final database = await db;
+    return database.transaction((txn) async {
+      final rows = await txn.query('competition_doubles_results',
+          where: 'game_id = ?', whereArgs: [gameId], limit: 1);
+      if (rows.isEmpty || rows.single['payload'] != acknowledgedPayload) return false;
+      if (rows.single['status'] == 'archived') return true;
+      if (rows.single['status'] != 'sending') return false;
+      return await txn.update('competition_doubles_results', {
+        'status': 'archived',
+        'acknowledged_at': DateTime.now().millisecondsSinceEpoch,
+      }, where: "game_id = ? AND status = 'sending'", whereArgs: [gameId]) == 1;
+    });
+  }
+
+  Future<void> recoverInterruptedCompetitionDoublesSends() async {
+    final database = await db;
+    await database.update('competition_doubles_results',
+        {'status': 'completed'}, where: "status = 'sending'");
   }
 
   /// C1B4.3e: immutable event journal for doubles 701. Replay events through
@@ -905,6 +997,7 @@ class DbHelper {
     await _createCompetitionSingleResults(db);
     await _createCompetitionTeamInbox(db);
     await _createCompetitionDoublesEvents(db);
+    await _createCompetitionDoublesResults(db);
     await db.execute('''
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
