@@ -1,0 +1,13 @@
+Kandidaatpatch: duurzame team-inbox, schema 28 -> 29.
+Vereist eerder geïnstalleerde:
+  lib/services/b74_team_match_contract.dart
+  lib/services/b74_team_revision_policy.dart
+Geen bestaande singles-tabellen worden gewijzigd of gewist.
+Nog GEEN HTTP ontvangst, GEEN X01 game en GEEN echte startdetectie.
+debugMarkCompetitionTeamStarted is uitsluitend een testhaak.
+Test:
+  flutter test --no-pub test/database/c1b4_team_inbox_test.dart
+  flutter test --no-pub
+  flutter analyze --no-pub
+  git diff --check
+NIET committen voor tests geslaagd zijn.

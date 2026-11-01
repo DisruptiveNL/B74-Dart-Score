@@ -1,0 +1,4 @@
+C1B4.3c: pure 701 scoring core, no changes to GameProvider, DB or singles.
+Requires installed C1B4.3b rotation. Not yet a playable screen.
+Test flutter test --no-pub test/services/b74_doubles_701_test.dart; flutter test --no-pub; flutter analyze --no-pub; git diff --check
+No commit.

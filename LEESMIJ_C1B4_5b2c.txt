@@ -1,0 +1,6 @@
+B74 C1B4.5b2c - 701 return transport
+
+Copy lib/ and test/ into B74-Dart-Score.
+Changes: shared QR paired transport extracted from singles sendPaired; singles keeps the same exact wire protocol and ACK checks. 701 sender uses same transport and existing 701 SQLite outbox. Existing sync timer now discovers completed 701 sessions, serializes from journal and sends on same QR connection.
+
+CAUTION: This patch has NOT been run through Flutter in this environment. Run flutter analyze --no-pub and flutter test --no-pub. Then test both directions on S25 and tablet, including offline retry. No git commit until validated.

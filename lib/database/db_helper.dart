@@ -32,7 +32,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 31;
+  static const int schemaVersion = 32;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -69,8 +69,87 @@ class DbHelper {
       onUpgrade: _onUpgrade,
       onOpen: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
+        await _createCompetitionBeerResults(db);
       },
     );
+  }
+
+  /// C1B6b.3: durable, idempotent receipt. No user-facing lock is activated
+  /// until the competition screens and score writers enforce this state.
+  Future<String> receiveMatchLocked(Map<String, dynamic> message) async {
+    final matchId = message['matchId'] as String;
+    final payload = jsonEncode(message);
+    final database = await db;
+    return database.transaction((txn) async {
+      await txn.execute(
+        'CREATE TABLE IF NOT EXISTS competition_match_locks ('
+        'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, received_at INTEGER NOT NULL)',
+      );
+      final previous = await txn.query('competition_match_locks',
+          columns: ['payload'], where: 'match_id = ?', whereArgs: [matchId]);
+      if (previous.isNotEmpty) {
+        final old = jsonDecode(previous.single['payload'] as String) as Map;
+        if (old['type'] != message['type'] || old['version'] != message['version'] ||
+            old['closedAt'] != message['closedAt'] ||
+            old['homeWins'] != message['homeWins'] ||
+            old['awayWins'] != message['awayWins']) {
+          throw StateError('Afwijkend MATCH_LOCKED-bericht voor dezelfde wedstrijd');
+        }
+        return 'unchanged';
+      }
+      await txn.insert('competition_match_locks', {
+        'match_id': matchId,
+        'payload': payload,
+        'received_at': DateTime.now().toUtc().millisecondsSinceEpoch,
+      });
+      return 'stored';
+    });
+  }
+
+  Future<bool> isCompetitionMatchLocked(String matchId) async {
+    final database = await db;
+    await database.execute('CREATE TABLE IF NOT EXISTS competition_match_locks ('
+        'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, received_at INTEGER NOT NULL)');
+    final rows = await database.query('competition_match_locks',
+        columns: ['match_id'], where: 'match_id = ?', whereArgs: [matchId], limit: 1);
+    return rows.isNotEmpty;
+  }
+
+  /// Rejects writes to any X01 game linked to a closed competition match.
+  /// Run inside the SAME transaction as the write to avoid a lock/write race.
+  Future<void> _requireMatchWritable(Transaction txn, String matchId) async {
+    await txn.execute('CREATE TABLE IF NOT EXISTS competition_match_locks ('
+        'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, received_at INTEGER NOT NULL)');
+    final rows = await txn.query('competition_match_locks',
+        columns: ['match_id'], where: 'match_id = ?',
+        whereArgs: [matchId], limit: 1);
+    if (rows.isNotEmpty) {
+      throw StateError('MATCH_LOCKED: wedstrijd is afgesloten');
+    }
+  }
+
+  Future<void> _requireGameWritable(Transaction txn, int gameId) async {
+    await txn.execute('CREATE TABLE IF NOT EXISTS competition_match_locks ('
+        'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, received_at INTEGER NOT NULL)');
+    final rows = await txn.rawQuery(
+      'SELECT 1 FROM competition_game_links g '
+      'JOIN competition_match_locks l ON l.match_id = g.match_id '
+      'WHERE g.game_id = ? LIMIT 1', [gameId]);
+    if (rows.isNotEmpty) {
+      throw StateError('MATCH_LOCKED: wedstrijd is afgesloten');
+    }
+  }
+
+  Future<void> _requireTeamGameWritable(Transaction txn, String gameId) async {
+    await txn.execute('CREATE TABLE IF NOT EXISTS competition_match_locks ('
+        'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, received_at INTEGER NOT NULL)');
+    final rows = await txn.rawQuery(
+      'SELECT 1 FROM competition_team_inbox i '
+      'JOIN competition_match_locks l ON l.match_id = i.match_id '
+      'WHERE i.game_id = ? LIMIT 1', [gameId]);
+    if (rows.isNotEmpty) {
+      throw StateError('MATCH_LOCKED: wedstrijd is afgesloten');
+    }
   }
 
   /// Applies incremental schema migrations from [oldVersion] up to [newVersion].
@@ -310,6 +389,9 @@ class DbHelper {
     }
     if (oldVersion < 31) {
       await _createCompetitionDoublesResults(db);
+    }
+    if (oldVersion < 32) {
+      await _createCompetitionBeerResults(db);
     }
   }
 
@@ -613,6 +695,28 @@ class DbHelper {
     );
   }
 
+  /// Beer results use a separate outbox: beer slot 1 must never overwrite
+  /// doubles slot 1 in the existing UNIQUE(match_id, slot) table.
+  Future<void> _createCompetitionBeerResults(Database database) async {
+    await database.execute(
+      'CREATE TABLE IF NOT EXISTS competition_beer_results ('
+      'game_id TEXT PRIMARY KEY, match_id TEXT NOT NULL, '
+      'slot INTEGER NOT NULL, revision INTEGER NOT NULL, '
+      "status TEXT NOT NULL DEFAULT 'completed', "
+      'payload TEXT NOT NULL, acknowledged_at INTEGER, '
+      'UNIQUE(match_id, slot), '
+      'FOREIGN KEY(game_id) REFERENCES competition_team_inbox(game_id))',
+    );
+  }
+
+  Future<String> _teamResultTable(DatabaseExecutor database, String gameId) async {
+    final inbox = await database.query('competition_team_inbox',
+        columns: ['kind'], where: 'game_id = ?', whereArgs: [gameId], limit: 1);
+    if (inbox.isEmpty) throw StateError('Teamwedstrijd ontbreekt');
+    return inbox.single['kind'] == 'beer1001'
+        ? 'competition_beer_results' : 'competition_doubles_results';
+  }
+
   /// Store the exact validated wire payload; never replace an in-flight or
   /// acknowledged result. Corrections after ACK need a separate revision flow.
   Future<void> saveCompletedCompetitionDoublesResult({
@@ -628,16 +732,19 @@ class DbHelper {
     }
     final database = await db;
     await database.transaction((txn) async {
+      await _requireTeamGameWritable(txn, gameId);
+
       final inbox = await txn.query('competition_team_inbox',
-          where: 'game_id = ? AND match_id = ? AND kind = ? AND slot = ? AND revision = ?',
-          whereArgs: [gameId, matchId, 'doubles701', slot, revision], limit: 1);
-      if (inbox.length != 1) throw StateError('701-wedstrijdidentiteit komt niet overeen');
-      final existing = await txn.query('competition_doubles_results',
+          where: 'game_id = ? AND match_id = ? AND kind IN (?, ?) AND slot = ? AND revision = ?',
+          whereArgs: [gameId, matchId, 'doubles701', 'beer1001', slot, revision], limit: 1);
+      if (inbox.length != 1) throw StateError('Teamwedstrijdidentiteit komt niet overeen');
+      final table = await _teamResultTable(txn, gameId);
+      final existing = await txn.query(table,
           where: 'game_id = ?', whereArgs: [gameId], limit: 1);
       if (existing.isNotEmpty && existing.single['status'] != 'completed') {
         throw StateError('701-resultaat wordt verzonden of is al bevestigd');
       }
-      await txn.insert('competition_doubles_results', {
+      await txn.insert(table, {
         'game_id': gameId, 'match_id': matchId, 'slot': slot,
         'revision': revision, 'status': 'completed',
         'payload': payload, 'acknowledged_at': null,
@@ -647,21 +754,24 @@ class DbHelper {
 
   Future<Map<String, Object?>?> competitionDoublesResult(String gameId) async {
     final database = await db;
-    final rows = await database.query('competition_doubles_results',
+    final table = await _teamResultTable(database, gameId);
+    final rows = await database.query(table,
         where: 'game_id = ?', whereArgs: [gameId], limit: 1);
     return rows.isEmpty ? null : rows.single;
   }
 
   Future<bool> beginCompetitionDoublesResultSend(String gameId) async {
     final database = await db;
-    return await database.update('competition_doubles_results',
+    final table = await _teamResultTable(database, gameId);
+    return await database.update(table,
         {'status': 'sending'},
         where: "game_id = ? AND status = 'completed'", whereArgs: [gameId]) == 1;
   }
 
   Future<bool> failCompetitionDoublesResultSend(String gameId) async {
     final database = await db;
-    return await database.update('competition_doubles_results',
+    final table = await _teamResultTable(database, gameId);
+    return await database.update(table,
         {'status': 'completed'},
         where: "game_id = ? AND status = 'sending'", whereArgs: [gameId]) == 1;
   }
@@ -669,13 +779,14 @@ class DbHelper {
   Future<bool> acknowledgeCompetitionDoublesResult(
       String gameId, String acknowledgedPayload) async {
     final database = await db;
+    final table = await _teamResultTable(database, gameId);
     return database.transaction((txn) async {
-      final rows = await txn.query('competition_doubles_results',
+      final rows = await txn.query(table,
           where: 'game_id = ?', whereArgs: [gameId], limit: 1);
       if (rows.isEmpty || rows.single['payload'] != acknowledgedPayload) return false;
       if (rows.single['status'] == 'archived') return true;
       if (rows.single['status'] != 'sending') return false;
-      return await txn.update('competition_doubles_results', {
+      return await txn.update(table, {
         'status': 'archived',
         'acknowledged_at': DateTime.now().millisecondsSinceEpoch,
       }, where: "game_id = ? AND status = 'sending'", whereArgs: [gameId]) == 1;
@@ -684,8 +795,10 @@ class DbHelper {
 
   Future<void> recoverInterruptedCompetitionDoublesSends() async {
     final database = await db;
-    await database.update('competition_doubles_results',
-        {'status': 'completed'}, where: "status = 'sending'");
+    for (final table in ['competition_doubles_results', 'competition_beer_results']) {
+      await database.update(table, {'status': 'completed'},
+          where: "status = 'sending'");
+    }
   }
 
   /// C1B4.3e: immutable event journal for doubles 701. Replay events through
@@ -726,6 +839,8 @@ class DbHelper {
     }
     final database = await db;
     await database.transaction((txn) async {
+      await _requireTeamGameWritable(txn, gameId);
+
       final inbox = await txn.query(
         'competition_team_inbox',
         columns: ['kind'],
@@ -733,7 +848,7 @@ class DbHelper {
         whereArgs: [gameId],
         limit: 1,
       );
-      if (inbox.length != 1 || inbox.single['kind'] != 'doubles701') {
+      if (inbox.length != 1 || !{'doubles701', 'beer1001'}.contains(inbox.single['kind'])) {
         throw StateError('701-koppelwedstrijd ontbreekt');
       }
       final count = Sqflite.firstIntValue(
@@ -998,6 +1113,7 @@ class DbHelper {
     await _createCompetitionTeamInbox(db);
     await _createCompetitionDoublesEvents(db);
     await _createCompetitionDoublesResults(db);
+    await _createCompetitionBeerResults(db);
     await db.execute('''
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1233,6 +1349,10 @@ class DbHelper {
   }) async {
     final d = await db;
     return d.transaction((txn) async {
+      if (competitionMatchId != null) {
+        await _requireMatchWritable(txn, competitionMatchId);
+      }
+
       if (competitionMatchId != null) {
         if (competitionSlot == null || starterExternalId == null) {
           throw ArgumentError('Incomplete competition game link');
@@ -1774,7 +1894,10 @@ class DbHelper {
   /// Updates an X01 game row (e.g. to mark it finished).
   Future<void> updateGame(Game g) async {
     final d = await db;
-    await d.update('games', g.toMap(), where: 'id = ?', whereArgs: [g.id]);
+    await d.transaction((txn) async {
+      await _requireGameWritable(txn, g.id!);
+      await txn.update('games', g.toMap(), where: 'id = ?', whereArgs: [g.id]);
+    });
   }
 
   /// All non-sync X01 games, newest first.
@@ -1824,13 +1947,23 @@ class DbHelper {
     final d = await db;
     final map = t.toMap()..remove('id');
     map['set_'] = map.remove('set');
-    return d.insert('dart_throws', map);
+    return d.transaction((txn) async {
+      await _requireGameWritable(txn, t.gameId);
+      return txn.insert('dart_throws', map);
+    });
   }
 
   /// Deletes the X01 throw with [id] (used by undo).
   Future<void> deleteThrow(int id) async {
     final d = await db;
-    await d.delete('dart_throws', where: 'id = ?', whereArgs: [id]);
+    await d.transaction((txn) async {
+      final rows = await txn.query('dart_throws', columns: ['game_id'],
+          where: 'id = ?', whereArgs: [id], limit: 1);
+      if (rows.isNotEmpty) {
+        await _requireGameWritable(txn, rows.single['game_id'] as int);
+      }
+      await txn.delete('dart_throws', where: 'id = ?', whereArgs: [id]);
+    });
   }
 
   /// Atomically updates a numeric visit and its later remaining-before values.
@@ -1844,6 +1977,8 @@ class DbHelper {
   ) async {
     final database = await db;
     await database.transaction((txn) async {
+      await _requireGameWritable(txn, gameId);
+
       final changed = await txn.update(
         'dart_throws',
         {'score': score, 'darts_used': dartsUsed},
@@ -1873,6 +2008,8 @@ class DbHelper {
   ) async {
     final database = await db;
     await database.transaction((txn) async {
+      await _requireGameWritable(txn, gameId);
+
       final changed = await txn.update(
         'dart_throws',
         {

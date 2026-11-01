@@ -45,6 +45,12 @@ class B74TeamMatchContract {
     if (bestOf is! int || (count == 4 ? bestOf != 1 : !{3, 5, 7}.contains(bestOf))) {
       throw const FormatException('Ongeldig aantal legs');
     }
+    // Optional v1 extension. Old 701/1001 packets remain Straight In.
+    // Never confuse check-in with startPolicy (which team starts).
+    if (packet.containsKey('checkIn') &&
+        !{'straight', 'double'}.contains(packet['checkIn'])) {
+      throw const FormatException('Ongeldige check-in regel');
+    }
     if (!{'home', 'away', 'bull'}.contains(packet['startPolicy'])) {
       throw const FormatException('Ongeldig beginnend team');
     }

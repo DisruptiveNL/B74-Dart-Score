@@ -6,7 +6,11 @@ class B74DoublesResultContract {
   static const type = 'b74.competition.doubles-result.v1';
   static const version = 1;
 
-  static String resultId(String matchId, int slot) {
+  static String resultId(String matchId, int slot, {String kind = 'doubles701'}) {
+    if (kind == 'beer1001' && slot == 1 && matchId.trim().isNotEmpty) {
+      return '$matchId:beer:1';
+    }
+    if (kind != 'doubles701') throw const FormatException('Ongeldige resultaatsoort');
     if (matchId.trim().isEmpty || slot < 1 || slot > 4) {
       throw const FormatException('Ongeldige koppelwedstrijdidentiteit');
     }
@@ -31,6 +35,10 @@ class B74DoublesResultContract {
     if (value['type'] != type || value['version'] != version) {
       throw const FormatException('Onbekend koppelresultaatprotocol');
     }
+    final kind = value['kind'] ?? 'doubles701';
+    if (!{'doubles701', 'beer1001'}.contains(kind)) {
+      throw const FormatException('Ongeldige resultaatsoort');
+    }
     final matchId = value['matchId'];
     final slot = value['slot'];
     final gameId = value['gameId'];
@@ -38,7 +46,7 @@ class B74DoublesResultContract {
     if (matchId is! String || slot is! int ||
         gameId is! String || gameId.trim().isEmpty ||
         revision is! int || revision < 1 ||
-        value['resultId'] != resultId(matchId, slot)) {
+        value['resultId'] != resultId(matchId, slot, kind: kind)) {
       throw const FormatException('Ongeldige wedstrijdkoppeling');
     }
     final home = value['homeTeamId'];
@@ -50,7 +58,7 @@ class B74DoublesResultContract {
     final bestOf = value['bestOf'];
     final homeLegs = value['homeLegs'];
     final awayLegs = value['awayLegs'];
-    if (bestOf is! int || !{3, 5, 7}.contains(bestOf) ||
+    if (bestOf is! int || (kind == 'beer1001' ? bestOf != 1 : !{3, 5, 7}.contains(bestOf)) ||
         homeLegs is! int || awayLegs is! int ||
         homeLegs < 0 || awayLegs < 0 ||
         (homeLegs > awayLegs ? homeLegs : awayLegs) != bestOf ~/ 2 + 1 ||
@@ -59,8 +67,8 @@ class B74DoublesResultContract {
       throw const FormatException('Ongeldige definitieve wedstrijdstand');
     }
     final players = value['players'];
-    if (players is! List || players.length != 4) {
-      throw const FormatException('Vier spelerstatistieken vereist');
+    if (players is! List || players.length != (kind == 'beer1001' ? 8 : 4)) {
+      throw const FormatException('Ongeldig aantal spelerstatistieken');
     }
     final ids = <String>{};
     for (final player in players) {

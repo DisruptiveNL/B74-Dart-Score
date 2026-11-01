@@ -1,0 +1,22 @@
+B74 C1B4.2B.2a — Teamwedstrijd revisiebeleid (Dart Score)
+
+Deze patch bevat uitsluitend TWEE NIEUWE bestanden. Geen bestaande code vervangen.
+De policy is nog NIET verbonden met de database of HTTP-ontvanger.
+
+Ontwerp:
+- Revisie 1: nieuwe wedstrijd.
+- Identieke replay: geen wijziging, ook na wedstrijdstart.
+- Volgende revisie: alleen voor wedstrijdstart.
+- Oudere/overgeslagen revisie of dezelfde revisie met andere inhoud: weigeren.
+- De database moet in een latere patch deze beslissing ATOMAIR toepassen,
+  onder dezelfde transactie en op basis van een betrouwbare startstatus.
+- De inhoud moet canoniek worden vergeleken, niet op ruwe JSON-veldvolgorde.
+  Daarom is dit voorlopig uitsluitend een testbare besliscomponent.
+
+INSTALLATIE
+1. Pak ZIP uit in D:\b74dev\projects\B74-Dart-Score
+2. flutter test --no-pub test/services/b74_team_revision_policy_test.dart
+3. flutter test --no-pub
+4. flutter analyze --no-pub
+5. git diff --check
+Nog NIET committen totdat de testresultaten zijn beoordeeld.

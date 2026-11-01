@@ -4,18 +4,42 @@ import 'b74_doubles_rotation.dart';
 /// Does not write to SQLite or change the existing singles GameProvider.
 /// All scoring operations represent one completed visit (up to three darts).
 class B74Doubles701 {
-  B74Doubles701({required this.starterTeam, this.bestOf = 5}) {
+  B74Doubles701({
+    required this.starterTeam,
+    this.bestOf = 5,
+    this.startingScore = 701,
+    this.playersPerTeam = 2,
+    this.checkIn = 'straight',
+  }) {
+    if (!{'straight', 'double'}.contains(checkIn)) {
+      throw ArgumentError.value(checkIn, 'checkIn');
+    }
+    if (startingScore != 701 && startingScore != 1001) {
+      throw ArgumentError.value(startingScore, 'startingScore');
+    }
+    if (playersPerTeam != 2 && playersPerTeam != 4) {
+      throw ArgumentError.value(playersPerTeam, 'playersPerTeam');
+    }
+    if (startingScore == 701 && playersPerTeam != 2 ||
+        startingScore == 1001 && playersPerTeam != 4) {
+      throw ArgumentError('Ongeldige teamspelconfiguratie');
+    }
     if (starterTeam != 0 && starterTeam != 1) {
       throw ArgumentError.value(starterTeam, 'starterTeam');
     }
-    if (!{3, 5, 7}.contains(bestOf)) {
+    if (!(startingScore == 1001 ? bestOf == 1 : {3, 5, 7}.contains(bestOf))) {
       throw ArgumentError.value(bestOf, 'bestOf');
     }
   }
 
   final int starterTeam;
   final int bestOf;
-  final List<int> remaining = [701, 701];
+  final int startingScore;
+  final int playersPerTeam;
+  final String checkIn;
+  final List<bool> opened = [false, false];
+  bool isOpened(int team) => checkIn == 'straight' || opened[team];
+  late final List<int> remaining = [startingScore, startingScore];
   final List<int> legsWon = [0, 0];
   int leg = 1;
   int visitIndex = 0;
@@ -31,6 +55,7 @@ class B74Doubles701 {
 
   int get targetLegs => (bestOf + 1) ~/ 2;
   bool get needsBull =>
+      bestOf > 1 &&
       winner == null &&
       legsWon[0] == targetLegs - 1 &&
       legsWon[1] == targetLegs - 1;
@@ -53,6 +78,7 @@ class B74Doubles701 {
     return B74DoublesRotation.visit(
       starterTeam: legStarter,
       turnIndex: visitIndex,
+      playersPerTeam: playersPerTeam,
     );
   }
 
@@ -105,9 +131,37 @@ class B74Doubles701 {
     required int score,
     bool bust = false,
     bool validCheckout = false,
+    int? openingDouble,
+    int? openingDart,
   }) {
     final turn = currentVisit;
     if (score < 0 || score > 180) throw ArgumentError.value(score, 'score');
+    // For Double In, score is the sum from the opening double onward.
+    // A visit before opening has zero credited points. The caller must
+    // explicitly supply the opening double; a turn total cannot prove it.
+    final wasOpened = isOpened(turn.team);
+    if (checkIn == 'double' && !wasOpened) {
+      if (openingDouble == null) {
+        if (openingDart != null) throw StateError('Openingsdart zonder dubbel');
+        if (score != 0 || validCheckout) {
+          throw StateError('Team moet eerst openen met een dubbel');
+        }
+      } else {
+        if (!(openingDouble == 50 ||
+            (openingDouble >= 2 && openingDouble <= 40 && openingDouble.isEven))) {
+          throw ArgumentError.value(openingDouble, 'openingDouble');
+        }
+        if (openingDart != null && (openingDart < 1 || openingDart > 3)) {
+          throw StateError('Openingsdart moet 1, 2 of 3 zijn');
+        }
+        if (score < openingDouble) {
+          throw StateError('Openingsdubbel telt mee in de score');
+        }
+        if (bust) throw StateError('Bust mag geen opening vastleggen');
+      }
+    } else if (openingDouble != null || openingDart != null) {
+      throw StateError('Openingsdubbel niet toegestaan voor geopend team');
+    }
     final before = remaining[turn.team];
     final after = before - score;
     if (!bust && (after < 0 || after == 1)) {
@@ -119,15 +173,20 @@ class B74Doubles701 {
     if (!bust && after != 0 && validCheckout) {
       throw StateError('Cannot checkout with score remaining');
     }
-    if (!bust) remaining[turn.team] = after;
+    if (!bust) {
+      remaining[turn.team] = after;
+      if (checkIn == 'double' && openingDouble != null) opened[turn.team] = true;
+    }
     if (!bust && after == 0) {
       legsWon[turn.team]++;
       if (legsWon[turn.team] == targetLegs) {
         winner = turn.team;
       } else {
         leg++;
-        remaining[0] = 701;
-        remaining[1] = 701;
+        remaining[0] = startingScore;
+        remaining[1] = startingScore;
+        opened[0] = false;
+        opened[1] = false;
         visitIndex = 0;
         _confirmedStarter = null;
       }

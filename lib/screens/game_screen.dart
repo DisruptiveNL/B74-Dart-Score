@@ -307,6 +307,27 @@ class _GameScreenState extends State<GameScreen> {
   }
 }
 
+/// While a player still needs a qualifying opening dart, the numeric visit
+/// total cannot encode where the first double fell. Reuse the existing
+/// dart-by-dart input and GameProvider rules. Keep it for the whole visit,
+/// even after the opening double, then return to the normal numeric keypad.
+class _B74AdaptiveInput extends StatelessWidget {
+  const _B74AdaptiveInput();
+
+  @override
+  Widget build(BuildContext context) {
+    final provider = context.watch<GameProvider>();
+    final requiresDarts =
+        (provider.currentGameMode != GameMode.straightIn &&
+            !provider.currentHasCheckedIn) ||
+        provider.dartsInVisit > 0;
+    if (requiresDarts) {
+      return const DartboardInput<GameProvider>(fillHeight: true);
+    }
+    return const B74NumericInput();
+  }
+}
+
 // ── Bodies ────────────────────────────────────────────────────────────────────
 
 /// The phone layout: scoreboard on top, input filling what is left below it.
@@ -335,7 +356,7 @@ class _PhoneBody extends StatelessWidget {
                 child: scoreboardBlock,
               ),
             ),
-            const Expanded(child: B74NumericInput()),
+            const Expanded(child: _B74AdaptiveInput()),
           ],
         ),
       ),
@@ -398,7 +419,7 @@ class _TabletBody extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             scoreboardBlock,
-            const Expanded(child: B74NumericInput()),
+            const Expanded(child: _B74AdaptiveInput()),
           ],
         ),
         secondary: stats,
@@ -444,10 +465,10 @@ class _TabletBody extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           checkoutHint,
-                          const Expanded(child: B74NumericInput()),
+                          const Expanded(child: _B74AdaptiveInput()),
                         ],
                       )
-                    : const B74NumericInput(),
+                    : const _B74AdaptiveInput(),
                 secondary: stats,
               ),
             ),

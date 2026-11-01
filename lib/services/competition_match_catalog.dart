@@ -25,7 +25,34 @@ class CompetitionMatchCatalog {
       whereArgs: ['doubles701'],
       orderBy: 'received_at DESC',
     );
-    return rows.map(CompetitionDoublesSummary.fromRow).toList();
+    final visible = <CompetitionDoublesSummary>[];
+    for (final row in rows) {
+      final match = CompetitionDoublesSummary.fromRow(row);
+      if (!await _helper.isCompetitionMatchLocked(match.matchId)) {
+        visible.add(match);
+      }
+    }
+    return visible;
+  }
+
+  /// Biergame-opdrachten uit dezelfde beveiligde team-inbox.
+  Future<List<CompetitionDoublesSummary>> loadBeers() async {
+    final database = await _helper.db;
+    final rows = await database.query(
+      'competition_team_inbox',
+      columns: ['game_id', 'match_id', 'slot', 'revision', 'payload', 'started'],
+      where: 'kind = ?',
+      whereArgs: ['beer1001'],
+      orderBy: 'received_at DESC',
+    );
+    final visible = <CompetitionDoublesSummary>[];
+    for (final row in rows) {
+      final match = CompetitionDoublesSummary.fromRow(row);
+      if (!await _helper.isCompetitionMatchLocked(match.matchId)) {
+        visible.add(match);
+      }
+    }
+    return visible;
   }
 
   Future<List<CompetitionMatchSummary>> load() async {
@@ -35,14 +62,17 @@ class CompetitionMatchCatalog {
       columns: ['payload', 'received_at'],
       orderBy: 'received_at DESC',
     );
-    return rows
-        .map(
-          (row) => CompetitionMatchSummary.fromPacket(
-            CompetitionSyncContract.decode(row['payload'] as String),
-            receivedAt: row['received_at'] as int,
-          ),
-        )
-        .toList();
+    final visible = <CompetitionMatchSummary>[];
+    for (final row in rows) {
+      final match = CompetitionMatchSummary.fromPacket(
+        CompetitionSyncContract.decode(row['payload'] as String),
+        receivedAt: row['received_at'] as int,
+      );
+      if (!await _helper.isCompetitionMatchLocked(match.id)) {
+        visible.add(match);
+      }
+    }
+    return visible;
   }
 }
 

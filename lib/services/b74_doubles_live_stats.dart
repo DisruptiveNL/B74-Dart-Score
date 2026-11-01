@@ -42,6 +42,9 @@ class B74DoublesLiveStats {
     required int startTeam,
     required int bestOf,
     required bool openingBullRequired,
+    int startingScore = 701,
+    int playersPerTeam = 2,
+    String checkIn = 'straight',
   }) {
     final decoded = events
         .map((e) => jsonDecode(e) as Map<String, dynamic>)
@@ -57,9 +60,13 @@ class B74DoublesLiveStats {
         corrections[event['targetSequence'] as int] = event;
       }
     }
-    final scores = List.generate(2, (_) => List.generate(2, (_) => <int>[]));
-    final darts = List.generate(2, (_) => List.generate(2, (_) => <int>[]));
-    final core = B74Doubles701(starterTeam: startTeam, bestOf: bestOf);
+    final scores = List.generate(2, (_) => List.generate(playersPerTeam, (_) => <int>[]));
+    final darts = List.generate(2, (_) => List.generate(playersPerTeam, (_) => <int>[]));
+    final core = B74Doubles701(
+      starterTeam: startTeam, bestOf: bestOf,
+      startingScore: startingScore, playersPerTeam: playersPerTeam,
+      checkIn: checkIn,
+    );
     for (var i = 0; i < decoded.length; i++) {
       if (revoked.contains(i)) continue;
       final event = corrections[i] == null
@@ -93,6 +100,8 @@ class B74DoublesLiveStats {
             score: event['score'] as int,
             bust: event['bust'] as bool,
             validCheckout: event['validCheckout'] as bool,
+            openingDouble: event['openingDouble'] as int?,
+            openingDart: event['openingDart'] as int?,
           );
       }
     }
@@ -100,7 +109,7 @@ class B74DoublesLiveStats {
       List.generate(
         2,
         (t) => List.generate(
-          2,
+          playersPerTeam,
           (p) => B74DoublesPlayerStats(scores[t][p], darts[t][p]),
         ),
       ),

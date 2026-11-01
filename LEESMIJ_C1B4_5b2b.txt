@@ -1,0 +1,12 @@
+C1B4.5b2b — SQLite outbox voor 701, zelfde lifecycle als singles.
+
+Installeer uitsluitend lib/database/db_helper.dart in B74-Dart-Score.
+Deze patch verhoogt schemaVersion van 30 naar 31 en migreert een aparte
+701-resultaattabel met koppeling aan de bestaande team-match inbox.
+
+Nog NIET aangesloten: 701-resultaatbuilder, beveiligde verzender, sync-loop,
+Dashboard ACK. Er vindt dus nog geen verzending plaats.
+
+Maak eerst een back-up van de lokale database voordat je de app op een toestel
+met bestaande wedstrijdgegevens start. Test flutter analyze --no-pub en
+flutter test --no-pub. Geen commit.

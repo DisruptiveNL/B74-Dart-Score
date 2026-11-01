@@ -1,0 +1,1 @@
+C1B4.4c.1: ontvangen 701-koppels zichtbaar en selecteerbaar in Competities & Toernooien. Nog geen spelstart of resultaatretour. Overschrijf alleen de twee lib-bestanden. Geen commit.

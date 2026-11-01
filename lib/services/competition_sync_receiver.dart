@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:crypto/crypto.dart';
 
 import 'competition_match_inbox.dart';
+import 'b74_match_locked_contract.dart';
 import '../database/db_helper.dart';
 import 'b74_team_revision_policy.dart';
 import 'b74_pairing_security.dart';
@@ -332,6 +333,49 @@ class CompetitionSyncReceiver {
           } on FormatException {
             response.statusCode = HttpStatus.badRequest;
           }
+        }
+      }
+    } else if (request.uri.path == '/b74/competition/match-locked' &&
+        request.method == 'POST') {
+      final nonce = request.headers.value('x-b74-lock-nonce');
+      final proof = request.headers.value('x-b74-lock-proof');
+      if (!b74Session.hasKey || nonce == null || proof == null ||
+          !RegExp(r'^[A-Za-z0-9_-]{32}$').hasMatch(nonce) ||
+          _endpointNonces.contains(nonce) || _endpointNonces.length >= 10000) {
+        response.statusCode = HttpStatus.forbidden;
+      } else {
+        try {
+          final bytes = BytesBuilder(copy: false);
+          await for (final chunk in request) {
+            if (bytes.length + chunk.length > maxPayloadBytes) {
+              throw const _PayloadTooLarge();
+            }
+            bytes.add(chunk);
+          }
+          final payload = utf8.decode(bytes.takeBytes());
+          final digest = sha256.convert(utf8.encode(payload)).toString();
+          if (!b74Session.verifyOperation('dashboard',
+              'competition-match-locked-v1\n$nonce\n$digest', proof)) {
+            response.statusCode = HttpStatus.forbidden;
+          } else {
+            _endpointNonces.add(nonce);
+            final message = B74MatchLockedContract.decode(payload);
+            final status = await _teamDb.receiveMatchLocked(message);
+            final deliveryId = B74MatchLockedContract.deliveryId(message);
+            // An authenticated ACK is emitted only after the SQLite commit.
+            final ackProof = b74Session.operationProof('tablet',
+                'competition-match-locked-ack-v1\n$nonce\n$deliveryId\n$status');
+            if (ackProof == null) throw StateError('Sessie verlopen');
+            response.statusCode = HttpStatus.ok;
+            response.write(jsonEncode({'status': status,
+                'deliveryId': deliveryId, 'nonce': nonce, 'proof': ackProof}));
+          }
+        } on _PayloadTooLarge {
+          response.statusCode = HttpStatus.requestEntityTooLarge;
+        } on FormatException {
+          response.statusCode = HttpStatus.badRequest;
+        } on StateError {
+          response.statusCode = HttpStatus.conflict;
         }
       }
     } else if (request.uri.path == '/b74/competition/team-import' &&

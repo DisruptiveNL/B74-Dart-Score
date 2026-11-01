@@ -126,6 +126,9 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
     });
     try {
       final match = widget.match;
+      if (await DbHelper.instance.isCompetitionMatchLocked(match.id)) {
+        throw StateError('Wedstrijd afgesloten: score-invoer is niet toegestaan.');
+      }
       final single = widget.single;
       final provider = context.read<GameProvider>();
       final existing = await _launcher.existingGameId(match.id, single.slot);

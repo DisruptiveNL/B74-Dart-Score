@@ -101,7 +101,7 @@ class CompetitionResultSyncService {
       // A failed 701 result never blocks the next match or singles.
       final database = await _db.db;
       final doubles = await database.query('competition_team_inbox',
-          where: 'kind = ?', whereArgs: ['doubles701']);
+          where: 'kind IN (?, ?)', whereArgs: ['doubles701', 'beer1001']);
       for (final row in doubles) {
         try {
           final gameId = row['game_id'] as String;
@@ -114,7 +114,9 @@ class CompetitionResultSyncService {
             final stats = B74DoublesLiveStats.fromEvents(session.events,
                 startTeam: session.startTeam,
                 bestOf: session.bestOf,
-                openingBullRequired: session.openingBullRequired);
+                openingBullRequired: session.openingBullRequired,
+                startingScore: session.startingScore,
+                playersPerTeam: session.playersPerTeam);
             final payload = B74DoublesResultBuilder.build(
                 packet: packet, engine: session.engine, stats: stats);
             await _db.saveCompletedCompetitionDoublesResult(

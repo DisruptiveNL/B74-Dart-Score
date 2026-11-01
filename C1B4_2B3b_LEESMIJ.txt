@@ -1,0 +1,11 @@
+C1B4.2B.3b — Flutter test zone HTTP override correctie.
+Uitsluitend test/services/competition_team_receiver_security_test.dart.
+Geen productiecode of beveiligingswijzigingen.
+
+Test:
+flutter test --no-pub test/services/competition_team_receiver_security_test.dart
+flutter test --no-pub
+flutter analyze --no-pub
+git diff --check
+
+Niet committen tot alle tests slagen.

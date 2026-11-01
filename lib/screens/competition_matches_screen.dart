@@ -23,6 +23,7 @@ class CompetitionMatchesScreen extends StatefulWidget {
 class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
   late Future<List<CompetitionMatchSummary>> _matches;
   late Future<List<CompetitionDoublesSummary>> _doubles;
+  late Future<List<CompetitionDoublesSummary>> _beers;
   Timer? _refreshTimer;
 
   @override
@@ -44,6 +45,7 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
     final catalog = CompetitionMatchCatalog();
     _matches = catalog.load();
     _doubles = catalog.loadDoubles();
+    _beers = catalog.loadBeers();
   }
 
   @override
@@ -75,7 +77,7 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
       ],
     ),
     body: FutureBuilder<List<Object>>(
-      future: Future.wait<Object>([_matches, _doubles]),
+      future: Future.wait<Object>([_matches, _doubles, _beers]),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(
@@ -87,7 +89,8 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
         }
         final matches = snapshot.data![0] as List<CompetitionMatchSummary>;
         final doubles = snapshot.data![1] as List<CompetitionDoublesSummary>;
-        if (matches.isEmpty && doubles.isEmpty) {
+        final beers = snapshot.data![2] as List<CompetitionDoublesSummary>;
+        if (matches.isEmpty && doubles.isEmpty && beers.isEmpty) {
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(24),
@@ -110,6 +113,57 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
               ),
             ),
             for (final match in matches) _MatchCard(match: match),
+            if (beers.isNotEmpty) ...[
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Text('Ontvangen Biergames 1001',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              ),
+              for (final beer in beers)
+                FutureBuilder<B74DoublesSession?>(
+                  key: ValueKey('beer-result-${beer.gameId}'),
+                  future: B74DoublesSession.load(beer.gameId),
+                  builder: (context, resultSnapshot) {
+                    final engine = resultSnapshot.data?.engine;
+                    final winner = engine?.winner;
+                    final finished = winner != null;
+                    final score = engine == null ? ''
+                        : '${engine.legsWon[0]}–${engine.legsWon[1]}';
+                    return FutureBuilder<Map<String, Object?>?>(
+                      future: DbHelper.instance.competitionDoublesResult(beer.gameId),
+                      builder: (context, syncSnapshot) {
+                        final synced = syncSnapshot.data?['status'] == 'archived';
+                        final syncLabel = synced
+                            ? 'Gesynchroniseerd' : 'Wacht op synchronisatie';
+                        return Card(
+                          color: finished ? Colors.green.withValues(alpha: 0.14) : null,
+                          child: ListTile(
+                            key: ValueKey('beer-${beer.gameId}'),
+                            title: Text('Biergame — ${beer.homeTeam} vs ${beer.awayTeam}'
+                                '${finished ? '  •  $score' : ''}'),
+                            subtitle: Text(
+                              '${beer.homePlayers.join(' + ')}  vs  ${beer.awayPlayers.join(' + ')}\n'
+                              '1001 · 1 leg · Revisie ${beer.revision}'
+                              '${finished ? '\nGespeeld · Winnaar: ${winner == 0 ? beer.homeTeam : beer.awayTeam} · $syncLabel' : (beer.started ? ' · Gestart' : ' · Ontvangen')}'
+                              '${resultSnapshot.hasError || syncSnapshot.hasError ? '\nStatus laden mislukt' : ''}',
+                            ),
+                            isThreeLine: true,
+                            trailing: Icon(finished
+                                ? (synced ? Icons.cloud_done : Icons.cloud_upload_outlined)
+                                : Icons.chevron_right),
+                            onTap: () async {
+                              await Navigator.push(context, MaterialPageRoute<void>(
+                                builder: (_) => CompetitionDoublesScreen(match: beer),
+                              ));
+                              if (context.mounted) (context as Element).markNeedsBuild();
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  },
+                ),
+            ],
             if (doubles.isNotEmpty) ...[
               const Padding(
                 padding: EdgeInsets.symmetric(vertical: 12),
@@ -200,6 +254,14 @@ class _MatchCard extends StatelessWidget {
           Text(
             '${match.home}  –  ${match.away}',
             style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Wedstrijdcode: ${match.id.length > 8 ? match.id.substring(0, 8).toUpperCase() : match.id}  •  Ontvangen: '
+            '${DateTime.fromMillisecondsSinceEpoch(match.receivedAt).day}-'
+            '${DateTime.fromMillisecondsSinceEpoch(match.receivedAt).month}-'
+            '${DateTime.fromMillisecondsSinceEpoch(match.receivedAt).year}',
+            style: Theme.of(context).textTheme.bodySmall,
           ),
           const SizedBox(height: 6),
           Text(

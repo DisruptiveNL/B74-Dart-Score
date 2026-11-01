@@ -24,10 +24,13 @@ class B74DoublesSession {
   final bool openingBullRequired;
   final List<String> events;
   final B74Doubles701 engine;
+  int get startingScore => engine.startingScore;
+  int get playersPerTeam => engine.playersPerTeam;
+  String get checkIn => engine.checkIn;
 
   static Future<B74DoublesSession> load(String gameId) async {
     final inbox = await DbHelper.instance.competitionTeamMatch(gameId);
-    if (inbox == null || inbox['kind'] != 'doubles701') {
+    if (inbox == null || !{'doubles701', 'beer1001'}.contains(inbox['kind'])) {
       throw StateError('701-koppelwedstrijd niet gevonden');
     }
     final packet = B74TeamMatchContract.decode(inbox['payload'] as String);
@@ -48,6 +51,9 @@ class B74DoublesSession {
     final engine = B74Doubles701(
       starterTeam: initialTeam ?? 0,
       bestOf: packet['bestOf'] as int,
+      startingScore: packet['startingScore'] as int,
+      playersPerTeam: (packet['kind'] == 'beer1001') ? 4 : 2,
+      checkIn: packet['checkIn'] as String? ?? 'straight',
     );
     // A correction invalidates exactly one earlier visit while preserving the
     // append-only audit trail. Replay all other events deterministically.
@@ -135,6 +141,8 @@ class B74DoublesSession {
             score: event['score'] as int,
             bust: event['bust'] as bool,
             validCheckout: event['validCheckout'] as bool,
+            openingDouble: event['openingDouble'] as int?,
+            openingDart: event['openingDart'] as int?,
           );
         default:
           throw StateError('Onbekend 701-event');
@@ -184,6 +192,8 @@ class B74DoublesSession {
     bool validCheckout = false,
     List<String>? checkoutDarts,
     int? checkoutDart,
+    int? openingDouble,
+    int? openingDart,
   }) async {
     // Validate against a fresh copy of the deterministic score core first.
     final fresh = await B74DoublesSession.load(gameId);
@@ -212,6 +222,8 @@ class B74DoublesSession {
       score: score,
       bust: bust,
       validCheckout: validCheckout,
+      openingDouble: openingDouble,
+      openingDart: openingDart,
     );
     await DbHelper.instance.appendCompetitionDoublesEvent(
       gameId: gameId,
@@ -221,6 +233,8 @@ class B74DoublesSession {
         'score': score,
         'bust': bust,
         'validCheckout': validCheckout,
+        if (openingDouble != null) 'openingDouble': openingDouble,
+        if (openingDart != null) 'openingDart': openingDart,
         if (checkoutDarts != null) 'checkoutDarts': checkoutDarts,
         if (checkoutDart != null) 'checkoutDart': checkoutDart,
       }),
@@ -334,6 +348,9 @@ class B74DoublesSession {
     final fresh = await B74DoublesSession.load(gameId);
     if (fresh.events.length != events.length)
       throw StateError('Wedstrijd gewijzigd: opnieuw laden');
+    if (checkIn == 'double') {
+      throw StateError('Double In: gebruik TERUGDRAAIEN en voer de beurt opnieuw in');
+    }
     final original = jsonDecode(events[sequence]) as Map<String, dynamic>;
     if (original['validCheckout'] == true) {
       throw StateError('Gebruik terugdraaien voor een winnende checkout');
@@ -374,7 +391,11 @@ class B74DoublesSession {
       if (e['type'] == 'correctVisit')
         replacements[e['targetSequence'] as int] = e;
     }
-    final core = B74Doubles701(starterTeam: startTeam, bestOf: bestOf);
+    final core = B74Doubles701(
+      starterTeam: startTeam, bestOf: bestOf,
+      startingScore: startingScore, playersPerTeam: playersPerTeam,
+      checkIn: checkIn,
+    );
     for (var i = 0; i < decoded.length; i++) {
       if (revoked.contains(i)) continue;
       final e = replacements[i] == null
@@ -395,6 +416,8 @@ class B74DoublesSession {
             score: e['score'] as int,
             bust: e['bust'] as bool,
             validCheckout: e['validCheckout'] as bool,
+            openingDouble: e['openingDouble'] as int?,
+            openingDart: e['openingDart'] as int?,
           );
         case 'correctVisit':
         case 'undoVisit':

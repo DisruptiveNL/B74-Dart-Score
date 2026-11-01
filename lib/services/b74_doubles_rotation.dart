@@ -9,7 +9,11 @@ class B74DoublesRotation {
   static ({int team, int player}) visit({
     required int starterTeam,
     required int turnIndex,
+    int playersPerTeam = 2,
   }) {
+    if (playersPerTeam < 1) {
+      throw ArgumentError.value(playersPerTeam, 'playersPerTeam');
+    }
     if (starterTeam != 0 && starterTeam != 1) {
       throw ArgumentError.value(starterTeam, 'starterTeam');
     }
@@ -17,7 +21,7 @@ class B74DoublesRotation {
       throw ArgumentError.value(turnIndex, 'turnIndex');
     }
     final team = turnIndex.isEven ? starterTeam : 1 - starterTeam;
-    final player = (turnIndex ~/ 2) % 2;
+    final player = (turnIndex ~/ 2) % playersPerTeam;
     return (team: team, player: player);
   }
 

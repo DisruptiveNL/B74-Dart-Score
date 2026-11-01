@@ -1,0 +1,16 @@
+C1B4.2B.3a — uitsluitend testcorrectie voor Flutter HTTP 400 override.
+
+Installeer in D:\b74dev\projects\B74-Dart-Score.
+Overschrijft alleen test/services/competition_team_receiver_security_test.dart.
+
+Flutter test installeert standaard een HttpOverrides.global die netwerkverzoeken
+met 400 afwijst. Deze test gebruikt een lokale loopback-server en heeft daarom
+voor deze test-isolate de echte dart:io HttpClient nodig.
+Productiecode, beveiliging, database en singles blijven ongewijzigd.
+
+flutter test --no-pub test/services/competition_team_receiver_security_test.dart
+flutter test --no-pub
+flutter analyze --no-pub
+git diff --check
+
+NIET committen voordat de tests slagen.

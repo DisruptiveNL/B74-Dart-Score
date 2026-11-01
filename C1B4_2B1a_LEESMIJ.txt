@@ -1,0 +1,1 @@
+Correctie uitsluitend voor test biergame 1001. Vervangt één testbestand; geen productcode, database of singles aangepast. Test eerst gericht en daarna volledige suite. Nog niet committen.

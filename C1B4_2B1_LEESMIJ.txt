@@ -1,0 +1,13 @@
+C1B4.2B.1 — DartScore: teamwedstrijd-contract + 6 tests
+
+Deze patch voegt ALLEEN een nieuw contract en tests toe.
+Er is nog GEEN koppeling met HTTP, UI of database.
+Bestaande singles-code is ongemoeid.
+
+Installatie: uitpakken in projectroot, dan:
+ git diff --check
+ flutter analyze --no-pub
+ flutter test --no-pub test/services/b74_team_match_contract_test.dart
+ flutter test --no-pub
+
+Nog niet committen voordat de tests groen zijn.

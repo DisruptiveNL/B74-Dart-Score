@@ -1,0 +1,3 @@
+C1B4.2B.3 kandidaatpatch: gescheiden, ondertekende HTTP team-import route. Vereist 2B2c en bestaande contract/policy.
+Test: flutter test --no-pub test/services/competition_team_receiver_security_test.dart; flutter test --no-pub; flutter analyze --no-pub; git diff --check.
+Nog geen Dashboard-zender of echte spelstart; niet committen voor groen.

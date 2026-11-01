@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../database/db_helper.dart';
+import '../database/db_helper.dart';
 import '../services/b74_doubles_live_stats.dart';
 import '../utils/layout.dart';
 
@@ -42,6 +44,14 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
 
   Future<void> _run(Future<void> Function(B74DoublesSession) action) async {
     if (_busy || _session == null) return;
+    if (await DbHelper.instance.isCompetitionMatchLocked(widget.match.matchId)) {
+      if (mounted) setState(() => _error = 'Wedstrijd afgesloten: scorewijzigingen zijn niet toegestaan.');
+      return;
+    }
+    if (await DbHelper.instance.isCompetitionMatchLocked(widget.match.matchId)) {
+      if (mounted) setState(() => _error = 'Wedstrijd afgesloten: scorewijzigingen zijn niet toegestaan.');
+      return;
+    }
     setState(() {
       _busy = true;
       _error = null;
@@ -150,21 +160,120 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
     }
   }
 
-  Widget _scoreInput(B74DoublesSession session, dynamic engine) {
-    return B74DoublesNumericInput(
-      key: ValueKey(
-        '${widget.match.gameId}-${engine.leg}-${session.events.length}',
+  /// Opening is recorded dart by dart. A non-double before opening is zero,
+  /// even when it hits a scoring segment. After opening, every dart scores.
+  Future<void> _enterOpeningVisit(B74DoublesSession session) async {
+    final darts = <({int value, bool isDouble})>[];
+    var opened = false;
+    var openingDouble = 0;
+    var openingDart = 0;
+    var total = 0;
+    while (darts.length < 3 && mounted) {
+      final dart = await showDialog<({int value, bool isDouble})>(
+        context: context,
+        builder: (c) {
+          var multiplier = 1;
+          return StatefulBuilder(builder: (context, update) => AlertDialog(
+            title: Text('DOUBLE IN · DART ${darts.length + 1}'),
+            content: SizedBox(
+              width: 380,
+              child: SingleChildScrollView(child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(opened
+                      ? 'Geopend · ${total} punten tot nu toe'
+                      : 'Nog niet geopend · raak een dubbel'),
+                  const SizedBox(height: 8),
+                  SegmentedButton<int>(
+                    segments: const [
+                      ButtonSegment(value: 1, label: Text('SINGLE')),
+                      ButtonSegment(value: 2, label: Text('DUBBEL')),
+                      ButtonSegment(value: 3, label: Text('TRIPLE')),
+                    ],
+                    selected: {multiplier},
+                    onSelectionChanged: (v) => update(() => multiplier = v.first),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(spacing: 4, runSpacing: 4, children: [
+                    OutlinedButton(
+                      onPressed: () => Navigator.pop(c, (value: 0, isDouble: false)),
+                      child: const Text('MIS / 0'),
+                    ),
+                    for (var n = 1; n <= 20; n++)
+                      OutlinedButton(
+                        onPressed: () => Navigator.pop(c,
+                            (value: n * multiplier, isDouble: multiplier == 2)),
+                        child: Text('${multiplier == 1 ? 'S' : multiplier == 2 ? 'D' : 'T'}$n'),
+                      ),
+                    OutlinedButton(
+                      onPressed: () => Navigator.pop(c, (value: 25, isDouble: false)),
+                      child: const Text('25'),
+                    ),
+                    OutlinedButton(
+                      onPressed: () => Navigator.pop(c, (value: 50, isDouble: true)),
+                      child: const Text('BULL 50'),
+                    ),
+                  ]),
+                ],
+              )),
+            ),
+            actions: [TextButton(
+              onPressed: () => Navigator.pop(c),
+              child: const Text('ANNULEREN'),
+            )],
+          ));
+        },
+      );
+      if (dart == null || !mounted) return;
+      darts.add(dart);
+      if (!opened && dart.isDouble) {
+        opened = true;
+        openingDouble = dart.value;
+        openingDart = darts.length;
+      }
+      if (opened) total += dart.value;
+    }
+    if (!mounted || darts.length != 3) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text('BEURT BEVESTIGEN'),
+        content: Text(opened
+            ? 'Opening op dart $openingDart · ${total} punten · 3 darts gegooid.'
+            : 'Geen openingsdubbel · 0 punten · 3 darts gegooid.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(c, false),
+              child: const Text('OPNIEUW')),
+          FilledButton(onPressed: () => Navigator.pop(c, true),
+              child: const Text('ACCEPT')),
+        ],
       ),
+    );
+    if (confirmed != true || !mounted) return;
+    await _run((s) => s.completeVisit(
+      score: total,
+      openingDouble: opened ? openingDouble : null,
+      openingDart: opened ? openingDart : null,
+    ));
+  }
+
+  Widget _scoreInput(B74DoublesSession session, dynamic engine) {
+    if (session.checkIn == 'double' &&
+        !engine.isOpened(engine.currentVisit.team)) {
+      return FilledButton.icon(
+        onPressed: _busy ? null : () => _enterOpeningVisit(session),
+        icon: const Icon(Icons.adjust),
+        label: const Text('DOUBLE IN · REGISTREER 3 DARTS'),
+      );
+    }
+    return B74DoublesNumericInput(
+      key: ValueKey('${widget.match.gameId}-${engine.leg}-${session.events.length}'),
       remaining: engine.remaining[engine.currentVisit.team] as int,
       disabled: _busy,
-      onSubmit: (score, bust, checkout, darts) => _run(
-        (s) => s.completeVisit(
-          score: score,
-          bust: bust,
-          validCheckout: checkout,
-          checkoutDart: darts,
-        ),
-      ),
+      onSubmit: (score, bust, checkout, darts) => _run((s) => s.completeVisit(
+        score: score, bust: bust, validCheckout: checkout,
+        checkoutDart: darts,
+      )),
     );
   }
 
@@ -174,6 +283,9 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
       startTeam: session.startTeam,
       bestOf: session.bestOf,
       openingBullRequired: session.openingBullRequired,
+      startingScore: session.startingScore,
+      playersPerTeam: session.playersPerTeam,
+      checkIn: session.checkIn,
     );
     final turn = engine.currentVisit;
     final current = stats.player(turn.team, turn.player);
@@ -249,11 +361,11 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Alle vier spelers',
+                  'Alle ${session.playersPerTeam * 2} spelers',
                   style: Theme.of(context).textTheme.titleMedium,
                 ),
                 for (var team = 0; team < 2; team++)
-                  for (var player = 0; player < 2; player++)
+                  for (var player = 0; player < session.playersPerTeam; player++)
                     statRow(
                       '${_player(team, player)} · ${stats.player(team, player).visits} beurten',
                       stats
@@ -281,12 +393,15 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
     final session = _session;
     final engine = session?.engine;
     return Scaffold(
-      appBar: AppBar(title: Text('Koppel ${widget.match.slot} · 701')),
-      body: session == null
+      appBar: AppBar(title: Text(widget.match.homePlayers.length == 4
+          ? 'Biergame · 1001' : 'Koppel ${widget.match.slot} · 701')),
+      body: session == null || engine == null
           ? Center(
-              child: _error == null
-                  ? const CircularProgressIndicator()
-                  : Text(_error!),
+              child: _error != null
+                  ? Text(_error!)
+                  : session == null
+                      ? const CircularProgressIndicator()
+                      : const Text('Scoresessie niet beschikbaar'),
             )
           : ListView(
               padding: const EdgeInsets.all(16),
@@ -295,7 +410,8 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
                   '${widget.match.homeTeam} vs ${widget.match.awayTeam}',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
-                Text('Best of ${widget.match.bestOf} · Leg ${engine!.leg}'),
+                Text(widget.match.homePlayers.length == 4
+                  ? '1001 · 1 leg' : 'Best of ${widget.match.bestOf} · Leg ${engine!.leg}'),
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -337,7 +453,7 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
                                 ),
                                 Text('Legs: ${engine.legsWon[team]}'),
                                 Text(
-                                  '${_player(team, 0)} + ${_player(team, 1)}',
+                                  (team == 0 ? widget.match.homePlayers : widget.match.awayPlayers).join(' + '),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
@@ -397,7 +513,7 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
                     icon: const Icon(Icons.undo),
                     label: const Text('LAATSTE BEURT CORRIGEREN'),
                   ),
-                if (session.correctableVisits.isNotEmpty)
+                if (session.checkIn != 'double' && session.correctableVisits.isNotEmpty)
                   OutlinedButton.icon(
                     onPressed: _busy ? null : () => _showCorrection(session),
                     icon: const Icon(Icons.edit_outlined),

@@ -419,12 +419,8 @@ class GameProvider extends ChangeNotifier
     return active[(pos + 1) % active.length];
   }
 
-  /// Whether check-in rules apply: only in the very first leg of the game.
-  bool get _checkInActive => _currentLeg == 1 && _currentSet == 1;
-
   /// Check-in rule for the player about to throw (handicap overrides game default).
   GameMode get currentGameMode {
-    if (!_checkInActive) return GameMode.straightIn;
     final pid = currentPlayerState.player.id;
     return _handicaps[pid]?.checkIn ?? _game!.gameMode;
   }
@@ -1177,9 +1173,9 @@ class GameProvider extends ChangeNotifier
     if (!bust && bustDarts != null) {
       throw ArgumentError('Geen BUST-darts zonder BUST');
     }
-    if (currentGameMode != GameMode.straightIn) {
+    if (!currentHasCheckedIn) {
       throw StateError(
-        'Numerieke invoer ondersteunt nog geen double/master-in',
+        'Open eerst met een geldige dubbel via dart-voor-dart-invoer',
       );
     }
     final remaining = currentPlayerState.remaining;

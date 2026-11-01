@@ -12,7 +12,7 @@ class B74DoublesResultBuilder {
     required B74DoublesLiveStats stats,
   }) {
     B74TeamMatchContract.validate(packet);
-    if (packet['kind'] != 'doubles701' || engine.winner == null) {
+    if (!{'doubles701', 'beer1001'}.contains(packet['kind']) || engine.winner == null) {
       throw StateError('Alleen een uitgespeelde 701-koppelwedstrijd');
     }
     if (engine.bestOf != packet['bestOf']) {
@@ -26,7 +26,7 @@ class B74DoublesResultBuilder {
       final side = sides[team];
       final teamId = side['teamId'] as String;
       final members = side['players'] as List;
-      for (var index = 0; index < 2; index++) {
+      for (var index = 0; index < (packet['kind'] == 'beer1001' ? 4 : 2); index++) {
         final player = members[index] as Map<String, dynamic>;
         final stat = stats.player(team, index);
         players.add({
@@ -51,7 +51,8 @@ class B74DoublesResultBuilder {
     return B74DoublesResultContract.encode({
       'type': B74DoublesResultContract.type,
       'version': B74DoublesResultContract.version,
-      'resultId': B74DoublesResultContract.resultId(matchId, slot),
+      'resultId': B74DoublesResultContract.resultId(matchId, slot, kind: packet['kind'] as String),
+      'kind': packet['kind'],
       'matchId': matchId,
       'gameId': packet['gameId'],
       'slot': slot,
