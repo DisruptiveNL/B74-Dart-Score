@@ -130,7 +130,14 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                     final score = engine == null
                         ? ''
                         : '${engine.legsWon[0]}–${engine.legsWon[1]}';
-                    return Card(
+                    return FutureBuilder<Map<String, Object?>?>(
+                      future: DbHelper.instance.competitionDoublesResult(match.gameId),
+                      builder: (context, syncSnapshot) {
+                        final synced = syncSnapshot.data?['status'] == 'archived';
+                        final syncLabel = synced
+                            ? 'Gesynchroniseerd'
+                            : 'Wacht op synchronisatie';
+                        return Card(
                       color: finished
                           ? Colors.green.withValues(alpha: 0.14)
                           : null,
@@ -143,12 +150,14 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                         subtitle: Text(
                           '${match.homePlayers.join(' + ')}  vs  ${match.awayPlayers.join(' + ')}\n'
                           '701 · Best of ${match.bestOf} · Revisie ${match.revision}'
-                          '${finished ? '\nGespeeld · Winnaar: ${winner == 0 ? match.homeTeam : match.awayTeam}' : (match.started ? ' · Gestart' : ' · Ontvangen')}'
+                          '${finished ? '\nGespeeld · Winnaar: ${winner == 0 ? match.homeTeam : match.awayTeam} · $syncLabel' : (match.started ? ' · Gestart' : ' · Ontvangen')}'
                           '${resultSnapshot.hasError ? '\nUitslag laden mislukt' : ''}',
                         ),
                         isThreeLine: true,
                         trailing: Icon(
-                          finished ? Icons.emoji_events : Icons.chevron_right,
+                          finished
+                              ? (synced ? Icons.cloud_done : Icons.cloud_upload_outlined)
+                              : Icons.chevron_right,
                         ),
                         onTap: () async {
                           await Navigator.push(
@@ -163,6 +172,8 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                           }
                         },
                       ),
+                    );
+                      },
                     );
                   },
                 ),
