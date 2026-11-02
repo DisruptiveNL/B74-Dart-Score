@@ -1,23 +1,22 @@
-B74 C1b2b Patch E — ruimte voor globale verbindingsindicator
+B74 C1B7 v0.6b-2 - kandidaatpatch (NIET lokaal gecompileerd)
 
-VEREIST: werkende Patch D reeds geinstalleerd.
+Bestanden: lib/services/b74_live_tv.dart en lib/screens/competition_doubles_screen.dart
 
-Overschrijf uitsluitend deze twee bestanden in de Dart Score projectroot:
-  lib/screens/competition_matches_screen.dart
-  lib/screens/competition_receive_screen.dart
+Doel: bestaande WSS TV-socket hergebruiken voor doubles701 en beer1001.
+- Na sessie laden/score/correctie/undo: volledige TV-snapshot.
+- Teamstatistieken per koppel/team uit correctie-bewuste events.
+- First nine en laatste drie teambeurten chronologisch uit journal.
+- Reconnect stuurt snapshot van laatst gekoppelde sessie.
+- Geen wijziging aan QR, TLS pinning of 48-uursregistratie.
 
-Wijzigingen:
-- Competities & Toernooien: 56 logical pixels rechts gereserveerd voor globale indicator.
-- Wedstrijden ontvangen: dubbele lokale B74LinkIndicator verwijderd; globale indicator blijft.
-- Geen wijzigingen aan Patch D, heartbeat, sessie, database of scorelogica.
+INSTALLATIE: pak ZIP uit in root D:\b74dev\projects\B74-Dart-Score.
+Maak vooraf een backup / controleer git diff; overschrijf alleen deze 2 bestanden.
 
-Controle:
-  dart format lib/screens/competition_matches_screen.dart lib/screens/competition_receive_screen.dart
-  flutter analyze
-  flutter test
-  flutter run -d R8YY91N6X3E --debug
+CONTROLE:
+flutter analyze --no-pub
+flutter test --no-pub
+flutter build apk --debug --no-pub
+git diff --check
 
-Praktijktest: radio opent Wedstrijden ontvangen, vernieuwen werkt, groen kettingicoon opent
-rechtstreeks B74 apparaatverbinding op beide schermen, geen overlap.
-
-Nog niet gecompileerd/getest op de gebruikersomgeving.
+Geen commit totdat echte apparaat-tests (701, 1001, correctie, undo,
+reconnect, terug naar singles) slagen.

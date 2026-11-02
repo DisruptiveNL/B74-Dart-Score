@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../services/b74_live_tv.dart';
-import '../widgets/wifi_pairing.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/game_provider.dart';
@@ -237,35 +236,19 @@ class _GameScreenState extends State<GameScreen> {
                       ],
                     ),
               actions: [
-                IconButton(
-                  icon: Icon(B74LiveTv.instance.connected ? Icons.tv : Icons.qr_code_scanner),
-                  tooltip: 'Koppel B74 Live TV',
-                  onPressed: () async {
-                    if (B74LiveTv.instance.connected) {
-                      await B74LiveTv.instance.disconnect();
-                      if (context.mounted) ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('TV-verbinding verbroken')));
-                      return;
-                    }
-                    var busy = false;
-                    await showDialog<void>(context: context, builder: (dialogContext) =>
-                      Dialog(child: SizedBox(width: 420, height: 480, child: Column(children: [
-                        const Padding(padding: EdgeInsets.all(12), child: Text('Scan de QR-code op de B74 Live TV')),
-                        Expanded(child: QrScanner(onScanned: (qr) async {
-                          if (busy || !qr.startsWith('b74-live://')) return;
-                          busy = true;
-                          try {
-                            await B74LiveTv.instance.connect(qr, provider);
-                            if (dialogContext.mounted) Navigator.pop(dialogContext);
-                          } catch (e) {
-                            busy = false;
-                            if (dialogContext.mounted) ScaffoldMessenger.of(dialogContext).showSnackBar(
-                              SnackBar(content: Text('TV-koppeling mislukt: $e')));
-                          }
-                        })),
-                      ]))));
-                    if (mounted) setState(() {});
-                  },
+                // C1B7 v0.6b: read-only indicator. Pair/unpair only centrally.
+                Tooltip(
+                  message: B74LiveTv.instance.connected
+                      ? 'B74 Live TV verbonden (beheer via Competities & Toernooien)'
+                      : 'B74 Live TV niet verbonden (koppel via Competities & Toernooien)',
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Icon(
+                      B74LiveTv.instance.connected ? Icons.tv : Icons.tv_off,
+                      semanticLabel: B74LiveTv.instance.connected
+                          ? 'TV verbonden' : 'TV niet verbonden',
+                    ),
+                  ),
                 ),
                 // Which hand holds the tablet changes between games and even
                 // between players, so the swap belongs here rather than three

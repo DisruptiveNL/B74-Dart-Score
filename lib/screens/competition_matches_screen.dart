@@ -32,8 +32,14 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
   void initState() {
     super.initState();
     _reload();
+
     _refreshTimer = Timer.periodic(const Duration(seconds: 4), (_) {
       if (mounted) setState(_reload);
+    });
+
+    // Herstel een eerder goedgekeurde TV-koppeling zonder nieuwe QR-scan.
+    B74LiveTv.instance.restore().then((_) {
+      if (mounted) setState(() {});
     });
   }
 

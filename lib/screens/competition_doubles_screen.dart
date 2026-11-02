@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../database/db_helper.dart';
 import '../database/db_helper.dart';
 import '../services/b74_doubles_live_stats.dart';
+import '../services/b74_live_tv.dart';
 import '../utils/layout.dart';
 
 import '../services/b74_doubles_session.dart';
@@ -32,11 +33,17 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
   Future<void> _reload() async {
     try {
       final session = await B74DoublesSession.load(widget.match.gameId);
-      if (mounted)
+      if (mounted) {
+        B74LiveTv.instance.attachDoubles(session,
+          homeTeam: widget.match.homeTeam,
+          awayTeam: widget.match.awayTeam,
+          homePlayers: widget.match.homePlayers,
+          awayPlayers: widget.match.awayPlayers);
         setState(() {
           _session = session;
           _error = null;
         });
+      }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     }
