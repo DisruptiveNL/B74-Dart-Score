@@ -172,14 +172,19 @@ Future<PlayerStats> loadPlayerStats(Player player) async {
   // Always reload from DB so local_stats_json reflects deletions done since screen opened
   player = await db.getPlayer(playerId) ?? player;
 
-  final throws = await db.getThrowsForPlayer(playerId);
+  final excludedGameIds = await db.getTestCompetitionSingleGameIds();
+  final throws = (await db.getThrowsForPlayer(playerId))
+      .where((dart) => !excludedGameIds.contains(dart.gameId))
+      .toList();
 
   // One query, then a lookup. Asking the database again for every game the
   // player has ever played reads the whole table once per game.
-  final gameIds = (await db.getGameIdsForPlayer(playerId)).toSet();
+  final gameIds = (await db.getGameIdsForPlayer(playerId)).toSet()
+    ..removeAll(excludedGameIds);
   // Read from the throws rather than from a column, because no column holds a
   // winner. See utils/game_winner.dart.
-  final wonGameIds = await db.getWonGameIds(playerId);
+  final wonGameIds = (await db.getWonGameIds(playerId))
+      .difference(excludedGameIds);
   final games = {
     for (final g in await db.getGames())
       if (gameIds.contains(g.id)) g.id!: g,

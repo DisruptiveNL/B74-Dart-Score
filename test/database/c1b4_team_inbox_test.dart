@@ -91,6 +91,48 @@ void main() {
           B74TeamRevisionDecision.reject);
     });
 
+    test('deletion tombstone blocks delayed doubles and beer imports', () async {
+      final helper = DbHelper.instance;
+      expect(await helper.receiveCompetitionDeletion(
+        matchId: 'match-1', revision: 1, division: 'test',
+        retainOfficialStatistics: false,
+      ), 'stored');
+      expect(await helper.receiveCompetitionTeamMatch(jsonEncode(packet(1))),
+          B74TeamRevisionDecision.reject);
+      final beer = packet(1, gameId: 'beer-1');
+      beer['kind'] = 'beer1001';
+      beer['startingScore'] = 1001;
+      beer['bestOf'] = 1;
+      for (final side in ['home', 'away']) {
+        final team = beer[side] as Map<String, dynamic>;
+        final prefix = side == 'home' ? 'h' : 'a';
+        final bondPrefix = side == 'home' ? '10' : '20';
+        team['players'] = <dynamic>[
+          ...(team['players'] as List),
+          {'playerId': '${prefix}3', 'name': 'Speler 3', 'bondNumber': '${bondPrefix}3', 'position': 3},
+          {'playerId': '${prefix}4', 'name': 'Speler 4', 'bondNumber': '${bondPrefix}4', 'position': 4},
+        ];
+      }
+      expect(await helper.receiveCompetitionTeamMatch(jsonEncode(beer)),
+          B74TeamRevisionDecision.reject);
+      final db = await helper.db;
+      expect(await db.query('competition_team_inbox'), isEmpty);
+    });
+
+    test('deletion tombstone also blocks replay of existing team match', () async {
+      final helper = DbHelper.instance;
+      final raw = jsonEncode(packet(1));
+      expect(await helper.receiveCompetitionTeamMatch(raw),
+          B74TeamRevisionDecision.create);
+      await helper.receiveCompetitionDeletion(
+        matchId: 'match-1', revision: 1, division: 'test',
+        retainOfficialStatistics: false,
+      );
+      expect(await helper.receiveCompetitionTeamMatch(raw),
+          B74TeamRevisionDecision.reject);
+      expect((await helper.competitionTeamMatch('game-5'))!['payload'], raw);
+    });
+
     test('different slots coexist without modifying singles tables', () async {
       final helper = DbHelper.instance;
       await helper.receiveCompetitionTeamMatch(jsonEncode(packet(1)));

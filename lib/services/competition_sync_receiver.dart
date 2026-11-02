@@ -6,6 +6,8 @@ import 'dart:async';
 import 'package:crypto/crypto.dart';
 
 import 'competition_match_inbox.dart';
+import 'competition_match_deletion_contract.dart';
+import 'b74_admin_deletion_authorization.dart';
 import 'b74_match_locked_contract.dart';
 import '../database/db_helper.dart';
 import 'b74_team_revision_policy.dart';
@@ -418,6 +420,251 @@ class CompetitionSyncReceiver {
               response.statusCode = HttpStatus.ok;
               response.write(jsonEncode({'status': decision.name}));
             }
+          }
+        } on _PayloadTooLarge {
+          response.statusCode = HttpStatus.requestEntityTooLarge;
+        } on FormatException {
+          response.statusCode = HttpStatus.badRequest;
+        } on StateError {
+          response.statusCode = HttpStatus.conflict;
+        }
+      }
+    } else if (request.uri.path == '/b74/competition/delete' &&
+        request.method == 'POST') {
+      // Reuse the existing authenticated QR session and operation-proof scheme.
+      final nonce = request.headers.value('x-b74-delete-nonce');
+      final proof = request.headers.value('x-b74-delete-proof');
+      if (!b74Session.hasKey || nonce == null || proof == null ||
+          !RegExp(r'^[A-Za-z0-9_-]{32}$').hasMatch(nonce) ||
+          _importNonces.contains(nonce)) {
+        response.statusCode = HttpStatus.forbidden;
+      } else {
+        try {
+          final bytes = BytesBuilder(copy: false);
+          await for (final chunk in request) {
+            if (bytes.length + chunk.length > maxPayloadBytes) {
+              throw const _PayloadTooLarge();
+            }
+            bytes.add(chunk);
+          }
+          final payload = utf8.decode(bytes.takeBytes());
+          final digest = sha256.convert(utf8.encode(payload)).toString();
+          if (!b74Session.verifyOperation('dashboard',
+              'competition-delete-v1\n$nonce\n$digest', proof)) {
+            response.statusCode = HttpStatus.forbidden;
+          } else if (_importNonces.length >= 10000) {
+            response.statusCode = HttpStatus.serviceUnavailable;
+          } else {
+            _importNonces.add(nonce);
+            final intent = CompetitionMatchDeletionContract.decode(payload);
+            final status = await _teamDb.receiveCompetitionDeletion(
+              matchId: intent['matchId'] as String,
+              revision: intent['revision'] as int,
+              division: intent['division'] as String,
+              retainOfficialStatistics: intent['retainOfficialStatistics'] as bool,
+            );
+            // Only TEST intents may trigger physical cleanup. Completion is
+            // committed in the same SQLite transaction as the deletions.
+            final matchId = intent['matchId'] as String;
+            final revision = intent['revision'] as int;
+            if ((intent['division'] as String).trim().toLowerCase() == 'test' &&
+                intent['retainOfficialStatistics'] == false &&
+                !await _teamDb.isTombstonedTestMatchCleaned(matchId, revision)) {
+              await _teamDb.purgeTombstonedTestMatch(matchId);
+            }
+            final cleaned = await _teamDb.isTombstonedTestMatchCleaned(matchId, revision);
+            final receipt = jsonEncode({
+              'status': status,
+              'matchId': matchId,
+              'revision': revision,
+              'cleanupCompleted': cleaned,
+            });
+            final receiptDigest = sha256.convert(utf8.encode(receipt)).toString();
+            final receiptProof = b74Session.operationProof('tablet',
+                'competition-delete-ack-v1\n$nonce\n$receiptDigest');
+            if (receiptProof == null) {
+              response.statusCode = HttpStatus.serviceUnavailable;
+            } else {
+              response.statusCode = HttpStatus.ok;
+              response.headers.set('x-b74-delete-ack-proof', receiptProof);
+              response.write(receipt);
+            }
+          }
+        } on _PayloadTooLarge {
+          response.statusCode = HttpStatus.requestEntityTooLarge;
+        } on FormatException {
+          response.statusCode = HttpStatus.badRequest;
+        } on StateError catch (error) {
+          response.statusCode = HttpStatus.conflict;
+          response.write(jsonEncode({'error': 'deletion_conflict',
+              'message': error.message.toString()}));
+        }
+      }
+    } else if (request.uri.path == '/b74/competition/admin-deletion/stage' &&
+        request.method == 'POST') {
+      // Separate authenticated, non-destructive admin channel. A successful
+      // response means STAGED only; it never deletes results or statistics.
+      // PIN and final confirmation must be enforced at the Dashboard caller.
+      if (!b74Session.hasKey) {
+        response.statusCode = HttpStatus.forbidden;
+      } else {
+        try {
+          final bytes = BytesBuilder(copy: false);
+          await for (final chunk in request) {
+            if (bytes.length + chunk.length > maxPayloadBytes) {
+              throw const _PayloadTooLarge();
+            }
+            bytes.add(chunk);
+          }
+          final raw = jsonDecode(utf8.decode(bytes.takeBytes()));
+          if (raw is! Map<String, dynamic>) {
+            throw const FormatException('Ongeldige admin-envelope');
+          }
+          final verified = B74AdminDeletionAuthorization.verify(
+            session: b74Session, envelope: raw);
+          final status = await _teamDb.stageAdminDeletionIntent(
+            matchId: verified['matchId'] as String,
+            revision: verified['revision'] as int,
+            scope: verified['scope'] as String,
+            statisticsMode: verified['statisticsMode'] as String,
+            authorizationId: verified['authorizationId'] as String,
+          );
+          final receipt = jsonEncode(<String, Object>{
+            'status': status,
+            'matchId': verified['matchId']!,
+            'revision': verified['revision']!,
+            'authorizationId': verified['authorizationId']!,
+            'executionCompleted': false,
+          });
+          final digest = sha256.convert(utf8.encode(receipt)).toString();
+          final proof = b74Session.operationProof('tablet',
+              'admin-deletion-stage-ack-v1\n$digest');
+          if (proof == null) {
+            response.statusCode = HttpStatus.serviceUnavailable;
+          } else {
+            response.headers.set('x-b74-admin-stage-ack-proof', proof);
+            response.statusCode = HttpStatus.ok;
+            response.write(receipt);
+          }
+        } on _PayloadTooLarge {
+          response.statusCode = HttpStatus.requestEntityTooLarge;
+        } on FormatException {
+          response.statusCode = HttpStatus.badRequest;
+        } on StateError {
+          response.statusCode = HttpStatus.conflict;
+        }
+      }
+    } else if (request.uri.path == '/b74/competition/admin-deletion/execute' &&
+        request.method == 'POST') {
+      // Separate execution authorization. Staging or a status query cannot
+      // trigger this endpoint. Caller must verify PIN and reconfirm execution.
+      if (!b74Session.hasKey) {
+        response.statusCode = HttpStatus.forbidden;
+      } else {
+        try {
+          final bytes = BytesBuilder(copy: false);
+          await for (final chunk in request) {
+            if (bytes.length + chunk.length > maxPayloadBytes) {
+              throw const _PayloadTooLarge();
+            }
+            bytes.add(chunk);
+          }
+          final raw = jsonDecode(utf8.decode(bytes.takeBytes()));
+          if (raw is! Map<String, dynamic>) {
+            throw const FormatException('Ongeldige uitvoerautorisatie');
+          }
+          final verified = B74AdminDeletionAuthorization.verify(
+              session: b74Session, envelope: raw);
+          final matchId = verified['matchId'] as String;
+          final revision = verified['revision'] as int;
+          final authorizationId = verified['authorizationId'] as String;
+          final before = await _teamDb.readAdminDeletionStatus(
+              matchId: matchId, revision: revision,
+              authorizationId: authorizationId);
+          if (before['scope'] != verified['scope'] ||
+              before['statisticsMode'] != verified['statisticsMode'] ||
+              before['status'] != 'staged' && before['status'] != 'completed') {
+            throw StateError('Conflicterende uitvoeropdracht');
+          }
+          final mode = verified['statisticsMode'] as String;
+          if (mode == 'retain') {
+            await _teamDb.retainStagedAdminMatchForVerifiedCoordinator(
+                matchId: matchId, revision: revision,
+                authorizationId: authorizationId);
+          } else if (mode == 'remove') {
+            await _teamDb.purgeStagedAdminRemoveForVerifiedCoordinator(
+                matchId: matchId, revision: revision,
+                authorizationId: authorizationId);
+          } else {
+            throw StateError('Ongeldige statistiekkeuze');
+          }
+          final after = await _teamDb.readAdminDeletionStatus(
+              matchId: matchId, revision: revision,
+              authorizationId: authorizationId);
+          if (after['status'] != 'completed' ||
+              after['executionCompleted'] != true) {
+            throw StateError('Uitvoering niet duurzaam bevestigd');
+          }
+          final receipt = jsonEncode(after);
+          final digest = sha256.convert(utf8.encode(receipt)).toString();
+          final proof = b74Session.operationProof('tablet',
+              'admin-deletion-execute-ack-v1\n$digest');
+          if (proof == null) {
+            response.statusCode = HttpStatus.serviceUnavailable;
+          } else {
+            response.headers.set('x-b74-admin-execute-ack-proof', proof);
+            response.statusCode = HttpStatus.ok;
+            response.write(receipt);
+          }
+        } on _PayloadTooLarge {
+          response.statusCode = HttpStatus.requestEntityTooLarge;
+        } on FormatException {
+          response.statusCode = HttpStatus.badRequest;
+        } on StateError {
+          response.statusCode = HttpStatus.conflict;
+        }
+      }
+    } else if (request.uri.path == '/b74/competition/admin-deletion/status' &&
+        request.method == 'POST') {
+      // Authenticated read-only reconciliation. This endpoint NEVER executes
+      // deletion, and an intent being staged is not a completion receipt.
+      if (!b74Session.hasKey) {
+        response.statusCode = HttpStatus.forbidden;
+      } else {
+        try {
+          final bytes = BytesBuilder(copy: false);
+          await for (final chunk in request) {
+            if (bytes.length + chunk.length > maxPayloadBytes) {
+              throw const _PayloadTooLarge();
+            }
+            bytes.add(chunk);
+          }
+          final raw = jsonDecode(utf8.decode(bytes.takeBytes()));
+          if (raw is! Map<String, dynamic>) {
+            throw const FormatException('Ongeldige status-envelope');
+          }
+          final verified = B74AdminDeletionAuthorization.verify(
+              session: b74Session, envelope: raw);
+          final status = await _teamDb.readAdminDeletionStatus(
+            matchId: verified['matchId'] as String,
+            revision: verified['revision'] as int,
+            authorizationId: verified['authorizationId'] as String,
+          );
+          // Compare all immutable intent fields, not only the identifier.
+          if (status['scope'] != verified['scope'] ||
+              status['statisticsMode'] != verified['statisticsMode']) {
+            throw StateError('Conflicterende beheerdersstatus');
+          }
+          final receipt = jsonEncode(status);
+          final digest = sha256.convert(utf8.encode(receipt)).toString();
+          final proof = b74Session.operationProof('tablet',
+              'admin-deletion-status-ack-v1\n$digest');
+          if (proof == null) {
+            response.statusCode = HttpStatus.serviceUnavailable;
+          } else {
+            response.headers.set('x-b74-admin-status-ack-proof', proof);
+            response.statusCode = HttpStatus.ok;
+            response.write(receipt);
           }
         } on _PayloadTooLarge {
           response.statusCode = HttpStatus.requestEntityTooLarge;

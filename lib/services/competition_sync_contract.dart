@@ -24,6 +24,7 @@ class CompetitionSyncContract {
     if (packet['type'] != type || packet['version'] != version) {
       throw const FormatException('Unsupported competition sync protocol');
     }
+    _validateDivision(packet);
     final matchId = _required(packet, 'matchId');
     if (matchId.isEmpty) throw const FormatException('Empty match ID');
     final home = _team(packet['home']);
@@ -65,6 +66,13 @@ class CompetitionSyncContract {
       if (packet['startingScore'] != (rules as Map)['startingScore']) {
         throw const FormatException('Starting score conflicts with X01 rules');
       }
+    }
+  }
+
+  static void _validateDivision(Map<String, dynamic> packet) {
+    final division = packet['division'];
+    if (division != null && (division is! String || division.trim().isEmpty)) {
+      throw const FormatException('Ongeldige divisie');
     }
   }
 

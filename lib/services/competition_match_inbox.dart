@@ -18,6 +18,12 @@ class CompetitionMatchInbox {
     final db = await _helper.db;
     return db.transaction((txn) async {
       final id = packet['matchId'] as String;
+      final deleted = await txn.query('competition_deletion_tombstones',
+          columns: ['revision'], where: 'match_id = ?', whereArgs: [id]);
+      if (deleted.isNotEmpty) {
+        throw StateError('Wedstrijd is gemarkeerd voor verwijdering: $id');
+      }
+
       final existing = await txn.query(
         'competition_inbox',
         where: 'match_id = ?',

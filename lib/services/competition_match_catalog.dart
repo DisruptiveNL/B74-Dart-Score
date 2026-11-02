@@ -1,6 +1,7 @@
 import '../database/db_helper.dart';
 import 'competition_sync_contract.dart';
 import 'b74_team_match_contract.dart';
+import 'competition_statistics_policy.dart';
 
 /// Read-only projection of durable, validated competition imports.
 class CompetitionMatchCatalog {
@@ -81,6 +82,10 @@ class CompetitionMatchSummary {
   final String home;
   final String away;
   final int receivedAt;
+  final String? matchType;
+  final String? division;
+  bool get countsTowardsOfficialStatistics =>
+      CompetitionStatisticsPolicy.countsTowardsOfficialStatistics(division);
   final List<CompetitionSingleSummary> singles;
   final Map<String, dynamic> rules;
 
@@ -89,6 +94,8 @@ class CompetitionMatchSummary {
     this.home,
     this.away,
     this.receivedAt,
+    this.matchType,
+    this.division,
     this.singles,
     this.rules,
   );
@@ -112,6 +119,9 @@ class CompetitionMatchSummary {
       (packet['home'] as Map)['name'] as String,
       (packet['away'] as Map)['name'] as String,
       receivedAt,
+      packet['matchType'] == 'cup' || packet['matchType'] == 'regular'
+          ? packet['matchType'] as String : null,
+      packet['division'] as String?,
       singles,
       Map<String, dynamic>.from(
         packet['x01Rules'] as Map? ?? CompetitionX01Rules.defaults(),
@@ -162,6 +172,8 @@ class CompetitionDoublesSummary {
     required this.slot,
     required this.revision,
     required this.bestOf,
+    required this.checkIn,
+    required this.division,
     required this.homeTeam,
     required this.awayTeam,
     required this.homePlayers,
@@ -174,6 +186,10 @@ class CompetitionDoublesSummary {
   final int slot;
   final int revision;
   final int bestOf;
+  final String checkIn;
+  final String? division;
+  bool get countsTowardsOfficialStatistics =>
+      CompetitionStatisticsPolicy.countsTowardsOfficialStatistics(division);
   final String homeTeam;
   final String awayTeam;
   final List<String> homePlayers;
@@ -193,6 +209,8 @@ class CompetitionDoublesSummary {
       slot: row['slot'] as int,
       revision: row['revision'] as int,
       bestOf: packet['bestOf'] as int,
+      checkIn: packet['checkIn'] == 'double' ? 'double' : 'straight',
+      division: packet['division'] as String?,
       homeTeam: home['teamName'] as String,
       awayTeam: away['teamName'] as String,
       homePlayers: names(home),

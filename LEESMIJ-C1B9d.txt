@@ -1,0 +1,16 @@
+C1B9d — STAP 2A: beleid + regressietests, NOG GEEN STATISTIEKENUITSLUITING
+
+Project: B74-Dart-Score
+
+Dit pakket introduceert uitsluitend een centrale pure policy en bijbehorende tests.
+Er is nog GEEN ontvangst/opslag van divisie en GEEN filtering in statistieken,
+herberekening, snapshots, verwijderen of synchronisatie aangesloten.
+
+Niet beschouwen als volledige C1B9d-implementatie.
+Niet gebruiken om testwedstrijden met echte spelers te spelen.
+
+Uitpakken in projectroot en uitvoeren:
+flutter analyze --no-pub
+flutter test --no-pub --reporter compact
+
+Geen databasewijziging, reset, commit of push.

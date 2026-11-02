@@ -1,0 +1,16 @@
+C1B7 v0.6b-1b2 — Dart Score client (NIET installeren zonder controle)
+
+Wijzigt:
+- lib/services/b74_live_tv.dart
+- lib/screens/competition_matches_screen.dart
+- pubspec.yaml
+
+Nieuwe dependency flutter_secure_storage; voer eerst flutter pub get uit.
+Vervolgens flutter analyze, flutter test, flutter build apk --debug.
+
+Let op:
+- De huidige Receiver-patch biedt nog geen remote revoke API; ontkoppelen wist de tabletregistratie, maar intrekking op Receiver volgt apart.
+- Receiver-registratie vervangt eerdere registratie op dezelfde TV.
+- Automatische reconnect vereist een bereikbaar IP-adres; wisselende TV-IP's worden niet automatisch ontdekt.
+- De UI toont verbonden-status mogelijk pas na opnieuw openen; statusnotificatie volgt in aparte patch.
+- Test op echte apparaten, niet committen voordat beide kanten zijn getest.

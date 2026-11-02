@@ -7,6 +7,7 @@ import '../utils/layout.dart';
 
 import '../services/b74_doubles_session.dart';
 import '../widgets/b74_doubles_numeric_input.dart';
+import '../widgets/b74_doubles_opening_input.dart';
 import '../services/competition_match_catalog.dart';
 
 /// 701 competition screen, isolated from the singles 501 workflow.
@@ -167,110 +168,25 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
     }
   }
 
-  /// Opening is recorded dart by dart. A non-double before opening is zero,
-  /// even when it hits a scoring segment. After opening, every dart scores.
-  Future<void> _enterOpeningVisit(B74DoublesSession session) async {
-    final darts = <({int value, bool isDouble})>[];
-    var opened = false;
-    var openingDouble = 0;
-    var openingDart = 0;
-    var total = 0;
-    while (darts.length < 3 && mounted) {
-      final dart = await showDialog<({int value, bool isDouble})>(
-        context: context,
-        builder: (c) {
-          var multiplier = 1;
-          return StatefulBuilder(builder: (context, update) => AlertDialog(
-            title: Text('DOUBLE IN · DART ${darts.length + 1}'),
-            content: SizedBox(
-              width: 380,
-              child: SingleChildScrollView(child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(opened
-                      ? 'Geopend · ${total} punten tot nu toe'
-                      : 'Nog niet geopend · raak een dubbel'),
-                  const SizedBox(height: 8),
-                  SegmentedButton<int>(
-                    segments: const [
-                      ButtonSegment(value: 1, label: Text('SINGLE')),
-                      ButtonSegment(value: 2, label: Text('DUBBEL')),
-                      ButtonSegment(value: 3, label: Text('TRIPLE')),
-                    ],
-                    selected: {multiplier},
-                    onSelectionChanged: (v) => update(() => multiplier = v.first),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(spacing: 4, runSpacing: 4, children: [
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(c, (value: 0, isDouble: false)),
-                      child: const Text('MIS / 0'),
-                    ),
-                    for (var n = 1; n <= 20; n++)
-                      OutlinedButton(
-                        onPressed: () => Navigator.pop(c,
-                            (value: n * multiplier, isDouble: multiplier == 2)),
-                        child: Text('${multiplier == 1 ? 'S' : multiplier == 2 ? 'D' : 'T'}$n'),
-                      ),
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(c, (value: 25, isDouble: false)),
-                      child: const Text('25'),
-                    ),
-                    OutlinedButton(
-                      onPressed: () => Navigator.pop(c, (value: 50, isDouble: true)),
-                      child: const Text('BULL 50'),
-                    ),
-                  ]),
-                ],
-              )),
-            ),
-            actions: [TextButton(
-              onPressed: () => Navigator.pop(c),
-              child: const Text('ANNULEREN'),
-            )],
-          ));
-        },
-      );
-      if (dart == null || !mounted) return;
-      darts.add(dart);
-      if (!opened && dart.isDouble) {
-        opened = true;
-        openingDouble = dart.value;
-        openingDart = darts.length;
-      }
-      if (opened) total += dart.value;
-    }
-    if (!mounted || darts.length != 3) return;
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (c) => AlertDialog(
-        title: const Text('BEURT BEVESTIGEN'),
-        content: Text(opened
-            ? 'Opening op dart $openingDart · ${total} punten · 3 darts gegooid.'
-            : 'Geen openingsdubbel · 0 punten · 3 darts gegooid.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(c, false),
-              child: const Text('OPNIEUW')),
-          FilledButton(onPressed: () => Navigator.pop(c, true),
-              child: const Text('ACCEPT')),
-        ],
-      ),
-    );
-    if (confirmed != true || !mounted) return;
-    await _run((s) => s.completeVisit(
-      score: total,
-      openingDouble: opened ? openingDouble : null,
-      openingDart: opened ? openingDart : null,
-    ));
-  }
-
   Widget _scoreInput(B74DoublesSession session, dynamic engine) {
     if (session.checkIn == 'double' &&
         !engine.isOpened(engine.currentVisit.team)) {
-      return FilledButton.icon(
-        onPressed: _busy ? null : () => _enterOpeningVisit(session),
-        icon: const Icon(Icons.adjust),
-        label: const Text('DOUBLE IN · REGISTREER 3 DARTS'),
+      return SizedBox(
+        height: 465,
+        child: B74DoublesOpeningInput(
+          key: ValueKey('opening-${widget.match.gameId}-${session.events.length}'),
+          remaining: engine.remaining[engine.currentVisit.team] as int,
+          onSubmit: ({required score, required bust, required checkout,
+              required checkoutDart, required openingDouble, required openingDart}) =>
+              _run((s) => s.completeVisit(
+                score: score,
+                bust: bust,
+                validCheckout: checkout,
+                checkoutDart: checkoutDart,
+                openingDouble: openingDouble,
+                openingDart: openingDart,
+              )),
+        ),
       );
     }
     return B74DoublesNumericInput(

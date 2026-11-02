@@ -14,6 +14,8 @@ import '../models/checkout_ladder_game.dart'
     show CheckoutLadderGame, CheckoutLadderThrow;
 import '../services/competition_single_result_lifecycle.dart';
 import '../services/b74_team_match_contract.dart';
+import '../services/competition_statistics_policy.dart';
+import '../services/competition_official_team_statistics.dart';
 import '../services/b74_team_revision_policy.dart';
 import '../services/sync_service.dart' show SyncOrigin, kLegacyOrigin;
 import '../utils/finish_calculator.dart';
@@ -32,7 +34,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 32;
+  static const int schemaVersion = 33;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -70,8 +72,523 @@ class DbHelper {
       onOpen: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
         await _createCompetitionBeerResults(db);
+        await _createCompetitionDeletionTombstones(db);
+        await _createAdminDeletionIntents(db);
       },
     );
+  }
+
+  /// Durable receipt of a verified deletion request. Does not purge results.
+  Future<void> _createCompetitionDeletionTombstones(Database db) async {
+    await db.execute('CREATE TABLE IF NOT EXISTS competition_deletion_tombstones ('
+        'match_id TEXT PRIMARY KEY, revision INTEGER NOT NULL, '
+        'division TEXT NOT NULL, retain_official_statistics INTEGER NOT NULL, '
+        'received_at INTEGER NOT NULL, cleaned_at INTEGER)');
+    final columns = await db.rawQuery('PRAGMA table_info(competition_deletion_tombstones)');
+    if (!columns.any((column) => column['name'] == 'cleaned_at')) {
+      await db.execute('ALTER TABLE competition_deletion_tombstones ADD COLUMN cleaned_at INTEGER');
+    }
+  }
+
+  /// Durable, non-destructive staging for exceptional admin requests.
+  /// This is NOT an authorization decision: the authenticated receiver must
+  /// verify a separately issued, single-use grant before calling this API.
+  /// Until that verifier exists, no transport route calls this method.
+  Future<void> _createAdminDeletionIntents(Database db) async {
+    // One immutable grant per action. A later REMOVE after a completed RETAIN
+    // needs a new authorization, without rewriting the original audit row.
+    const ddl = 'CREATE TABLE competition_admin_deletion_intents ('
+        'match_id TEXT NOT NULL, revision INTEGER NOT NULL, '
+        'scope TEXT NOT NULL, statistics_mode TEXT NOT NULL, '
+        'authorization_id TEXT PRIMARY KEY, received_at INTEGER NOT NULL, '
+        "status TEXT NOT NULL CHECK(status = 'staged'))";
+    final existing = await db.rawQuery(
+        "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'competition_admin_deletion_intents'");
+    if (existing.isEmpty) {
+      await db.execute(ddl);
+    } else if ((existing.single['sql'] as String).contains('match_id TEXT PRIMARY KEY')) {
+      // SQLite cannot drop a primary key. Migrate atomically, preserving
+      // existing grants; never delete an existing audit receipt.
+      await db.transaction((txn) async {
+        await txn.execute('ALTER TABLE competition_admin_deletion_intents RENAME TO competition_admin_deletion_intents_old');
+        await txn.execute(ddl);
+        await txn.execute('INSERT INTO competition_admin_deletion_intents '
+            '(match_id,revision,scope,statistics_mode,authorization_id,received_at,status) '
+            'SELECT match_id,revision,scope,statistics_mode,authorization_id,received_at,status '
+            'FROM competition_admin_deletion_intents_old');
+        await txn.execute('DROP TABLE competition_admin_deletion_intents_old');
+      });
+    }
+    await db.execute('CREATE INDEX IF NOT EXISTS idx_admin_intents_match '
+        'ON competition_admin_deletion_intents(match_id)');
+  }
+
+  /// Persist the exact immutable request; replay is idempotent, mutation fails.
+  /// Never deletes results, updates a TEST tombstone or acknowledges cleanup.
+  Future<String> stageAdminDeletionIntent({
+    required String matchId,
+    required int revision,
+    required String scope,
+    required String statisticsMode,
+    required String authorizationId,
+  }) async {
+    if (matchId.isEmpty || matchId.trim() != matchId || revision < 1 ||
+        !const {'official', 'historical_development'}.contains(scope) ||
+        !const {'retain', 'remove'}.contains(statisticsMode) ||
+        authorizationId.isEmpty || authorizationId.trim() != authorizationId) {
+      throw const FormatException('Ongeldig beheerdersverwijderverzoek');
+    }
+    final database = await db;
+    return database.transaction((txn) async {
+      final existing = await txn.query('competition_admin_deletion_intents',
+          where: 'match_id = ? OR authorization_id = ?',
+          whereArgs: [matchId, authorizationId]);
+      if (existing.isNotEmpty) {
+        final exact = existing.where((r) => r['authorization_id'] == authorizationId).toList();
+        if (exact.length == 1 && exact.single['match_id'] == matchId &&
+            exact.single['revision'] == revision && exact.single['scope'] == scope &&
+            exact.single['statistics_mode'] == statisticsMode) {
+          return 'already_staged';
+        }
+        // Only a fresh REMOVE grant may follow a completed official RETAIN.
+        // No second staged grant, and never reuse an authorization ID.
+        final tombstones = await txn.query('competition_deletion_tombstones',
+            where: 'match_id = ?', whereArgs: [matchId], limit: 1);
+        final allowed = exact.isEmpty && existing.length == 1 &&
+            existing.single['match_id'] == matchId &&
+            existing.single['revision'] == revision &&
+            existing.single['scope'] == 'official' &&
+            existing.single['statistics_mode'] == 'retain' &&
+            scope == 'official' && statisticsMode == 'remove' &&
+            tombstones.length == 1 &&
+            tombstones.single['revision'] == revision &&
+            tombstones.single['retain_official_statistics'] == 1 &&
+            tombstones.single['cleaned_at'] != null;
+        if (!allowed) throw StateError('Conflicterend beheerdersverwijderverzoek');
+      }
+      await txn.insert('competition_admin_deletion_intents', {
+        'match_id': matchId, 'revision': revision, 'scope': scope,
+        'statistics_mode': statisticsMode,
+        'authorization_id': authorizationId,
+        'received_at': DateTime.now().toUtc().millisecondsSinceEpoch,
+        'status': 'staged',
+      });
+      return 'staged';
+    });
+  }
+
+  /// Read-only, durable status for an exact admin deletion intent.
+  /// Never interprets a staged intent as completed execution.
+  Future<Map<String, Object>> readAdminDeletionStatus({
+    required String matchId,
+    required int revision,
+    required String authorizationId,
+  }) async {
+    if (matchId.isEmpty || matchId.trim() != matchId || revision < 1 ||
+        authorizationId.isEmpty || authorizationId.trim() != authorizationId) {
+      throw const FormatException('Ongeldige beheerdersstatusaanvraag');
+    }
+    final database = await db;
+    return database.transaction((txn) async {
+      final intents = await txn.query('competition_admin_deletion_intents',
+          where: 'match_id = ? AND revision = ? AND authorization_id = ?',
+          whereArgs: [matchId, revision, authorizationId], limit: 1);
+      if (intents.length != 1) {
+        throw StateError('Geen exacte beheerdersopdracht');
+      }
+      final intent = intents.single;
+      final tombstones = await txn.query('competition_deletion_tombstones',
+          where: 'match_id = ?', whereArgs: [matchId], limit: 1);
+      var completed = false;
+      if (tombstones.isNotEmpty) {
+        final t = tombstones.single;
+        final expectedRetain = intent['statistics_mode'] == 'retain' ? 1 : 0;
+        final upgradedRetain = expectedRetain == 1 &&
+            t['retain_official_statistics'] == 0 &&
+            (await txn.query('competition_admin_deletion_intents',
+              where: 'match_id = ? AND revision = ? AND statistics_mode = ?',
+              whereArgs: [matchId, revision, 'remove'])).isNotEmpty;
+        if (t['revision'] != revision ||
+            (t['retain_official_statistics'] != expectedRetain && !upgradedRetain) ||
+            t['cleaned_at'] == null) {
+          throw StateError('Conflicterende verwijderstatus');
+        }
+        completed = true;
+      }
+      return <String, Object>{
+        'matchId': matchId,
+        'revision': revision,
+        'authorizationId': authorizationId,
+        'statisticsMode': intent['statistics_mode'] as String,
+        'scope': intent['scope'] as String,
+        'status': completed ? 'completed' : 'staged',
+        'executionCompleted': completed,
+      };
+    });
+  }
+
+  /// C1B9d Admin 2C2d2a: read-only execution preflight.
+  ///
+  /// A staged intent is NOT permission to execute. This method intentionally
+  /// performs no deletion. It validates the exact immutable intent and reports
+  /// dependent rows so retention can be implemented without silently losing
+  /// statistics or touching shared players.
+  Future<Map<String, Object>> inspectAdminDeletionImpact({
+    required String matchId,
+    required int revision,
+    required String authorizationId,
+  }) async {
+    if (matchId.isEmpty || matchId.trim() != matchId || revision < 1 ||
+        authorizationId.isEmpty || authorizationId.trim() != authorizationId) {
+      throw const FormatException('Ongeldige beheerdersverwijderinspectie');
+    }
+    final database = await db;
+    return database.transaction((txn) async {
+      final intents = await txn.query('competition_admin_deletion_intents',
+          where: 'match_id = ? AND revision = ? AND authorization_id = ?',
+          whereArgs: [matchId, revision, authorizationId], limit: 1);
+      if (intents.isEmpty) {
+        throw StateError('Geen overeenkomende beheerdersopdracht');
+      }
+      final intent = intents.single;
+      final linkedGames = await txn.query('competition_game_links',
+          columns: ['game_id'], where: 'match_id = ?', whereArgs: [matchId]);
+      final gameIds = linkedGames.map((r) => r['game_id'] as int).toList();
+      var throwsCount = 0;
+      for (final gameId in gameIds) {
+        final count = Sqflite.firstIntValue(await txn.rawQuery(
+            'SELECT COUNT(*) FROM dart_throws WHERE game_id = ?', [gameId]));
+        throwsCount += count ?? 0;
+      }
+      Future<int> count(String table) async => Sqflite.firstIntValue(
+          await txn.rawQuery('SELECT COUNT(*) FROM $table WHERE match_id = ?',
+              [matchId])) ?? 0;
+      final doubles = await count('competition_doubles_results');
+      final beer = await count('competition_beer_results');
+      final singles = await count('competition_single_results');
+      final teamInbox = await count('competition_team_inbox');
+      final matchInbox = await count('competition_inbox');
+      return <String, Object>{
+        'matchId': matchId,
+        'revision': revision,
+        'scope': intent['scope'] as String,
+        'statisticsMode': intent['statistics_mode'] as String,
+        'authorizationId': authorizationId,
+        'singleGames': gameIds.length,
+        'dartThrows': throwsCount,
+        'singleResults': singles,
+        'doublesResults': doubles,
+        'beerResults': beer,
+        'teamInboxRows': teamInbox,
+        'matchInboxRows': matchInbox,
+        'executionAllowed': false,
+      };
+    });
+  }
+
+  /// C1B9d 2C2d2b: atomic REMOVE-mode database primitive (NOT a transport API).
+  ///
+  /// Deliberately not connected to the receiver. Staging is not authorization;
+  /// the future execution coordinator must verify a fresh, single-use grant
+  /// and both devices' completion protocol before calling this primitive.
+  /// RETAIN is refused until its independent statistics archive is implemented.
+  /// The transaction is all-or-nothing; an immutable deletion tombstone prevents
+  /// delayed competition imports from resurrecting the removed match.
+  Future<String> purgeStagedAdminRemoveForVerifiedCoordinator({
+    required String matchId,
+    required int revision,
+    required String authorizationId,
+  }) async {
+    if (matchId.isEmpty || matchId.trim() != matchId || revision < 1 ||
+        authorizationId.isEmpty || authorizationId.trim() != authorizationId) {
+      throw const FormatException('Ongeldige beheerdersverwijdering');
+    }
+    final database = await db;
+    return database.transaction((txn) async {
+      final intents = await txn.query('competition_admin_deletion_intents',
+          where: 'match_id = ? AND revision = ? AND authorization_id = ?',
+          whereArgs: [matchId, revision, authorizationId], limit: 1);
+      if (intents.length != 1) {
+        throw StateError('Geen exacte geregistreerde beheerdersopdracht');
+      }
+      final intent = intents.single;
+      if (intent['statistics_mode'] != 'remove') {
+        throw StateError('RETAIN vereist afzonderlijke statistiekarchivering');
+      }
+      if (intent['scope'] != 'official' &&
+          intent['scope'] != 'historical_development') {
+        throw StateError('Ongeldige scope');
+      }
+      final tombstones = await txn.query('competition_deletion_tombstones',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      if (tombstones.isNotEmpty) {
+        final previous = tombstones.single;
+        if (tombstones.length == 1 &&
+            previous['revision'] == revision &&
+            previous['retain_official_statistics'] == 0 &&
+            previous['cleaned_at'] != null &&
+            (await txn.query('competition_inbox',
+                where: 'match_id = ?', whereArgs: [matchId])).isEmpty) {
+          // Exact immutable intent was verified above. A retry after a lost
+          // response must not attempt another destructive transaction.
+          return 'already_purged';
+        }
+        final retainUpgrade = tombstones.length == 1 &&
+            previous['revision'] == revision &&
+            previous['retain_official_statistics'] == 1 &&
+            previous['cleaned_at'] != null &&
+            intent['scope'] == 'official' &&
+            (await txn.query('competition_admin_deletion_intents',
+                where: 'match_id = ? AND revision = ? AND statistics_mode = ?',
+                whereArgs: [matchId, revision, 'retain'])).length == 1;
+        if (!retainUpgrade) {
+          throw StateError('Bestaande verwijdertombstone: handmatige reconciliatie vereist');
+        }
+      }
+      final inbox = await txn.query('competition_inbox',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      if (inbox.length != 1) {
+        throw StateError('Wedstrijd ontbreekt of is niet uniek');
+      }
+      final payload = jsonDecode(inbox.single['payload'] as String);
+      if (payload is! Map<String, dynamic>) {
+        throw StateError('Ongeldig wedstrijdpayload');
+      }
+      final division = (payload['division'] as String? ?? '').trim();
+      if (intent['scope'] == 'official' && division.toLowerCase() == 'test') {
+        throw StateError('TEST-wedstrijd vereist gewone opruimroute');
+      }
+      final teamRows = await txn.query('competition_team_inbox',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      if (teamRows.any((r) => r['revision'] != revision)) {
+        throw StateError('Teamonderdelen hebben afwijkende revisie');
+      }
+      final links = await txn.query('competition_game_links',
+          columns: ['game_id'], where: 'match_id = ?', whereArgs: [matchId]);
+      final gameIds = links.map((r) => r['game_id'] as int).toList();
+      // Reject unexpected cross-match ownership instead of deleting shared data.
+      for (final gameId in gameIds) {
+        final owners = Sqflite.firstIntValue(await txn.rawQuery(
+          'SELECT COUNT(*) FROM competition_game_links WHERE game_id = ?',
+          [gameId],
+        ));
+        if (owners != 1) throw StateError('Gedeelde wedstrijdgame');
+      }
+      for (final row in teamRows) {
+        await txn.delete('competition_doubles_events',
+            where: 'game_id = ?', whereArgs: [row['game_id']]);
+      }
+      await txn.delete('competition_doubles_results',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      await txn.delete('competition_beer_results',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      await txn.delete('competition_team_inbox',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      await txn.delete('competition_single_results',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      for (final gameId in gameIds) {
+        await txn.delete('dart_throws',
+            where: 'game_id = ?', whereArgs: [gameId]);
+        await txn.delete('game_players',
+            where: 'game_id = ?', whereArgs: [gameId]);
+      }
+      await txn.delete('competition_game_links',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      for (final gameId in gameIds) {
+        await txn.delete('games', where: 'id = ?', whereArgs: [gameId]);
+      }
+      await txn.delete('competition_inbox',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      await txn.execute('CREATE TABLE IF NOT EXISTS competition_match_locks ('
+          'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, received_at INTEGER NOT NULL)');
+      await txn.delete('competition_match_locks',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+      if (tombstones.isEmpty) {
+        await txn.insert('competition_deletion_tombstones', {
+          'match_id': matchId, 'revision': revision, 'division': division,
+          'retain_official_statistics': 0, 'received_at': now, 'cleaned_at': now,
+        });
+      } else {
+        await txn.update('competition_deletion_tombstones',
+          {'retain_official_statistics': 0, 'cleaned_at': now},
+          where: 'match_id = ? AND revision = ?', whereArgs: [matchId, revision]);
+      }
+      // Intent remains as an immutable audit receipt; never delete players.
+      return 'purged';
+    });
+  }
+
+  /// C1B9d RETAIN primitive: logical removal without touching source statistics.
+  ///
+  /// IMPORTANT: this is not a transport endpoint or an authorization verifier.
+  /// Only a future verified coordinator may call this method. Consumers of
+  /// active competition data must filter tombstoned matches separately.
+  /// Preserving the competition inbox is intentional: linked X01 games and
+  /// historical statistics still depend on that parent row.
+  Future<String> retainStagedAdminMatchForVerifiedCoordinator({
+    required String matchId,
+    required int revision,
+    required String authorizationId,
+  }) async {
+    if (matchId.isEmpty || matchId.trim() != matchId || revision < 1 ||
+        authorizationId.isEmpty || authorizationId.trim() != authorizationId) {
+      throw const FormatException('Ongeldige RETAIN-opdracht');
+    }
+    final database = await db;
+    return database.transaction((txn) async {
+      final intents = await txn.query('competition_admin_deletion_intents',
+          where: 'match_id = ? AND revision = ? AND authorization_id = ?',
+          whereArgs: [matchId, revision, authorizationId], limit: 1);
+      if (intents.length != 1 || intents.single['statistics_mode'] != 'retain' ||
+          intents.single['scope'] != 'official') {
+        throw StateError('Geen exacte officiële RETAIN-opdracht');
+      }
+      final previous = await txn.query('competition_deletion_tombstones',
+          where: 'match_id = ?', whereArgs: [matchId], limit: 1);
+      if (previous.isNotEmpty) {
+        final t = previous.single;
+        if (t['revision'] == revision &&
+            t['retain_official_statistics'] == 1 &&
+            t['cleaned_at'] != null) return 'already_retained';
+        throw StateError('Conflicterende verwijdertombstone');
+      }
+      final inbox = await txn.query('competition_inbox',
+          where: 'match_id = ?', whereArgs: [matchId], limit: 1);
+      if (inbox.length != 1) throw StateError('Wedstrijd ontbreekt');
+      final payload = jsonDecode(inbox.single['payload'] as String);
+      if (payload is! Map<String, dynamic>) {
+        throw StateError('Ongeldig wedstrijdpayload');
+      }
+      final division = (payload['division'] as String? ?? '').trim();
+      if (division.isEmpty || division.toLowerCase() == 'test') {
+        throw StateError('Geen officiële competitieafdeling');
+      }
+      final teamRows = await txn.query('competition_team_inbox',
+          columns: ['revision'], where: 'match_id = ?', whereArgs: [matchId]);
+      if (teamRows.any((row) => row['revision'] != revision)) {
+        throw StateError('Afwijkende revisie van teamonderdelen');
+      }
+      final now = DateTime.now().toUtc().millisecondsSinceEpoch;
+      await txn.insert('competition_deletion_tombstones', {
+        'match_id': matchId, 'revision': revision, 'division': division,
+        'retain_official_statistics': 1, 'received_at': now, 'cleaned_at': now,
+      });
+      // Deliberately leave every competition result, game, throw and player
+      // untouched. Deletion from active UI is a separate consumer concern.
+      return 'retained';
+    });
+  }
+
+  /// Called only after transport authentication and contract validation.
+  /// A duplicate is safe; a conflicting request is rejected atomically.
+  Future<String> receiveCompetitionDeletion({
+    required String matchId,
+    required int revision,
+    required String division,
+    required bool retainOfficialStatistics,
+  }) async {
+    if (matchId.trim().isEmpty || revision < 1 ||
+        (division.trim().toLowerCase() == 'test' && retainOfficialStatistics)) {
+      throw const FormatException('Ongeldig verwijderverzoek');
+    }
+    final database = await db;
+    return database.transaction((txn) async {
+      final existing = await txn.query('competition_deletion_tombstones',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      if (existing.isNotEmpty) {
+        final row = existing.single;
+        if (row['revision'] != revision || row['division'] != division ||
+            row['retain_official_statistics'] != (retainOfficialStatistics ? 1 : 0)) {
+          throw StateError('Conflicterend verwijderverzoek: $matchId');
+        }
+        return 'already_stored';
+      }
+      await txn.insert('competition_deletion_tombstones', {
+        'match_id': matchId,
+        'revision': revision,
+        'division': division,
+        'retain_official_statistics': retainOfficialStatistics ? 1 : 0,
+        'received_at': DateTime.now().toUtc().millisecondsSinceEpoch,
+      });
+      return 'stored';
+    });
+  }
+
+  /// C1B9d-3b2c7b1: local TEST-only cleanup after a durable deletion intent.
+  /// Does not represent an end-to-end completion ACK. Never call this for an
+  /// official match, and never infer TEST status from a mutable UI label.
+  /// The tombstone remains to reject delayed competition imports.
+  Future<String> purgeTombstonedTestMatch(String matchId) async {
+    if (matchId.trim().isEmpty) throw ArgumentError('Lege wedstrijdidentiteit');
+    final database = await db;
+    return database.transaction((txn) async {
+      final intent = await txn.query('competition_deletion_tombstones',
+          where: 'match_id = ?', whereArgs: [matchId], limit: 1);
+      if (intent.isEmpty ||
+          (intent.single['division'] as String).trim().toLowerCase() != 'test' ||
+          intent.single['retain_official_statistics'] != 0) {
+        throw StateError('Geen geldig TEST-opruimverzoek voor $matchId');
+      }
+
+      // The X01 game is owned by the competition link. Never delete players:
+      // they can participate in official and unrelated matches.
+      final links = await txn.query('competition_game_links',
+          columns: ['game_id'], where: 'match_id = ?', whereArgs: [matchId]);
+      final gameIds = links.map((row) => row['game_id'] as int).toList();
+      final teams = await txn.query('competition_team_inbox',
+          columns: ['game_id'], where: 'match_id = ?', whereArgs: [matchId]);
+      for (final row in teams) {
+        final gameId = row['game_id'] as String;
+        await txn.delete('competition_doubles_events',
+            where: 'game_id = ?', whereArgs: [gameId]);
+      }
+      await txn.delete('competition_doubles_results',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      await txn.delete('competition_beer_results',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      await txn.delete('competition_team_inbox',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      await txn.delete('competition_single_results',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      for (final gameId in gameIds) {
+        await txn.delete('dart_throws',
+            where: 'game_id = ?', whereArgs: [gameId]);
+        await txn.delete('game_players',
+            where: 'game_id = ?', whereArgs: [gameId]);
+      }
+      await txn.delete('competition_game_links',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      for (final gameId in gameIds) {
+        await txn.delete('games', where: 'id = ?', whereArgs: [gameId]);
+      }
+      await txn.delete('competition_inbox',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      // MATCH_LOCKED storage is created lazily by the existing receiver.
+      // A TEST match may be purged before that receiver was ever used.
+      await txn.execute('CREATE TABLE IF NOT EXISTS competition_match_locks ('
+          'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, received_at INTEGER NOT NULL)');
+      await txn.delete('competition_match_locks',
+          where: 'match_id = ?', whereArgs: [matchId]);
+      // Commit completion together with the actual cleanup, never before it.
+      await txn.update('competition_deletion_tombstones', {
+        'cleaned_at': DateTime.now().toUtc().millisecondsSinceEpoch,
+      }, where: 'match_id = ?', whereArgs: [matchId]);
+      // Keep tombstone permanently. No players or player-origin snapshots
+      // are deleted, because they are shared across unrelated games.
+      return 'purged';
+    });
+  }
+
+  /// Read-only, durable local completion state. Receipt and cleanup are distinct.
+  Future<bool> isTombstonedTestMatchCleaned(String matchId, int revision) async {
+    final database = await db;
+    final rows = await database.query('competition_deletion_tombstones',
+        columns: ['cleaned_at'],
+        where: 'match_id = ? AND revision = ? AND lower(trim(division)) = ? '
+            'AND retain_official_statistics = 0',
+        whereArgs: [matchId, revision, 'test'], limit: 1);
+    return rows.isNotEmpty && rows.single['cleaned_at'] != null;
   }
 
   /// C1B6b.3: durable, idempotent receipt. No user-facing lock is activated
@@ -392,6 +909,9 @@ class DbHelper {
     }
     if (oldVersion < 32) {
       await _createCompetitionBeerResults(db);
+    }
+    if (oldVersion < 33) {
+      await _createCompetitionDeletionTombstones(db);
     }
   }
 
@@ -801,6 +1321,39 @@ class DbHelper {
     }
   }
 
+  /// Official team-result projection for aggregate/report consumers.
+  /// Live scoring, the durable result outbox, sync and TV remain unchanged.
+  Future<List<Map<String, Object?>>> getOfficialCompetitionTeamResults({
+    required bool beerGame,
+  }) async {
+    final database = await db;
+    final table = beerGame
+        ? 'competition_beer_results'
+        : 'competition_doubles_results';
+    final rows = await database.rawQuery(
+      'SELECT r.*, i.payload AS match_payload '
+      'FROM $table r '
+      'JOIN competition_team_inbox i ON i.game_id = r.game_id '
+      'ORDER BY r.match_id, r.slot',
+    );
+    return CompetitionStatisticsPolicy.officialTeamResultRows(rows);
+  }
+
+  /// Official standings are derived from saved results, never cached.
+  Future<List<OfficialTeamStanding>> getOfficialTeamStandings({
+    required OfficialTeamDiscipline discipline,
+  }) async {
+    final database = await db;
+    final table = discipline == OfficialTeamDiscipline.beer1001
+        ? 'competition_beer_results' : 'competition_doubles_results';
+    final rows = await database.rawQuery(
+      'SELECT r.*, i.payload AS match_payload FROM $table r '
+      'JOIN competition_team_inbox i ON i.game_id = r.game_id '
+      'ORDER BY r.match_id, r.slot',
+    );
+    return CompetitionOfficialTeamStatistics.aggregate(discipline, rows);
+  }
+
   /// C1B4.3e: immutable event journal for doubles 701. Replay events through
   /// the scoring core to restore the exact starter, scores and turn order.
   Future<void> _createCompetitionDoublesEvents(Database database) async {
@@ -891,6 +1444,19 @@ class DbHelper {
     final revision = packet['revision'] as int;
     final database = await db;
     return database.transaction((txn) async {
+      // A durable deletion intent takes precedence over any delayed team
+      // snapshot (doubles 701 or beer 1001), including identical replays.
+      // Keep this check in the same transaction as the inbox write.
+      final tombstone = await txn.query(
+        'competition_deletion_tombstones',
+        columns: ['revision'],
+        where: 'match_id = ?',
+        whereArgs: [matchId],
+        limit: 1,
+      );
+      if (tombstone.isNotEmpty) {
+        return B74TeamRevisionDecision.reject;
+      }
       final rows = await txn.query(
         'competition_team_inbox',
         where: 'game_id = ?',
@@ -1114,6 +1680,7 @@ class DbHelper {
     await _createCompetitionDoublesEvents(db);
     await _createCompetitionDoublesResults(db);
     await _createCompetitionBeerResults(db);
+    await _createCompetitionDeletionTombstones(db);
     await db.execute('''
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1492,10 +2059,31 @@ class DbHelper {
   static int _perfectLegsFor(List<DartThrow> throws, int? minDarts) =>
       perfectLegsFromThrows(throws, (_) => minDarts);
 
+  /// Competition singles in division `test` must never enter official
+  /// lifetime statistics or the permanent deleted-game snapshot.
+  /// Other game types are not represented by an X01 game id here.
+  Future<Set<int>> getTestCompetitionSingleGameIds() async {
+    final database = await db;
+    final rows = await database.rawQuery(
+      'SELECT l.game_id, i.payload FROM competition_game_links l '
+      'JOIN competition_inbox i ON i.match_id = l.match_id',
+    );
+    return {
+      for (final row in rows)
+        if (CompetitionStatisticsPolicy.isTestDivision(
+          (jsonDecode(row['payload'] as String) as Map<String, dynamic>)['division']
+              as String?,
+        ))
+          row['game_id'] as int,
+    };
+  }
+
   /// Snapshots one game's throws into each involved player's persistent
   /// `local_stats_json`, so lifetime stats survive deleting the game. Call this
   /// BEFORE [deleteGame].
   Future<void> snapshotGameStats(int gameId) async {
+    // Do not permanently fold a test competition single into official history.
+    if ((await getTestCompetitionSingleGameIds()).contains(gameId)) return;
     final d = await db;
     final throws = await getThrowsForGame(gameId);
     if (throws.isEmpty) return;

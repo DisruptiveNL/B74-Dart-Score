@@ -1,22 +1,11 @@
-B74 C1B7 v0.6b-2 - kandidaatpatch (NIET lokaal gecompileerd)
+B74 C1B9d — RETAIN → REMOVE database patch (Dart Score only)
 
-Bestanden: lib/services/b74_live_tv.dart en lib/screens/competition_doubles_screen.dart
+Copy lib/ and test/ into D:\b74dev\projects\B74-Dart-Score.
+Run:
+  flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings
+  flutter test --no-pub test/database/c1b9d_retain_to_remove_test.dart
+  flutter test --no-pub --reporter compact
 
-Doel: bestaande WSS TV-socket hergebruiken voor doubles701 en beer1001.
-- Na sessie laden/score/correctie/undo: volledige TV-snapshot.
-- Teamstatistieken per koppel/team uit correctie-bewuste events.
-- First nine en laatste drie teambeurten chronologisch uit journal.
-- Reconnect stuurt snapshot van laatst gekoppelde sessie.
-- Geen wijziging aan QR, TLS pinning of 48-uursregistratie.
+This patch changes the SQLite admin-intents schema to allow a NEW REMOVE grant after a COMPLETED RETAIN. It retains old audit intents and atomically upgrades the tombstone after removal. It is not the finished Dashboard workflow. DO NOT delete real official data yet.
 
-INSTALLATIE: pak ZIP uit in root D:\b74dev\projects\B74-Dart-Score.
-Maak vooraf een backup / controleer git diff; overschrijf alleen deze 2 bestanden.
-
-CONTROLE:
-flutter analyze --no-pub
-flutter test --no-pub
-flutter build apk --debug --no-pub
-git diff --check
-
-Geen commit totdat echte apparaat-tests (701, 1001, correctie, undo,
-reconnect, terug naar singles) slagen.
+Flutter is not available in the patch-building environment; tests have NOT been run here.

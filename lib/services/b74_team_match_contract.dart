@@ -25,6 +25,11 @@ class B74TeamMatchContract {
     if (packet['type'] != type || packet['version'] != version) {
       throw const FormatException('Onbekend teamwedstrijdprotocol');
     }
+    final division = packet['division'];
+    if (division != null &&
+        (division is! String || division.trim().isEmpty)) {
+      throw const FormatException('Ongeldige divisie');
+    }
     _text(packet, 'matchId');
     _text(packet, 'gameId');
     final revision = packet['revision'];

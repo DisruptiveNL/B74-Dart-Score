@@ -160,27 +160,37 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
             ),
           );
         }
+        final groups = <String, _CompetitionGroup>{};
+        for (final match in matches) {
+          groups.putIfAbsent(match.id, () => _CompetitionGroup(match.id))
+              .singles = match;
+        }
+        for (final item in doubles) {
+          groups.putIfAbsent(item.matchId, () => _CompetitionGroup(item.matchId))
+              .doubles.add(item);
+        }
+        for (final item in beers) {
+          groups.putIfAbsent(item.matchId, () => _CompetitionGroup(item.matchId))
+              .beers.add(item);
+        }
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            const Padding(
-              padding: EdgeInsets.only(bottom: 12),
-              child: Text(
-                'DOGD',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+            for (final group in groups.values)
+              _CompetitionGroupCard(
+                group: group,
+                buildDoubles: (item) => _doublesTile(item),
+                buildBeer: (item) => _beerTile(item),
               ),
-            ),
-            for (final match in matches) _MatchCard(match: match),
-            if (beers.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text('Ontvangen Biergames 1001',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-              ),
-              for (final beer in beers)
-                FutureBuilder<B74DoublesSession?>(
-                  key: ValueKey('beer-result-${beer.gameId}'),
-                  future: B74DoublesSession.load(beer.gameId),
+          ],
+        );
+      },
+    ),
+  );
+  Widget _beerTile(CompetitionDoublesSummary item) =>
+FutureBuilder<B74DoublesSession?>(
+                  key: ValueKey('beer-result-${item.gameId}'),
+                  future: B74DoublesSession.load(item.gameId),
                   builder: (context, resultSnapshot) {
                     final engine = resultSnapshot.data?.engine;
                     final winner = engine?.winner;
@@ -188,7 +198,7 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                     final score = engine == null ? ''
                         : '${engine.legsWon[0]}–${engine.legsWon[1]}';
                     return FutureBuilder<Map<String, Object?>?>(
-                      future: DbHelper.instance.competitionDoublesResult(beer.gameId),
+                      future: DbHelper.instance.competitionDoublesResult(item.gameId),
                       builder: (context, syncSnapshot) {
                         final synced = syncSnapshot.data?['status'] == 'archived';
                         final syncLabel = synced
@@ -196,13 +206,13 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                         return Card(
                           color: finished ? Colors.green.withValues(alpha: 0.14) : null,
                           child: ListTile(
-                            key: ValueKey('beer-${beer.gameId}'),
-                            title: Text('Biergame — ${beer.homeTeam} vs ${beer.awayTeam}'
+                            key: ValueKey('beer-${item.gameId}'),
+                            title: Text('Biergame — ${item.homeTeam} vs ${item.awayTeam}'
                                 '${finished ? '  •  $score' : ''}'),
                             subtitle: Text(
-                              '${beer.homePlayers.join(' + ')}  vs  ${beer.awayPlayers.join(' + ')}\n'
-                              '1001 · 1 leg · Revisie ${beer.revision}'
-                              '${finished ? '\nGespeeld · Winnaar: ${winner == 0 ? beer.homeTeam : beer.awayTeam} · $syncLabel' : (beer.started ? ' · Gestart' : ' · Ontvangen')}'
+                              '${item.homePlayers.join(' + ')}  vs  ${item.awayPlayers.join(' + ')}\n'
+                              '1001 · 1 leg · ${item.checkIn == 'double' ? 'Double In' : 'Straight In'} · Revisie ${item.revision}'
+                              '${finished ? '\nGespeeld · Winnaar: ${winner == 0 ? item.homeTeam : item.awayTeam} · $syncLabel' : (item.started ? ' · Gestart' : ' · Ontvangen')}'
                               '${resultSnapshot.hasError || syncSnapshot.hasError ? '\nStatus laden mislukt' : ''}',
                             ),
                             isThreeLine: true,
@@ -211,7 +221,7 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                                 : Icons.chevron_right),
                             onTap: () async {
                               await Navigator.push(context, MaterialPageRoute<void>(
-                                builder: (_) => CompetitionDoublesScreen(match: beer),
+                                builder: (_) => CompetitionDoublesScreen(match: item),
                               ));
                               if (context.mounted) (context as Element).markNeedsBuild();
                             },
@@ -220,20 +230,12 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                       },
                     );
                   },
-                ),
-            ],
-            if (doubles.isNotEmpty) ...[
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 12),
-                child: Text(
-                  'Ontvangen koppels 701',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
-              for (final match in doubles)
-                FutureBuilder<B74DoublesSession?>(
-                  key: ValueKey('doubles-result-${match.gameId}'),
-                  future: B74DoublesSession.load(match.gameId),
+                );
+
+  Widget _doublesTile(CompetitionDoublesSummary item) =>
+FutureBuilder<B74DoublesSession?>(
+                  key: ValueKey('doubles-result-${item.gameId}'),
+                  future: B74DoublesSession.load(item.gameId),
                   builder: (context, resultSnapshot) {
                     final session = resultSnapshot.data;
                     final engine = session?.engine;
@@ -243,7 +245,7 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                         ? ''
                         : '${engine.legsWon[0]}–${engine.legsWon[1]}';
                     return FutureBuilder<Map<String, Object?>?>(
-                      future: DbHelper.instance.competitionDoublesResult(match.gameId),
+                      future: DbHelper.instance.competitionDoublesResult(item.gameId),
                       builder: (context, syncSnapshot) {
                         final synced = syncSnapshot.data?['status'] == 'archived';
                         final syncLabel = synced
@@ -254,15 +256,15 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                           ? Colors.green.withValues(alpha: 0.14)
                           : null,
                       child: ListTile(
-                        key: ValueKey('doubles-${match.gameId}'),
+                        key: ValueKey('doubles-${item.gameId}'),
                         title: Text(
-                          'Koppel ${match.slot} — ${match.homeTeam} vs ${match.awayTeam}'
+                          'Koppel ${item.slot} — ${item.homeTeam} vs ${item.awayTeam}'
                           '${finished ? '  •  $score' : ''}',
                         ),
                         subtitle: Text(
-                          '${match.homePlayers.join(' + ')}  vs  ${match.awayPlayers.join(' + ')}\n'
-                          '701 · Best of ${match.bestOf} · Revisie ${match.revision}'
-                          '${finished ? '\nGespeeld · Winnaar: ${winner == 0 ? match.homeTeam : match.awayTeam} · $syncLabel' : (match.started ? ' · Gestart' : ' · Ontvangen')}'
+                          '${item.homePlayers.join(' + ')}  vs  ${item.awayPlayers.join(' + ')}\n'
+                          '701 · Best of ${item.bestOf} · ${item.checkIn == 'double' ? 'Double In' : 'Straight In'} · Revisie ${item.revision}'
+                          '${finished ? '\nGespeeld · Winnaar: ${winner == 0 ? item.homeTeam : item.awayTeam} · $syncLabel' : (item.started ? ' · Gestart' : ' · Ontvangen')}'
                           '${resultSnapshot.hasError ? '\nUitslag laden mislukt' : ''}',
                         ),
                         isThreeLine: true,
@@ -276,7 +278,7 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                             context,
                             MaterialPageRoute<void>(
                               builder: (_) =>
-                                  CompetitionDoublesScreen(match: match),
+                                  CompetitionDoublesScreen(match: item),
                             ),
                           );
                           if (context.mounted) {
@@ -288,13 +290,8 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                       },
                     );
                   },
-                ),
-            ],
-          ],
-        );
-      },
-    ),
-  );
+                );
+
 }
 
 class _MatchCard extends StatelessWidget {
@@ -402,4 +399,65 @@ class _MatchCard extends StatelessWidget {
     CompetitionX01Rules.fixedHome => 'Thuis begint',
     _ => 'Uit begint',
   };
+}
+
+
+class _CompetitionGroup {
+  _CompetitionGroup(this.id);
+  final String id;
+  CompetitionMatchSummary? singles;
+  final List<CompetitionDoublesSummary> doubles = [];
+  final List<CompetitionDoublesSummary> beers = [];
+}
+
+class _CompetitionGroupCard extends StatelessWidget {
+  const _CompetitionGroupCard({
+    required this.group,
+    required this.buildDoubles,
+    required this.buildBeer,
+  });
+  final _CompetitionGroup group;
+  final Widget Function(CompetitionDoublesSummary) buildDoubles;
+  final Widget Function(CompetitionDoublesSummary) buildBeer;
+
+  @override
+  Widget build(BuildContext context) {
+    final match = group.singles;
+    final other = group.doubles.isNotEmpty
+        ? group.doubles.first
+        : (group.beers.isNotEmpty ? group.beers.first : null);
+    final home = match?.home ?? other?.homeTeam ?? 'Thuisteam onbekend';
+    final away = match?.away ?? other?.awayTeam ?? 'Uitteam onbekend';
+    final kind = match?.matchType;
+    final title = kind == 'cup' ? 'BEKER' : kind == 'regular' ? 'COMPETITIE' : 'TYPE ONBEKEND';
+    final doubleIn = match?.rules['checkIn'];
+    final allDoubles = [...group.doubles]..sort((a,b) => a.slot.compareTo(b.slot));
+    final allBeers = [...group.beers]..sort((a,b) => a.slot.compareTo(b.slot));
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: ExpansionTile(
+        key: ValueKey('match-group-${group.id}'),
+        leading: Icon(kind == 'cup' ? Icons.emoji_events : Icons.assignment_outlined),
+        title: Text('$home – $away'),
+        subtitle: Text('$title · Wedstrijdcode: ${group.id}\n'
+          '${match == null ? 'Singles nog niet ontvangen' : 'Singles ${match.singles.length}'}'
+          ' · Koppels ${allDoubles.length} · Biergame ${allBeers.length}'
+          '${doubleIn == 'double' ? ' · Double In (Singles)' : doubleIn == 'straight' ? ' · Straight In (Singles)' : ''}'),
+        children: [
+          if (match != null) ...[
+            const ListTile(title: Text('Singles 501')),
+            _MatchCard(match: match),
+          ],
+          if (allDoubles.isNotEmpty) ...[
+            const ListTile(title: Text('Koppels 701')),
+            for (final item in allDoubles) buildDoubles(item),
+          ],
+          if (allBeers.isNotEmpty) ...[
+            const ListTile(title: Text('Biergame 1001')),
+            for (final item in allBeers) buildBeer(item),
+          ],
+        ],
+      ),
+    );
+  }
 }
