@@ -22,7 +22,9 @@ class CompetitionMatchCatalog {
         'payload',
         'started',
       ],
-      where: 'kind = ?',
+      where: 'kind = ? AND NOT EXISTS ('
+          'SELECT 1 FROM competition_deletion_tombstones t '
+          'WHERE t.match_id = competition_team_inbox.match_id AND t.cleaned_at IS NOT NULL)',
       whereArgs: ['doubles701'],
       orderBy: 'received_at DESC',
     );
@@ -42,7 +44,9 @@ class CompetitionMatchCatalog {
     final rows = await database.query(
       'competition_team_inbox',
       columns: ['game_id', 'match_id', 'slot', 'revision', 'payload', 'started'],
-      where: 'kind = ?',
+      where: 'kind = ? AND NOT EXISTS ('
+          'SELECT 1 FROM competition_deletion_tombstones t '
+          'WHERE t.match_id = competition_team_inbox.match_id AND t.cleaned_at IS NOT NULL)',
       whereArgs: ['beer1001'],
       orderBy: 'received_at DESC',
     );
@@ -61,6 +65,9 @@ class CompetitionMatchCatalog {
     final rows = await db.query(
       'competition_inbox',
       columns: ['payload', 'received_at'],
+      where: 'NOT EXISTS ('
+          'SELECT 1 FROM competition_deletion_tombstones t '
+          'WHERE t.match_id = competition_inbox.match_id AND t.cleaned_at IS NOT NULL)',
       orderBy: 'received_at DESC',
     );
     final visible = <CompetitionMatchSummary>[];
