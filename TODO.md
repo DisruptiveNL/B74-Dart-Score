@@ -1,6 +1,6 @@
 # B74 Dart Score — TODO
 
-**Bijgewerkt:** 2026-11-02
+**Bijgewerkt:** 2026-11-03
 **Status:** C1B7 Live TV werkende, gepushte tussenversie; resterende beveiligings- en releasetests staan open.
 
 ## C1B7 — Live TV
@@ -42,7 +42,7 @@
 - [ ] Tests voor opening op dart 1, 2 en 3, geen opening, bust, checkout, correctie en undo.
 - [ ] Geen wijzigingen aan werkende TV-transportlaag of TV-layout.
 
-## C1B9 — Licentiebeleid en autorisatie (voorstel)
+## Licentiebeleid en autorisatie (voorstel; nummer nog toe te wijzen)
 - [ ] Licentievormen en gebruiksvoorwaarden vaststellen en juridisch laten toetsen vóór publieke uitgifte.
 - [ ] **Licentieaanvraag vooraf verplicht:** aanvrager beschrijft type gebruiker, organisatie en beoogde gebruiksscope.
 - [ ] Aanvragen worden persoonlijk beoordeeld; **gebruik pas toegestaan na expliciete goedkeuring**.
@@ -80,9 +80,62 @@
 - [ ] RETAIN blijft selecteerbaar voor latere REMOVE.
 - [ ] Beveiligde synchronisatie en fysieke end-to-end-test afronden.
 
-## Competitiereglement — Regulier en Beker
-- [ ] Reglement instelbaar maken voor Singles, Koppels en Biergame.
-- [ ] Dit ondersteunen voor zowel Reguliere competitie als Beker.
-- [ ] Bij aanmaken van een wedstrijd automatisch het toepasselijke reglement overnemen.
-- [ ] Overgenomen instellingen bij de wedstrijd vastleggen; latere reglementswijzigingen wijzigen bestaande wedstrijden niet.
-- [ ] Regressietests toevoegen.
+## C1B11 — Competitiereglement Regulier en Beker (actieve bouwopdracht)
+
+**Status:** functionele afspraken vastgesteld; broncode-inventarisatie en implementatie nog uit te voeren.
+**Aanpak:** eerst Dashboard-reglement en wedstrijdsnapshot, daarna Score-verwerking en integratietests. Bestaande werking niet onnodig wijzigen.
+
+### 1. Reglement en opslag
+- [ ] Reglement per wedstrijdsoort ondersteunen: **Regulier** en **Beker**.
+- [ ] Per wedstrijd precies drie configuratiegroepen: **Singles** (alle vier gelijk), **Koppels** (alle vier gelijk), **Biergame** (één onderdeel).
+- [ ] Bij nieuwe wedstrijd de **laatst opgeslagen instellingen als voorstel** invullen; de gebruiker kan deze vóór vastlegging aanpassen.
+- [ ] De definitieve instellingen als **onveranderlijke wedstrijdsnapshot** opslaan en meesturen naar Dart Score; latere reglementswijzigingen hebben geen terugwerkende kracht.
+- [ ] Bestaande wedstrijden en databaseversies veilig migreren; defaults voor ontbrekende velden expliciet vastleggen.
+
+### 2. Instelbare spelregels
+- [ ] Singles: X01 = **301 / 501 / 701**, standaard **501**; Best of **3 / 5 / 7 / 9 / 11**, standaard **5**.
+- [ ] Koppels: X01 = **301 / 501 / 701**, standaard **701**; Best of **3 / 5 / 7 / 9 / 11**, standaard **5**.
+- [ ] Biergame: X01 = **301 / 501 / 701 / 1001**, standaard **1001**; altijd **één leg**.
+- [ ] Per groep onafhankelijk **Straight In / Double In** en **Straight Out / Double Out / Master Out**. Master Out: dubbel, triple of inner bull (50); Double Out: dubbel of inner bull (50).
+- [ ] Double In: punten tellen vanaf en inclusief de eerste geldige dubbel; eerdere darts tellen voor het aantal gegooide darts; drie mislukte openingen = 0 punten.
+- [ ] Per groep wedstrijdpunten voor winst instelbaar als **positief geheel getal (minimaal 1)**; standaard **1** per gewonnen onderdeel. Geen competitieklassement/ranglijst bouwen.
+
+### 3. Startregeling
+- [ ] Per groep afzonderlijk **Thuis begint / Uit begint / Bullstart** instelbaar.
+- [ ] Bij Thuis/Uit-start geldt voor Singles respectievelijk Koppels een doorlopende afwisseling van eerste-leg-starters: onderdeel 1 start volgens instelling, 2 tegengesteld, 3 volgens instelling, 4 tegengesteld. Biergame volgt eigen instelling.
+- [ ] Bij Bullstart wordt **per afzonderlijk onderdeel** gebulld; bullwinnaar begint leg 1.
+- [ ] Binnen een onderdeel wisselt de legstarter automatisch; bij Singles en Koppels kan een **optionele bull voor de beslissende leg** worden ingesteld. Geen extra beslissende-leg-bull bij Biergame.
+- [ ] De starter automatisch uit het reglement afleiden; uitsluitend bullwinnaar laten vastleggen wanneer nodig. Bestaande handmatige starterbevestiging per leg vervangen.
+
+### 4. Opstellingen, verzenden en speelvolgorde
+- [ ] Vaste sportieve volgorde: **Single 1–4 → Koppel 1–4 → Biergame**. Niet als instelbare volgorde aanbieden.
+- [ ] De **vier Singles gezamenlijk** definitief verzenden; Koppels **elk afzonderlijk**; Biergame afzonderlijk.
+- [ ] Captain/appbediener mag **alle onderdelen vooraf indelen en verzenden**, ook Biergame vóór afronding van Koppels. Geen onnodige verzendblokkades op basis van spelfase of vertraagde synchronisatie.
+- [ ] Voor iedere verzending expliciete waarschuwing/bevestiging: **VERZONDEN = DEFINITIEF**; na verzending geen wijzigingen meer aan die opstelling, ook niet vóór aanvang.
+- [ ] Niet-verzonden onderdelen blijven aanpasbaar; toegestane wissels gelden uitsluitend voor toekomstige, niet-verzonden onderdelen. Reeds vervangen spelers keren niet terug; invaller neemt de positie over.
+- [ ] Singles gebruiken vier vaste basisspelers; geen wissels tijdens Singles. Reserves en de bestaande regels voor koppelsamenstelling behouden.
+
+### 5. Dummy en wedstrijdresultaten
+- [ ] Dummy is een afzonderlijke speler met naam **Dummy**; bij drie echte spelers toegestaan als vierde.
+- [ ] Dummy in Singles: reglementair verlies zonder darts of individuele statistieken, met legs **2–0 / 3–0 / 4–0 / 5–0 / 6–0** voor respectievelijk Bo3/5/7/9/11. Alleen teamresultaat telt.
+- [ ] Dummy tegenover Dummy: een echte speler van elk team bullt om het reglementaire teampunt; geen individuele statistieken.
+- [ ] Dummy in Koppels/Biergame: normale rotatie, per Dummy-beurt **0 punten en 3 darts**; Dummy kan niet uitgooien; team-/koppelgemiddelde wordt hierdoor beïnvloed.
+- [ ] Geen wedstrijd aanmaken bij slechts twee echte spelers; geen automatische 9–0.
+- [ ] Teamuitslag berekenen met ingestelde puntgewichten; standaard maximaal **9–0**.
+
+### 6. Correctie, afsluiting en testen
+- [ ] Correctie/undo maximaal **laatste drie beurten**, uitsluitend zolang het betreffende onderdeel nog loopt; na beëindiging van het onderdeel geen correcties meer.
+- [ ] Sportief afgerond bij negen definitieve resultaten; **alleen Dashboard** mag daarna na volledige synchronisatie de wedstrijd administratief afsluiten en vergrendelen.
+- [ ] Unit- en regressietests voor alle X01/Bo-combinaties, in/out, startafwisseling, bull, puntweging, Dummy, verzendvergrendeling, wissels, wedstrijdsnapshot en migraties.
+- [ ] Integratietests Dashboard → Dart Score → Dashboard en Live Receiver; bestaande WSS/TV-layout/statistieken niet onnodig aanpassen.
+- [ ] Op echte Android-apparaten verifiëren, `flutter analyze`, `flutter test`, `git diff --check` en gecontroleerd committen/pushen per afgeronde stap.
+
+### 7. Uitvoering in stappen
+- [ ] **Stap 1:** actuele Dashboard- en Dart Score-broncode inventariseren: bestaande modellen, opslag, protocol, schermen en tests.
+- [ ] **Stap 2:** reglementmodel, validatie, defaults, migratie en wedstrijdsnapshot in Dashboard.
+- [ ] **Stap 3:** reglementscherm en definitieve verzendbevestigingen in Dashboard.
+- [ ] **Stap 4:** protocoluitbreiding en Score-engine voor X01, in/out, starters, Bo en Dummy.
+- [ ] **Stap 5:** end-to-end-regressie en fysieke tests; documentatie en TODO actualiseren.
+
+## Later — testgegevens gecontroleerd opschonen
+- [ ] **Niet nu uitvoeren.** Eerst backup/inventarisatie van wedstrijden, spelers, teams, competities en statistieken; daarna gecontroleerd alle testdata wissen voor een schone start.
