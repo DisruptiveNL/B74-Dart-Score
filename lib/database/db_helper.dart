@@ -208,12 +208,20 @@ class DbHelper {
             (await txn.query('competition_admin_deletion_intents',
               where: 'match_id = ? AND revision = ? AND statistics_mode = ?',
               whereArgs: [matchId, revision, 'remove'])).isNotEmpty;
+        final pendingRemove = expectedRetain == 0 &&
+            t['retain_official_statistics'] == 1 &&
+            t['cleaned_at'] != null &&
+            intent['scope'] == 'official' &&
+            (await txn.query('competition_admin_deletion_intents',
+              where: 'match_id = ? AND revision = ? AND statistics_mode = ? AND scope = ?',
+              whereArgs: [matchId, revision, 'retain', 'official'])).isNotEmpty;
         if (t['revision'] != revision ||
-            (t['retain_official_statistics'] != expectedRetain && !upgradedRetain) ||
+            (t['retain_official_statistics'] != expectedRetain &&
+                !upgradedRetain && !pendingRemove) ||
             t['cleaned_at'] == null) {
           throw StateError('Conflicterende verwijderstatus');
         }
-        completed = true;
+        completed = !pendingRemove;
       }
       return <String, Object>{
         'matchId': matchId,

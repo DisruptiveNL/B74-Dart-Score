@@ -23,6 +23,14 @@ void main() {
           matchId: 'retained', revision: 1, authorizationId: 'grant-retain'), 'retained');
       expect(await helper.stageAdminDeletionIntent(matchId: 'retained', revision: 1,
           scope: 'official', statisticsMode: 'remove', authorizationId: 'grant-remove'), 'staged');
+      final pendingRemove = await helper.readAdminDeletionStatus(
+          matchId: 'retained', revision: 1,
+          authorizationId: 'grant-remove');
+      expect(pendingRemove['status'], 'staged');
+      expect(pendingRemove['executionCompleted'], false);
+      expect((await helper.readAdminDeletionStatus(
+          matchId: 'retained', revision: 1,
+          authorizationId: 'grant-retain'))['status'], 'completed');
       expect(await helper.purgeStagedAdminRemoveForVerifiedCoordinator(
           matchId: 'retained', revision: 1, authorizationId: 'grant-remove'), 'purged');
       expect(await helper.purgeStagedAdminRemoveForVerifiedCoordinator(
