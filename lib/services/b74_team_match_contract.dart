@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'b74_match_rules_contract.dart';
 
 /// C1B4 teamwedstrijd-contract. Staat los van het bestaande singles-v1-contract.
 /// Dit contract valideert de berichtstructuur; speelgerechtigdheid en revisies
@@ -58,6 +59,29 @@ class B74TeamMatchContract {
     }
     if (!{'home', 'away', 'bull'}.contains(packet['startPolicy'])) {
       throw const FormatException('Ongeldig beginnend team');
+    }
+    // C1B11: optional, immutable match-wide rules envelope. Legacy packets
+    // remain valid. Fail closed if the attached snapshot belongs to another
+    // match or contradicts the actual game settings in this v1 packet.
+    if (packet.containsKey('matchRules')) {
+      final rawRules = packet['matchRules'];
+      if (rawRules is! Map<String, dynamic>) {
+        throw const FormatException('Ongeldig wedstrijdreglement');
+      }
+      B74MatchRulesContract.validate(rawRules);
+      if (rawRules['matchId'] != packet['matchId']) {
+        throw const FormatException('Reglement hoort bij andere wedstrijd');
+      }
+      final group = B74MatchRulesContract.forGame(
+        rawRules, count == 2 ? 'doubles' : 'beer',
+      );
+      if (group['startingScore'] != packet['startingScore'] ||
+          group['bestOf'] != packet['bestOf'] ||
+          (packet['checkIn'] ?? 'straight') != group['checkIn']) {
+        throw const FormatException('Reglement en spelinstellingen verschillen');
+      }
+      // Further C1B11 settings are transported without activating the
+      // legacy score engine prematurely.
     }
     final home = _side(packet['home'], count);
     final away = _side(packet['away'], count);
