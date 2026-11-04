@@ -10,7 +10,11 @@ class B74Doubles701 {
     this.startingScore = 701,
     this.playersPerTeam = 2,
     this.checkIn = 'straight',
+    this.checkOut = 'double',
   }) {
+    if (!{'straight', 'double', 'master'}.contains(checkOut)) {
+      throw ArgumentError.value(checkOut, 'checkOut');
+    }
     if (!{'straight', 'double'}.contains(checkIn)) {
       throw ArgumentError.value(checkIn, 'checkIn');
     }
@@ -37,6 +41,7 @@ class B74Doubles701 {
   final int startingScore;
   final int playersPerTeam;
   final String checkIn;
+  final String checkOut;
   final List<bool> opened = [false, false];
   bool isOpened(int team) => checkIn == 'straight' || opened[team];
   late final List<int> remaining = [startingScore, startingScore];
@@ -125,7 +130,7 @@ class B74Doubles701 {
     );
   }
 
-  /// The caller must validate dart values and checkout (double-out) using
+  /// The caller must validate dart values and the configured checkout using
   /// the existing X01 rules. A bust never changes the shared team score.
   void completeVisit({
     required int score,
@@ -148,7 +153,9 @@ class B74Doubles701 {
         }
       } else {
         if (!(openingDouble == 50 ||
-            (openingDouble >= 2 && openingDouble <= 40 && openingDouble.isEven))) {
+            (openingDouble >= 2 &&
+                openingDouble <= 40 &&
+                openingDouble.isEven))) {
           throw ArgumentError.value(openingDouble, 'openingDouble');
         }
         if (openingDart != null && (openingDart < 1 || openingDart > 3)) {
@@ -164,7 +171,7 @@ class B74Doubles701 {
     }
     final before = remaining[turn.team];
     final after = before - score;
-    if (!bust && (after < 0 || after == 1)) {
+    if (!bust && (after < 0 || (after == 1 && checkOut != 'straight'))) {
       throw StateError('Bust must be marked by X01 checkout validation');
     }
     if (!bust && after == 0 && !validCheckout) {
@@ -175,7 +182,8 @@ class B74Doubles701 {
     }
     if (!bust) {
       remaining[turn.team] = after;
-      if (checkIn == 'double' && openingDouble != null) opened[turn.team] = true;
+      if (checkIn == 'double' && openingDouble != null)
+        opened[turn.team] = true;
     }
     if (!bust && after == 0) {
       legsWon[turn.team]++;
