@@ -4,6 +4,7 @@ import '../database/db_helper.dart';
 import 'b74_doubles_701.dart';
 import 'b74_doubles_checkout.dart';
 import 'b74_team_match_contract.dart';
+import 'competition_team_rules_guard.dart';
 
 /// Durable 701 doubles session. Each command is validated by replaying the
 /// saved journal before an atomic append; an unsuccessful write changes no
@@ -34,6 +35,7 @@ class B74DoublesSession {
       throw StateError('701-koppelwedstrijd niet gevonden');
     }
     final packet = B74TeamMatchContract.decode(inbox['payload'] as String);
+    CompetitionTeamRulesGuard.validateForCurrentEngine(packet);
     final policy = packet['startPolicy'] as String;
     // The initial bull policy requires an explicit selection in the UI.
     // For subsequent legs, the core proposes alternation from that choice.
@@ -162,6 +164,7 @@ class B74DoublesSession {
     final inbox = await DbHelper.instance.competitionTeamMatch(gameId);
     if (inbox == null) throw StateError('Wedstrijd ontbreekt');
     final packet = B74TeamMatchContract.decode(inbox['payload'] as String);
+    CompetitionTeamRulesGuard.validateForCurrentEngine(packet);
     final firstBull = engine.leg == 1 && packet['startPolicy'] == 'bull';
     if (engine.needsBull) {
       if (!viaBull) throw StateError('Bull verplicht');
