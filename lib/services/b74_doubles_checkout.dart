@@ -1,4 +1,4 @@
-/// Dart-by-dart validation for a double-out 701 checkout.
+/// Dart-by-dart validation for Straight, Double and Master Out.
 /// A value is encoded as a board segment: S20, D20, T20, S25 or BULL.
 class B74DoublesCheckout {
   static final List<String> segments = [
@@ -32,9 +32,19 @@ class B74DoublesCheckout {
     required int remaining,
     required int score,
     required List<String> darts,
+    String checkOut = 'double',
   }) {
-    if (darts.isEmpty || darts.length > 3 || !isDouble(darts.last))
+    if (!{'straight', 'double', 'master'}.contains(checkOut)) {
+      throw ArgumentError.value(checkOut, 'checkOut');
+    }
+    if (darts.isEmpty || darts.length > 3) return false;
+    final last = darts.last;
+    if (checkOut == 'double' && !isDouble(last)) return false;
+    if (checkOut == 'master' &&
+        !isDouble(last) &&
+        !(last.startsWith('T') && segments.contains(last))) {
       return false;
+    }
     var sum = 0;
     for (final dart in darts) {
       try {
