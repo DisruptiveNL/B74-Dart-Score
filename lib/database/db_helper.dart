@@ -1533,6 +1533,20 @@ class DbHelper {
     return rows.isEmpty ? null : rows.single;
   }
 
+  /// C1B11: lees het door Dashboard vastgelegde reglement uit de duurzame
+  /// team-inbox. Geen eigen reglementopslag of lokale standaardwaarden.
+  /// Null betekent: onbekende wedstrijd of legacy-bericht zonder snapshot.
+  /// Een ongeldig opgeslagen bericht wordt niet stilzwijgend hersteld.
+  Future<Map<String, dynamic>?> competitionTeamMatchRules(String gameId) async {
+    final row = await competitionTeamMatch(gameId);
+    if (row == null) return null;
+    final packet = B74TeamMatchContract.decode(row['payload'] as String);
+    final rules = packet['matchRules'];
+    if (rules == null) return null;
+    // Een nieuwe JSON-decodering voorkomt dat callers de inbox kunnen wijzigen.
+    return jsonDecode(jsonEncode(rules)) as Map<String, dynamic>;
+  }
+
   /// Tijdelijke lifecycle-haak voor de integratietests.
   /// Later wordt deze status transactioneel aan de eerste geregistreerde
   /// worp gekoppeld. Niet gebruiken als vervanging van de echte spelstart.
