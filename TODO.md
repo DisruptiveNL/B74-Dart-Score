@@ -1,6 +1,6 @@
 # B74 Dart Score — TODO
 
-**Bijgewerkt:** 2026-11-03
+**Bijgewerkt:** 2026-11-06
 **Status:** C1B7 Live TV werkende, gepushte tussenversie; resterende beveiligings- en releasetests staan open.
 
 ## C1B7 — Live TV
@@ -137,5 +137,32 @@
 - [ ] **Stap 4:** protocoluitbreiding en Score-engine voor X01, in/out, starters, Bo en Dummy.
 - [ ] **Stap 5:** end-to-end-regressie en fysieke tests; documentatie en TODO actualiseren.
 
+## C1B12 — Beperking tot Dashboard-gestuurde wedstrijden en opschonen lokale spellen
+
+**Status:** scopebesluit vastgesteld; inventarisatie en uitvoering nog open. **Planning:** na functionele afronding van C1B11.  
+**Architectuurreferentie:** B74-ARCH-SCOPE-001 (zie architectuurprincipes v1.2).
+
+**Definitieve scope:** B74 Dart Score is uitsluitend bedoeld voor het ontvangen, spelen, lokaal duurzaam vastleggen en synchroniseren van wedstrijden die door B74 Competition Dashboard zijn aangemaakt en uitgegeven. Dart Score mag geen zelfstandige wedstrijd of spel starten.
+
+- [ ] Inventariseer alle lokaal startbare spelvormen, waaronder Cricket, losse Single 501, overige X01-spellen, trainings-/oefenmodi en bijbehorende navigatie, afhankelijkheden en tests; verwijder alleen daadwerkelijk aanwezige onderdelen.
+- [ ] Verwijder de mogelijkheid om zonder geldige Dashboard-wedstrijdopdracht een spel of wedstrijd aan te maken of te starten; handhaaf validatie ook buiten de UI.
+- [ ] Verwijder overbodige lokale spelkeuze, schermen, spelgebonden services, modellen en tests nadat afhankelijkheden zijn onderzocht; voorkom dode code.
+- [ ] Behoud de herbruikbare X01-score-engine, configureerbare in/out- en checkoutregels, starters, rotatie, correctie/undo en statistieken die voor Dashboard-wedstrijden nodig zijn.
+- [ ] Behoud duurzame lokale wedstrijdopslag, hervatten na app-herstart of netwerkuitval, idempotente synchronisatie, ACK/retry en beveiligde Dashboard-koppeling.
+- [ ] Behoud de read-only Live Receiver-koppeling, TV-statistieken en bestaande beveiliging; voorkom ongewenste wijzigingen in de transportlaag.
+- [ ] Inventariseer bestaande lokale spelgegevens en databaseverwijzingen; bepaal expliciet of migratie, behoud, archivering of gecontroleerde verwijdering nodig is. Geen impliciet dataverlies.
+- [ ] Controleer dat ontvangen Singles, Koppels en Biergame volgens het wedstrijdsnapshot functioneren, ook wanneer tijdelijk offline wordt gescoord.
+- [ ] Werk gebruikersinterface, documentatie, tests en eventuele release-/licentieteksten bij zodat geen zelfstandige spelmodus wordt beloofd.
+- [ ] Voer unit-, migratie-, regressie- en fysieke end-to-end-tests uit (Dashboard → Dart Score → Dashboard en Live Receiver), inclusief offline/herstart.
+- [ ] `flutter analyze --no-pub`, `flutter test --no-pub`, `git diff --check`; pas na expliciet akkoord committen/pushen.
+
+**Ontwerpafspraak:** de huidige productscope beperken zonder de technische kern kunstmatig te versmallen. Een toekomstige zelfstandige spelmodus of aparte app vereist een nieuw expliciet scope-/architectuurbesluit; wordt nu niet vooruit gebouwd.
+
 ## Later — testgegevens gecontroleerd opschonen
 - [ ] **Niet nu uitvoeren.** Eerst backup/inventarisatie van wedstrijden, spelers, teams, competities en statistieken; daarna gecontroleerd alle testdata wissen voor een schone start.
+
+## Voortgang sinds vorige TODO-versie (2026-11-06)
+
+- [x] C1B11 Dart Score checkoutregels: `matchRules`-verwerking en stabielere synchronisatietest vastgelegd in commit `16abaf6` op `feature/c1b3-singles-sync`.
+- [x] Dart Score: volledige testsuite **990/990 geslaagd** na verwijderen tijdelijke diagnosecode; `git status --short` schoon na push.
+- [ ] Overige C1B11-werkzaamheden blijven open totdat actuele Dashboard-/Score-implementatie afzonderlijk is gecontroleerd.
