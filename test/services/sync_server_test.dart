@@ -303,6 +303,12 @@ void main() {
           // The receiver may intentionally close the connection
           // after detecting that the payload exceeds its size limit.
         } finally {
+          // Send buffered HTTP headers before closing, including when sends=0.
+          try {
+            await socket.flush();
+          } on SocketException {
+            // Client may have closed after rejecting an oversized response.
+          }
           socket.destroy();
         }
       });

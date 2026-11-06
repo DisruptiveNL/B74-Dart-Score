@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../database/db_helper.dart';
 import 'b74_doubles_701.dart';
 import 'b74_doubles_checkout.dart';
+import 'b74_match_rules_contract.dart';
 import 'b74_team_match_contract.dart';
 import 'competition_team_rules_guard.dart';
 
@@ -28,6 +29,7 @@ class B74DoublesSession {
   int get startingScore => engine.startingScore;
   int get playersPerTeam => engine.playersPerTeam;
   String get checkIn => engine.checkIn;
+  String get checkOut => engine.checkOut;
 
   static Future<B74DoublesSession> load(String gameId) async {
     final inbox = await DbHelper.instance.competitionTeamMatch(gameId);
@@ -50,12 +52,21 @@ class B74DoublesSession {
       }
       initialTeam = first['team'] as int;
     }
+    final rules = packet['matchRules'] as Map<String, dynamic>?;
+    final checkOut = rules == null
+        ? 'double'
+        : B74MatchRulesContract.forGame(
+                rules,
+                packet['kind'] == 'beer1001' ? 'beer' : 'doubles',
+              )['checkOut']
+              as String;
     final engine = B74Doubles701(
       starterTeam: initialTeam ?? 0,
       bestOf: packet['bestOf'] as int,
       startingScore: packet['startingScore'] as int,
       playersPerTeam: (packet['kind'] == 'beer1001') ? 4 : 2,
       checkIn: packet['checkIn'] as String? ?? 'straight',
+      checkOut: checkOut,
     );
     // A correction invalidates exactly one earlier visit while preserving the
     // append-only audit trail. Replay all other events deterministically.
@@ -136,6 +147,7 @@ class B74DoublesSession {
                 remaining: engine.remaining[engine.currentVisit.team],
                 score: event['score'] as int,
                 darts: (event['checkoutDarts'] as List).cast<String>(),
+                checkOut: engine.checkOut,
               )) {
             throw StateError('Ongeldige opgeslagen checkout');
           }
@@ -215,6 +227,7 @@ class B74DoublesSession {
               remaining: fresh.engine.remaining[fresh.engine.currentVisit.team],
               score: score,
               darts: checkoutDarts,
+              checkOut: fresh.engine.checkOut,
             ))) {
       throw StateError('Checkout per dart ongeldig');
     }
@@ -352,7 +365,9 @@ class B74DoublesSession {
     if (fresh.events.length != events.length)
       throw StateError('Wedstrijd gewijzigd: opnieuw laden');
     if (checkIn == 'double') {
-      throw StateError('Double In: gebruik TERUGDRAAIEN en voer de beurt opnieuw in');
+      throw StateError(
+        'Double In: gebruik TERUGDRAAIEN en voer de beurt opnieuw in',
+      );
     }
     final original = jsonDecode(events[sequence]) as Map<String, dynamic>;
     if (original['validCheckout'] == true) {
@@ -395,9 +410,12 @@ class B74DoublesSession {
         replacements[e['targetSequence'] as int] = e;
     }
     final core = B74Doubles701(
-      starterTeam: startTeam, bestOf: bestOf,
-      startingScore: startingScore, playersPerTeam: playersPerTeam,
+      starterTeam: startTeam,
+      bestOf: bestOf,
+      startingScore: startingScore,
+      playersPerTeam: playersPerTeam,
       checkIn: checkIn,
+      checkOut: checkOut,
     );
     for (var i = 0; i < decoded.length; i++) {
       if (revoked.contains(i)) continue;
