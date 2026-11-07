@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../database/db_helper.dart';
-import '../database/db_helper.dart';
 import '../services/b74_doubles_live_stats.dart';
 import '../services/b74_live_tv.dart';
 import '../utils/layout.dart';
@@ -33,7 +32,7 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
 
   Future<void> _reload() async {
     try {
-      final session = await B74DoublesSession.load(widget.match.gameId);
+      var session = await B74DoublesSession.load(widget.match.gameId);
       if (mounted) {
         B74LiveTv.instance.attachDoubles(session,
           homeTeam: widget.match.homeTeam,
@@ -176,6 +175,7 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
         child: B74DoublesOpeningInput(
           key: ValueKey('opening-${widget.match.gameId}-${session.events.length}'),
           remaining: engine.remaining[engine.currentVisit.team] as int,
+          checkOut: session.checkOut,
           onSubmit: ({required score, required bust, required checkout,
               required checkoutDart, required openingDouble, required openingDart}) =>
               _run((s) => s.completeVisit(
@@ -193,6 +193,7 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
       key: ValueKey('${widget.match.gameId}-${engine.leg}-${session.events.length}'),
       remaining: engine.remaining[engine.currentVisit.team] as int,
       disabled: _busy,
+      checkOut: session.checkOut,
       onSubmit: (score, bust, checkout, darts) => _run((s) => s.completeVisit(
         score: score, bust: bust, validCheckout: checkout,
         checkoutDart: darts,
@@ -334,7 +335,7 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 Text(widget.match.homePlayers.length == 4
-                  ? '1001 · 1 leg' : 'Best of ${widget.match.bestOf} · Leg ${engine!.leg}'),
+                  ? '1001 · 1 leg' : 'Best of ${widget.match.bestOf} · Leg ${engine.leg}'),
                 const SizedBox(height: 12),
                 Row(
                   children: [

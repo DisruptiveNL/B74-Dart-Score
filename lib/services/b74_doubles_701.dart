@@ -11,6 +11,7 @@ class B74Doubles701 {
     this.playersPerTeam = 2,
     this.checkIn = 'straight',
     this.checkOut = 'double',
+    this.bullDecidingLeg = true,
   }) {
     if (!{'straight', 'double', 'master'}.contains(checkOut)) {
       throw ArgumentError.value(checkOut, 'checkOut');
@@ -18,20 +19,17 @@ class B74Doubles701 {
     if (!{'straight', 'double'}.contains(checkIn)) {
       throw ArgumentError.value(checkIn, 'checkIn');
     }
-    if (startingScore != 701 && startingScore != 1001) {
-      throw ArgumentError.value(startingScore, 'startingScore');
-    }
-    if (playersPerTeam != 2 && playersPerTeam != 4) {
-      throw ArgumentError.value(playersPerTeam, 'playersPerTeam');
-    }
-    if (startingScore == 701 && playersPerTeam != 2 ||
-        startingScore == 1001 && playersPerTeam != 4) {
-      throw ArgumentError('Ongeldige teamspelconfiguratie');
+    // Match kind is determined by team size, not by the X01 score.
+    if (!(playersPerTeam == 2
+            ? const {301, 501, 701}.contains(startingScore)
+            : playersPerTeam == 4 &&
+                const {301, 501, 701, 1001}.contains(startingScore))) {
+      throw ArgumentError('Ongeldige teamspelconfiguratie of startscore');
     }
     if (starterTeam != 0 && starterTeam != 1) {
       throw ArgumentError.value(starterTeam, 'starterTeam');
     }
-    if (!(startingScore == 1001 ? bestOf == 1 : {3, 5, 7}.contains(bestOf))) {
+    if (!(playersPerTeam == 4 ? bestOf == 1 : {3, 5, 7, 9, 11}.contains(bestOf))) {
       throw ArgumentError.value(bestOf, 'bestOf');
     }
   }
@@ -42,6 +40,7 @@ class B74Doubles701 {
   final int playersPerTeam;
   final String checkIn;
   final String checkOut;
+  final bool bullDecidingLeg;
   final List<bool> opened = [false, false];
   bool isOpened(int team) => checkIn == 'straight' || opened[team];
   late final List<int> remaining = [startingScore, startingScore];
@@ -60,6 +59,7 @@ class B74Doubles701 {
 
   int get targetLegs => (bestOf + 1) ~/ 2;
   bool get needsBull =>
+      bullDecidingLeg &&
       bestOf > 1 &&
       winner == null &&
       legsWon[0] == targetLegs - 1 &&

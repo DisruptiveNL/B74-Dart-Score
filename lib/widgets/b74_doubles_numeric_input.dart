@@ -8,10 +8,12 @@ class B74DoublesNumericInput extends StatefulWidget {
     required this.remaining,
     required this.onSubmit,
     this.disabled = false,
+    this.checkOut = 'double',
   });
 
   final int remaining;
   final bool disabled;
+  final String checkOut;
   final Future<void> Function(
     int score,
     bool bust,
@@ -48,7 +50,7 @@ class _B74DoublesNumericInputState extends State<B74DoublesNumericInput> {
     bool checkout = false;
     bool bust = _bust;
     if (!bust && score > widget.remaining) bust = true;
-    if (!bust && widget.remaining - score == 1) bust = true;
+    if (!bust && widget.remaining - score == 1 && widget.checkOut != 'straight') bust = true;
     if (!bust && score == widget.remaining) {
       final dart = await _checkoutDart();
       if (dart == null || !mounted) return;

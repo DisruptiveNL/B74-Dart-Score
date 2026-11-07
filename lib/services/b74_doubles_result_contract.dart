@@ -58,7 +58,7 @@ class B74DoublesResultContract {
     final bestOf = value['bestOf'];
     final homeLegs = value['homeLegs'];
     final awayLegs = value['awayLegs'];
-    if (bestOf is! int || (kind == 'beer1001' ? bestOf != 1 : !{3, 5, 7}.contains(bestOf)) ||
+    if (bestOf is! int || (kind == 'beer1001' ? bestOf != 1 : !{3, 5, 7, 9, 11}.contains(bestOf)) ||
         homeLegs is! int || awayLegs is! int ||
         homeLegs < 0 || awayLegs < 0 ||
         (homeLegs > awayLegs ? homeLegs : awayLegs) != bestOf ~/ 2 + 1 ||

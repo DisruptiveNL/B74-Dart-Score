@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show WidgetsBindingObserver;
 import '../database/db_helper.dart';
+import '../services/competition_single_bull_store.dart';
 import '../models/player.dart';
 import '../models/game.dart';
 import '../models/dart_throw.dart';
@@ -346,6 +347,94 @@ class GameProvider extends ChangeNotifier
   Game? _game;
   // Competition singles alternate leg starters independently of the checkout winner.
   bool _competitionSingle = false;
+  bool _singleDeciderBullEnabled = false;
+  bool _singleBullPending = false;
+  bool _singleStarterPending = false;
+  int? _singleSuggestedStarter;
+  bool get singleStarterPending => _singleStarterPending;
+  int get singleSuggestedStarter => _singleSuggestedStarter ?? _currentPlayerIndex;
+  final _singleBullStore = CompetitionSingleBullStore();
+  bool get singleDecidingBullPending => _singleBullPending;
+
+  Future<void> _refreshSingleBull() async {
+    _singleBullPending = false;
+    _singleStarterPending = false;
+    _singleSuggestedStarter = null;
+    _singleDeciderBullEnabled = false;
+    final game = _game;
+    if (!_competitionSingle || game?.id == null || _gameOver ||
+        _playerStates.length != 2 || _currentSet != 1) {
+      return;
+    }
+    final database = await _db.db;
+    final rows = await database.rawQuery(
+      'SELECT i.payload FROM competition_game_links l '
+      'JOIN competition_inbox i ON i.match_id = l.match_id '
+      'WHERE l.game_id = ? LIMIT 1', [game!.id]);
+    if (rows.isEmpty) return;
+    final packet = jsonDecode(rows.single['payload'] as String) as Map<String, dynamic>;
+    final rules = packet['x01Rules'] as Map<String, dynamic>?;
+    _singleDeciderBullEnabled = rules?['bullDecidingLeg'] == true;
+    final deciding = _singleDeciderBullEnabled && game.legs > 1 &&
+        _playerStates.every((state) => state.legsWon == game.legs - 1);
+    int? bullWinner;
+    if (deciding) {
+      bullWinner = await _singleBullStore.winner(gameId: game.id!, leg: _currentLeg);
+      if (bullWinner == null) _singleBullPending = true;
+    }
+    final savedStarter = await _singleBullStore.starter(gameId: game.id!, leg: _currentLeg);
+    final hasVisits = _playerStates.any((state) => state.throws.any(
+      (visit) => visit.leg == _currentLeg && visit.set == _currentSet,
+    ));
+    final proposedId = bullWinner ?? _playerStates[(_currentLeg - 1) % 2].player.id;
+    _singleSuggestedStarter = _playerStates.indexWhere((s) => s.player.id == proposedId);
+    if (_singleSuggestedStarter! < 0) throw StateError('Starter speelt niet mee');
+    if (savedStarter != null) {
+      final index = _playerStates.indexWhere((s) => s.player.id == savedStarter);
+      if (index < 0) throw StateError('Opgeslagen starter speelt niet mee');
+      if (!hasVisits) _currentPlayerIndex = index;
+    } else if (!hasVisits) {
+      _singleStarterPending = !_singleBullPending;
+      _currentPlayerIndex = _singleSuggestedStarter!;
+    }
+    return;
+  }
+
+  Future<void> confirmSingleStarter(int playerId) async {
+    if (!_singleStarterPending || _singleBullPending || _game?.id == null ||
+        _currentVisitDarts.isNotEmpty) {
+      throw StateError('Starterbevestiging is niet beschikbaar');
+    }
+    final index = _playerStates.indexWhere((s) => s.player.id == playerId);
+    if (index < 0) throw StateError('Starter speelt niet mee');
+    final bullWinner = _singleDeciderBullEnabled
+        ? await _singleBullStore.winner(gameId: _game!.id!, leg: _currentLeg)
+        : null;
+    if (bullWinner != null && bullWinner != playerId) {
+      throw StateError('Bij verplichte bull moet de bullwinnaar beginnen');
+    }
+    await _singleBullStore.recordStarter(
+        gameId: _game!.id!, leg: _currentLeg, playerId: playerId);
+    _currentPlayerIndex = index;
+    _singleStarterPending = false;
+    notifyListeners();
+  }
+
+  Future<void> confirmSingleDecidingBull(int winnerPlayerId) async {
+    if (!_singleBullPending || _game?.id == null || _currentVisitDarts.isNotEmpty) {
+      throw StateError('Geen beslissende-leg-bull vereist');
+    }
+    final slot = _playerStates.indexWhere((state) => state.player.id == winnerPlayerId);
+    if (slot < 0) throw StateError('Bullwinnaar speelt niet mee');
+    await _singleBullStore.record(
+      gameId: _game!.id!, leg: _currentLeg, winnerPlayerId: winnerPlayerId);
+    _currentPlayerIndex = slot;
+    _singleBullPending = false;
+    _singleSuggestedStarter = slot;
+    _singleStarterPending = true;
+    notifyListeners();
+  }
+
   List<PlayerState> _playerStates = [];
   int _currentPlayerIndex = 0;
   int _currentLeg = 1;
@@ -582,6 +671,7 @@ class GameProvider extends ChangeNotifier
     _game = game;
     _gameOver = false;
     _winnerId = null;
+    await _refreshSingleBull();
     notifyListeners();
   }
 
@@ -1047,6 +1137,9 @@ class GameProvider extends ChangeNotifier
   }) async {
     _handicaps = game.handicaps ?? {};
     _competitionSingle = competitionMatchId != null;
+    _singleBullPending = false;
+    _singleStarterPending = false;
+    _singleDeciderBullEnabled = false;
 
     final ids = players.map((p) => p.id!).toList();
     final gameId = await _db.insertGame(
@@ -1110,6 +1203,7 @@ class GameProvider extends ChangeNotifier
     _redoStack.clear();
     dropHeldVisit();
     releaseBot();
+    await _refreshSingleBull();
     notifyListeners();
     scheduleBot();
   }
@@ -1155,7 +1249,7 @@ class GameProvider extends ChangeNotifier
     int? bustDarts,
   }) async {
     if (_numericVisitSubmitting) throw StateError('Beurt wordt al verwerkt');
-    if (_game == null || _gameOver || isBotTurn || inputLocked) {
+    if (_game == null || _gameOver || isBotTurn || inputLocked || _singleBullPending || _singleStarterPending) {
       throw StateError('Score-invoer is momenteel niet beschikbaar');
     }
     if (_currentVisitDarts.isNotEmpty) {
@@ -1266,7 +1360,8 @@ class GameProvider extends ChangeNotifier
         _numericVisitSubmitting ||
         _currentVisitDarts.isNotEmpty ||
         isBotTurn ||
-        inputLocked) {
+        inputLocked ||
+        _singleBullPending || _singleStarterPending) {
       throw StateError('Correctie is momenteel niet beschikbaar');
     }
     if (newScore < 0 ||
@@ -1362,7 +1457,7 @@ class GameProvider extends ChangeNotifier
     bool bust = false,
     List<DartEntry>? hits,
   }) async {
-    if (_game == null || _gameOver) return;
+    if (_game == null || _gameOver || _singleBullPending || _singleStarterPending) return;
     final state = _playerStates[_currentPlayerIndex];
     final remaining = state.remaining;
     final newRemaining = remaining - score;
@@ -1421,6 +1516,7 @@ class GameProvider extends ChangeNotifier
 
     if (checkout) {
       await _handleCheckout();
+      await _refreshSingleBull();
     } else {
       _advancePlayer();
     }
@@ -1716,7 +1812,7 @@ class GameProvider extends ChangeNotifier
   /// in-progress visit. Any new dart invalidates the redo stack.
   @override
   Future<void> tapField(int field, int modifier) async {
-    if (_game == null || _gameOver || _currentVisitDarts.length >= 3) return;
+    if (_game == null || _gameOver || _singleBullPending || _singleStarterPending || _currentVisitDarts.length >= 3) return;
     if (inputLocked) return;
     _redoStack.clear();
     await _addDart(field, modifier);

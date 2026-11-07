@@ -9,9 +9,11 @@ class B74DoublesOpeningInput extends StatefulWidget {
     super.key,
     required this.remaining,
     required this.onSubmit,
+    this.checkOut = 'double',
   });
 
   final int remaining;
+  final String checkOut;
   final Future<void> Function({
     required int score,
     required bool bust,
@@ -31,7 +33,7 @@ class _B74DoublesOpeningInputState extends State<B74DoublesOpeningInput> {
   @override
   void initState() {
     super.initState();
-    source = _OpeningSource(widget.remaining, widget.onSubmit);
+    source = _OpeningSource(widget.remaining, widget.onSubmit, widget.checkOut);
   }
 
   @override
@@ -48,9 +50,10 @@ class _B74DoublesOpeningInputState extends State<B74DoublesOpeningInput> {
 }
 
 class _OpeningSource extends ChangeNotifier implements DartboardInputSource {
-  _OpeningSource(this.remaining, this.submit);
+  _OpeningSource(this.remaining, this.submit, this.checkOut);
 
   final int remaining;
+  final String checkOut;
   final Future<void> Function({
     required int score,
     required bool bust,
@@ -93,7 +96,10 @@ class _OpeningSource extends ChangeNotifier implements DartboardInputSource {
       if (openingDouble == null) continue;
       score += dart.score;
       final left = remaining - score;
-      if (left < 0 || left == 1 || (left == 0 && dart.modifier != 2)) {
+      if (left < 0 ||
+          (left == 1 && checkOut != 'straight') ||
+          (left == 0 && checkOut == 'double' && dart.modifier != 2) ||
+          (left == 0 && checkOut == 'master' && dart.modifier != 2 && dart.modifier != 3)) {
         bust = true;
         break;
       }

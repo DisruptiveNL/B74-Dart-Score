@@ -53,6 +53,68 @@ class _GameScreenState extends State<GameScreen> {
           );
         }
 
+        if (provider.singleDecidingBullPending) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Beslissende leg — bull')),
+            body: Center(child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const Text('Bull verplicht. Wie heeft het bullen gewonnen?'),
+                const SizedBox(height: 20),
+                for (final state in provider.playerStates)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: FilledButton(
+                      onPressed: () async {
+                        try {
+                          await provider.confirmSingleDecidingBull(state.player.id!);
+                        } catch (error) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('$error')));
+                          }
+                        }
+                      },
+                      child: Text('Bullwinnaar: ${state.displayName}'),
+                    ),
+                  ),
+              ]),
+            )),
+          );
+        }
+
+        if (provider.singleStarterPending) {
+          return Scaffold(
+            appBar: AppBar(title: const Text('Starter bevestigen')),
+            body: Center(child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                const Text('Wie begint deze leg? Bevestig vóór score-invoer.'),
+                const SizedBox(height: 12),
+                Text('Voorgesteld: ${provider.playerStates[provider.singleSuggestedStarter].displayName}'),
+                const SizedBox(height: 20),
+                for (final state in provider.playerStates)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    child: FilledButton(
+                      onPressed: () async {
+                        try {
+                          await provider.confirmSingleStarter(state.player.id!);
+                        } catch (error) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('$error')));
+                          }
+                        }
+                      },
+                      child: Text('Bevestig: ${state.displayName}'),
+                    ),
+                  ),
+              ]),
+            )),
+          );
+        }
+
         final game = provider.game!;
         final states = provider.playerStates;
         final currentIdx = provider.currentPlayerIndex;

@@ -44,11 +44,20 @@ class B74TeamMatchContract {
         (kind == 'beer1001' && slot != 1)) {
       throw const FormatException('Ongeldige wedstrijdvorm of wedstrijdregel');
     }
-    if (packet['startingScore'] != (count == 2 ? 701 : 1001)) {
+    // Legacy packets retain their original fixed score. A frozen C1B11
+    // snapshot may select any score permitted for this match category.
+    final allowedScores = count == 2
+        ? const {301, 501, 701}
+        : const {301, 501, 701, 1001};
+    final score = packet['startingScore'];
+    if (score is! int ||
+        (packet.containsKey('matchRules')
+            ? !allowedScores.contains(score)
+            : score != (count == 2 ? 701 : 1001))) {
       throw const FormatException('Ongeldige startscore');
     }
     final bestOf = packet['bestOf'];
-    if (bestOf is! int || (count == 4 ? bestOf != 1 : !{3, 5, 7}.contains(bestOf))) {
+    if (bestOf is! int || (count == 4 ? bestOf != 1 : !{3, 5, 7, 9, 11}.contains(bestOf))) {
       throw const FormatException('Ongeldig aantal legs');
     }
     // Optional v1 extension. Old 701/1001 packets remain Straight In.
@@ -80,8 +89,19 @@ class B74TeamMatchContract {
           (packet['checkIn'] ?? 'straight') != group['checkIn']) {
         throw const FormatException('Reglement en spelinstellingen verschillen');
       }
-      // Further C1B11 settings are transported without activating the
-      // legacy score engine prematurely.
+      // The packet uses home/away while the frozen rules use fixedHome/
+      // fixedAway. Reject drift before a game is accepted or replayed.
+      const policyToPacket = <String, String>{
+        'fixedHome': 'home',
+        'fixedAway': 'away',
+        'bull': 'bull',
+      };
+      if (packet['startPolicy'] != policyToPacket[group['startPolicy']]) {
+        throw const FormatException('Startregeling wijkt af van reglement');
+      }
+      // checkOut and bullDecidingLeg are read directly from the validated
+      // immutable snapshot by the team score engine; they are not duplicated
+      // as mutable top-level fields in the v1 packet.
     }
     final home = _side(packet['home'], count);
     final away = _side(packet['away'], count);

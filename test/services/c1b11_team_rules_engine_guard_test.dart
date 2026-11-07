@@ -35,21 +35,21 @@ void main() {
   test('supported frozen doubles regulation is playable', () {
     expect(() => CompetitionTeamRulesGuard.validateForCurrentEngine(packet()), returnsNormally);
   });
-  test('master out is refused before play', () {
+  test('master out is supported by current engine', () {
     final p = packet();
     (p['matchRules']['rules']['doubles'] as Map)['checkOut'] = 'master';
-    expect(() => CompetitionTeamRulesGuard.validateForCurrentEngine(p), throwsStateError);
+    expect(() => CompetitionTeamRulesGuard.validateForCurrentEngine(p), returnsNormally);
   });
-  test('optional deciding bull is not silently ignored', () {
+  test('optional deciding bull is supported by current engine', () {
     final p = packet();
     (p['matchRules']['rules']['doubles'] as Map)['bullDecidingLeg'] = false;
-    expect(() => CompetitionTeamRulesGuard.validateForCurrentEngine(p), throwsStateError);
+    expect(() => CompetitionTeamRulesGuard.validateForCurrentEngine(p), returnsNormally);
   });
   test('beer rules are checked separately', () {
     final p = packet(kind: 'beer1001');
     expect(() => CompetitionTeamRulesGuard.validateForCurrentEngine(p), returnsNormally);
     (p['matchRules']['rules']['beer'] as Map)['checkOut'] = 'straight';
-    expect(() => CompetitionTeamRulesGuard.validateForCurrentEngine(p), throwsStateError);
+    expect(() => CompetitionTeamRulesGuard.validateForCurrentEngine(p), returnsNormally);
   });
   test('legacy packet without snapshot retains legacy behavior', () {
     final p = packet()..remove('matchRules');

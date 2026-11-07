@@ -34,7 +34,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 33;
+  static const int schemaVersion = 34;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -921,6 +921,9 @@ class DbHelper {
     if (oldVersion < 33) {
       await _createCompetitionDeletionTombstones(db);
     }
+    if (oldVersion < 34) {
+      await _createCompetitionSingleDecidingBulls(db);
+    }
   }
 
   /// Recomputes `dart_throws.checkout_darts` for every visit already on the
@@ -1151,6 +1154,19 @@ class DbHelper {
       'CREATE INDEX IF NOT EXISTS idx_ladder_throws_game '
       'ON checkout_ladder_throws(game_id)',
     );
+  }
+
+  /// Deciding-leg bull winners for official Singles, persisted across restarts.
+  Future<void> _createCompetitionSingleDecidingBulls(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS competition_single_deciding_bulls (
+        game_id INTEGER NOT NULL,
+        leg INTEGER NOT NULL,
+        winner_player_id INTEGER NOT NULL,
+        recorded_at INTEGER NOT NULL,
+        PRIMARY KEY (game_id, leg)
+      )
+    ''');
   }
 
   /// Competition imports are isolated from legacy player/statistics sync.
@@ -1703,6 +1719,7 @@ class DbHelper {
     await _createCompetitionDoublesResults(db);
     await _createCompetitionBeerResults(db);
     await _createCompetitionDeletionTombstones(db);
+    await _createCompetitionSingleDecidingBulls(db);
     await db.execute('''
       CREATE TABLE games (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -30,6 +30,7 @@ class B74DoublesSession {
   int get playersPerTeam => engine.playersPerTeam;
   String get checkIn => engine.checkIn;
   String get checkOut => engine.checkOut;
+  bool get bullDecidingLeg => engine.bullDecidingLeg;
 
   static Future<B74DoublesSession> load(String gameId) async {
     final inbox = await DbHelper.instance.competitionTeamMatch(gameId);
@@ -67,6 +68,7 @@ class B74DoublesSession {
       playersPerTeam: (packet['kind'] == 'beer1001') ? 4 : 2,
       checkIn: packet['checkIn'] as String? ?? 'straight',
       checkOut: checkOut,
+      bullDecidingLeg: rules == null ? true : B74MatchRulesContract.forGame(rules, packet['kind'] == 'beer1001' ? 'beer' : 'doubles')['bullDecidingLeg'] as bool,
     );
     // A correction invalidates exactly one earlier visit while preserving the
     // append-only audit trail. Replay all other events deterministically.
@@ -170,6 +172,29 @@ class B74DoublesSession {
       saved,
       engine,
     );
+  }
+
+  /// Persist the regulation-derived starter exactly once before scoring.
+  /// A bull is never guessed: its winner must be selected explicitly.
+  /// The existing journal append enforces the expected event sequence.
+  Future<bool> ensureAutomaticStarter() async {
+    if (!engine.awaitingStarter || engine.winner != null) return false;
+    if (engine.needsBull || (engine.leg == 1 && openingBullRequired)) {
+      return false;
+    }
+    final starter = engine.suggestedStarter;
+    if (starter == null) return false;
+    final inbox = await DbHelper.instance.competitionTeamMatch(gameId);
+    if (inbox == null) throw StateError('Wedstrijd ontbreekt');
+    final packet = B74TeamMatchContract.decode(inbox['payload'] as String);
+    CompetitionTeamRulesGuard.validateForCurrentEngine(packet);
+    if (await DbHelper.instance.isCompetitionMatchLocked(
+      packet['matchId'] as String,
+    )) {
+      return false;
+    }
+    await confirmStarter(starter);
+    return true;
   }
 
   Future<void> confirmStarter(int team, {bool viaBull = false}) async {
@@ -416,6 +441,7 @@ class B74DoublesSession {
       playersPerTeam: playersPerTeam,
       checkIn: checkIn,
       checkOut: checkOut,
+      bullDecidingLeg: bullDecidingLeg,
     );
     for (var i = 0; i < decoded.length; i++) {
       if (revoked.contains(i)) continue;

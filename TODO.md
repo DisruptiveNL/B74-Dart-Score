@@ -1,6 +1,6 @@
 # B74 Dart Score — TODO
 
-**Bijgewerkt:** 2026-11-06
+**Bijgewerkt:** 2026-11-07
 **Status:** C1B7 Live TV werkende, gepushte tussenversie; resterende beveiligings- en releasetests staan open.
 
 ## C1B7 — Live TV
@@ -82,7 +82,7 @@
 
 ## C1B11 — Competitiereglement Regulier en Beker (actieve bouwopdracht)
 
-**Status:** functionele afspraken vastgesteld; broncode-inventarisatie en implementatie nog uit te voeren.
+**Status:** implementatie en fysieke ketentest deels geslaagd op 2026-11-07; starterbevestiging per leg is de eerstvolgende correctie (Patch 04B.3C).
 **Aanpak:** eerst Dashboard-reglement en wedstrijdsnapshot, daarna Score-verwerking en integratietests. Bestaande werking niet onnodig wijzigen.
 
 ### 1. Reglement en opslag
@@ -105,7 +105,9 @@
 - [ ] Bij Thuis/Uit-start geldt voor Singles respectievelijk Koppels een doorlopende afwisseling van eerste-leg-starters: onderdeel 1 start volgens instelling, 2 tegengesteld, 3 volgens instelling, 4 tegengesteld. Biergame volgt eigen instelling.
 - [ ] Bij Bullstart wordt **per afzonderlijk onderdeel** gebulld; bullwinnaar begint leg 1.
 - [ ] Binnen een onderdeel wisselt de legstarter automatisch; bij Singles en Koppels kan een **optionele bull voor de beslissende leg** worden ingesteld. Geen extra beslissende-leg-bull bij Biergame.
-- [ ] De starter automatisch uit het reglement afleiden; uitsluitend bullwinnaar laten vastleggen wanneer nodig. Bestaande handmatige starterbevestiging per leg vervangen.
+- [ ] **Definitief besluit 2026-11-07 — Patch 04B.3C:** vóór **iedere leg** de starter volgens het reglement **voorstellen**, maar de teller mag thuis/uit handmatig kiezen en moet **expliciet bevestigen vóór score-invoer**. Dit vervangt het eerdere besluit om zonder bevestiging automatisch te starten.
+- [ ] Bij verplichte bull voor een beslissende leg eerst de bullwinnaar vastleggen; die bepaalt de starter. Bevestigde starter duurzaam bewaren, bij herstart niet opnieuw laten bevestigen en na undo/replay correct herstellen.
+- [ ] Regressietests: leg 1, volgende legs, handmatige afwijking, bull, herstart vóór/na bevestiging, herstart met reeds gegooide beurten, undo en TV-live.
 
 ### 4. Opstellingen, verzenden en speelvolgorde
 - [ ] Vaste sportieve volgorde: **Single 1–4 → Koppel 1–4 → Biergame**. Niet als instelbare volgorde aanbieden.
@@ -166,3 +168,20 @@
 - [x] C1B11 Dart Score checkoutregels: `matchRules`-verwerking en stabielere synchronisatietest vastgelegd in commit `16abaf6` op `feature/c1b3-singles-sync`.
 - [x] Dart Score: volledige testsuite **990/990 geslaagd** na verwijderen tijdelijke diagnosecode; `git status --short` schoon na push.
 - [ ] Overige C1B11-werkzaamheden blijven open totdat actuele Dashboard-/Score-implementatie afzonderlijk is gecontroleerd.
+
+
+## Fysieke integratietest — 2026-11-07 (C1B11 / C1B7)
+
+- [x] Actuele Dashboard-debugbuild op Samsung S25 (Android 17) geïnstalleerd en gestart.
+- [x] Actuele Dart Score-debugbuild op Samsung SM-X135F (Android 16) geïnstalleerd en gestart.
+- [x] Live Receiver-debugbuild op Pro14 GD Android TV (Android 14) geïnstalleerd en gestart; EGL schakelt terug naar OpenGLES.
+- [x] Dashboard toont afzonderlijke reglementen voor Regulier en Beker, met X01, Best of, check-in/out, starterbeleid en punten.
+- [x] Reguliere testwedstrijd Steady–Testteam aangemaakt, code `7F72BC2C`; singlesopstellingen vastgezet bij START SINGLES.
+- [x] Dashboard → Score: vier singles overgedragen, ontvangst bevestigd; 501/Bo5, Straight In/Double Out en voorgestelde starter 'Uit begint' zichtbaar.
+- [x] Score → Live Receiver: QR/WSS-koppeling en live score-/statistiekweergave op TV praktisch bevestigd.
+- [x] Starterafwisseling werkt in praktijk: Jan leg 1, Jair leg 2.
+- [ ] **Afwijking:** teller kan de starter vóór leg 1 of leg 2 niet wijzigen/bevestigen; herstellen in Patch 04B.3C.
+- [ ] UI-aandachtspunt: opstellingsscherm meldt maximaal 2 wissels; eerdere afspraak is maximaal 8 reserves per team. Apart onderzoeken; geen stilzwijgende wijziging tijdens 04B.3C.
+- [ ] Oudere Score-wedstrijden tonen 'TYPE ONBEKEND'; migratie/legacy-weergave apart onderzoeken.
+- [ ] Nog niet aangetoond: volledige negen onderdelen, Koppels/Biergame volgens snapshot, offline/herstart, Dashboard-eindafsluiting en exacte TV-statistieken.
+- [x] Laatste vóór fysieke test gemelde regressiestand: Dart Score **1049** tests; Dashboard **150** tests; Score analyzer **39 info**, `git diff --check` schoon. Deze aantallen zijn geen nieuwe testuitvoering na 04B.3C.
