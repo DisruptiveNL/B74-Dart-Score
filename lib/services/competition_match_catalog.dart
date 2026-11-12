@@ -10,7 +10,9 @@ class CompetitionMatchCatalog {
   final DbHelper _helper;
 
   /// Ontvangen 701-opdrachten, los van de bestaande singles-inbox.
-  Future<List<CompetitionDoublesSummary>> loadDoubles() async {
+  Future<List<CompetitionDoublesSummary>> loadDoubles({
+    bool archived = false,
+  }) async {
     final database = await _helper.db;
     final rows = await database.query(
       'competition_team_inbox',
@@ -22,7 +24,8 @@ class CompetitionMatchCatalog {
         'payload',
         'started',
       ],
-      where: 'kind = ? AND NOT EXISTS ('
+      where:
+          'kind = ? AND NOT EXISTS ('
           'SELECT 1 FROM competition_deletion_tombstones t '
           'WHERE t.match_id = competition_team_inbox.match_id AND t.cleaned_at IS NOT NULL)',
       whereArgs: ['doubles701'],
@@ -31,7 +34,7 @@ class CompetitionMatchCatalog {
     final visible = <CompetitionDoublesSummary>[];
     for (final row in rows) {
       final match = CompetitionDoublesSummary.fromRow(row);
-      if (!await _helper.isCompetitionMatchLocked(match.matchId)) {
+      if (await _helper.isCompetitionMatchLocked(match.matchId) == archived) {
         visible.add(match);
       }
     }
@@ -39,12 +42,22 @@ class CompetitionMatchCatalog {
   }
 
   /// Biergame-opdrachten uit dezelfde beveiligde team-inbox.
-  Future<List<CompetitionDoublesSummary>> loadBeers() async {
+  Future<List<CompetitionDoublesSummary>> loadBeers({
+    bool archived = false,
+  }) async {
     final database = await _helper.db;
     final rows = await database.query(
       'competition_team_inbox',
-      columns: ['game_id', 'match_id', 'slot', 'revision', 'payload', 'started'],
-      where: 'kind = ? AND NOT EXISTS ('
+      columns: [
+        'game_id',
+        'match_id',
+        'slot',
+        'revision',
+        'payload',
+        'started',
+      ],
+      where:
+          'kind = ? AND NOT EXISTS ('
           'SELECT 1 FROM competition_deletion_tombstones t '
           'WHERE t.match_id = competition_team_inbox.match_id AND t.cleaned_at IS NOT NULL)',
       whereArgs: ['beer1001'],
@@ -53,19 +66,20 @@ class CompetitionMatchCatalog {
     final visible = <CompetitionDoublesSummary>[];
     for (final row in rows) {
       final match = CompetitionDoublesSummary.fromRow(row);
-      if (!await _helper.isCompetitionMatchLocked(match.matchId)) {
+      if (await _helper.isCompetitionMatchLocked(match.matchId) == archived) {
         visible.add(match);
       }
     }
     return visible;
   }
 
-  Future<List<CompetitionMatchSummary>> load() async {
+  Future<List<CompetitionMatchSummary>> load({bool archived = false}) async {
     final db = await _helper.db;
     final rows = await db.query(
       'competition_inbox',
       columns: ['payload', 'received_at'],
-      where: 'NOT EXISTS ('
+      where:
+          'NOT EXISTS ('
           'SELECT 1 FROM competition_deletion_tombstones t '
           'WHERE t.match_id = competition_inbox.match_id AND t.cleaned_at IS NOT NULL)',
       orderBy: 'received_at DESC',
@@ -76,7 +90,7 @@ class CompetitionMatchCatalog {
         CompetitionSyncContract.decode(row['payload'] as String),
         receivedAt: row['received_at'] as int,
       );
-      if (!await _helper.isCompetitionMatchLocked(match.id)) {
+      if (await _helper.isCompetitionMatchLocked(match.id) == archived) {
         visible.add(match);
       }
     }
@@ -127,7 +141,8 @@ class CompetitionMatchSummary {
       (packet['away'] as Map)['name'] as String,
       receivedAt,
       packet['matchType'] == 'cup' || packet['matchType'] == 'regular'
-          ? packet['matchType'] as String : null,
+          ? packet['matchType'] as String
+          : null,
       packet['division'] as String?,
       singles,
       Map<String, dynamic>.from(

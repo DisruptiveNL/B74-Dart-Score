@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'b74_match_rules_contract.dart';
+import 'b74_competition_reglement.dart';
 
 /// C1B4 teamwedstrijd-contract. Staat los van het bestaande singles-v1-contract.
 /// Dit contract valideert de berichtstructuur; speelgerechtigdheid en revisies
@@ -27,8 +28,7 @@ class B74TeamMatchContract {
       throw const FormatException('Onbekend teamwedstrijdprotocol');
     }
     final division = packet['division'];
-    if (division != null &&
-        (division is! String || division.trim().isEmpty)) {
+    if (division != null && (division is! String || division.trim().isEmpty)) {
       throw const FormatException('Ongeldige divisie');
     }
     _text(packet, 'matchId');
@@ -39,8 +39,13 @@ class B74TeamMatchContract {
     }
     final slot = packet['slot'];
     final kind = packet['kind'];
-    final count = kind == 'doubles701' ? 2 : kind == 'beer1001' ? 4 : 0;
-    if (count == 0 || (kind == 'doubles701' && (slot is! int || slot < 1 || slot > 4)) ||
+    final count = kind == 'doubles701'
+        ? 2
+        : kind == 'beer1001'
+        ? 4
+        : 0;
+    if (count == 0 ||
+        (kind == 'doubles701' && (slot is! int || slot < 1 || slot > 4)) ||
         (kind == 'beer1001' && slot != 1)) {
       throw const FormatException('Ongeldige wedstrijdvorm of wedstrijdregel');
     }
@@ -57,7 +62,8 @@ class B74TeamMatchContract {
       throw const FormatException('Ongeldige startscore');
     }
     final bestOf = packet['bestOf'];
-    if (bestOf is! int || (count == 4 ? bestOf != 1 : !{3, 5, 7, 9, 11}.contains(bestOf))) {
+    if (bestOf is! int ||
+        (count == 4 ? bestOf != 1 : !{3, 5, 7, 9, 11}.contains(bestOf))) {
       throw const FormatException('Ongeldig aantal legs');
     }
     // Optional v1 extension. Old 701/1001 packets remain Straight In.
@@ -82,21 +88,25 @@ class B74TeamMatchContract {
         throw const FormatException('Reglement hoort bij andere wedstrijd');
       }
       final group = B74MatchRulesContract.forGame(
-        rawRules, count == 2 ? 'doubles' : 'beer',
+        rawRules,
+        count == 2 ? 'doubles' : 'beer',
       );
       if (group['startingScore'] != packet['startingScore'] ||
           group['bestOf'] != packet['bestOf'] ||
           (packet['checkIn'] ?? 'straight') != group['checkIn']) {
-        throw const FormatException('Reglement en spelinstellingen verschillen');
+        throw const FormatException(
+          'Reglement en spelinstellingen verschillen',
+        );
       }
-      // The packet uses home/away while the frozen rules use fixedHome/
-      // fixedAway. Reject drift before a game is accepted or replayed.
-      const policyToPacket = <String, String>{
-        'fixedHome': 'home',
-        'fixedAway': 'away',
-        'bull': 'bull',
-      };
-      if (packet['startPolicy'] != policyToPacket[group['startPolicy']]) {
+      // The frozen start policy applies to the first doubles slot. Later
+      // doubles alternate their first-leg starter, as the Dashboard does.
+      final rules = rawRules['rules'] as Map<String, dynamic>;
+      final expectedStarter = B74CompetitionReglement.firstLegStarter(
+        rules,
+        count == 2 ? 'doubles' : 'beer',
+        count == 2 ? (slot as int) - 1 : 0,
+      );
+      if (packet['startPolicy'] != (expectedStarter ?? 'bull')) {
         throw const FormatException('Startregeling wijkt af van reglement');
       }
       // checkOut and bullDecidingLeg are read directly from the validated
