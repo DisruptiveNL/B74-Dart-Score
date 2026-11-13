@@ -2,6 +2,7 @@ import 'b74_doubles_701.dart';
 import 'b74_doubles_live_stats.dart';
 import 'b74_doubles_result_contract.dart';
 import 'b74_team_match_contract.dart';
+import 'competition_dummy_identity.dart';
 
 /// Pure 701 result serialization. Input is the persisted match packet and the
 /// correction-aware replay of its journal; no UI counters are trusted.
@@ -28,11 +29,15 @@ class B74DoublesResultBuilder {
       final members = side['players'] as List;
       for (var index = 0; index < (packet['kind'] == 'beer1001' ? 4 : 2); index++) {
         final player = members[index] as Map<String, dynamic>;
+        final dummy = CompetitionDummyIdentity.isDummyBond(
+          player['bondNumber'] as String?,
+        );
         final stat = stats.player(team, index);
         players.add({
           'playerId': player['playerId'],
           'teamId': teamId,
-          'statistics': {
+          if (dummy) 'officialStatisticsEligible': false,
+          'statistics': dummy ? <String, dynamic>{} : {
             'visits': stat.visits,
             'darts': stat.dartsThrown,
             'scored': stat.points,

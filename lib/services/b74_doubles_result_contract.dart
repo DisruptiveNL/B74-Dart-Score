@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'competition_dummy_identity.dart';
 
 /// C1B4.5 wire format for a completed doubles 701 result.
 /// Transport acknowledgement and persistence are separate concerns.
@@ -79,6 +80,19 @@ class B74DoublesResultContract {
           player['teamId'] != home && player['teamId'] != away ||
           player['statistics'] is! Map<String, dynamic>) {
         throw const FormatException('Ongeldige spelerstatistieken');
+      }
+      // Dummy occupies a lineup slot but never owns individual statistics.
+      // Keep the participant in the wire contract for lineup verification.
+      final id = player['playerId'] as String;
+      final isDummy = CompetitionDummyIdentity.isParticipantId(id);
+      if (isDummy) {
+        if (id != CompetitionDummyIdentity.participantId(player['teamId'] as String) ||
+            player['officialStatisticsEligible'] != false ||
+            (player['statistics'] as Map<String, dynamic>).isNotEmpty) {
+          throw const FormatException('DUMMY mag geen individuele statistieken hebben');
+        }
+      } else if (player['officialStatisticsEligible'] == false) {
+        throw const FormatException('Echte speler mag niet als DUMMY worden uitgesloten');
       }
     }
   }

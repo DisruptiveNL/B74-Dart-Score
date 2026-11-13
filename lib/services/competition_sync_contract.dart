@@ -1,3 +1,4 @@
+import 'competition_dummy_identity.dart';
 import 'dart:convert';
 
 /// B74 Competition Sync protocol v1. Transport-independent JSON contract.
@@ -47,6 +48,8 @@ class CompetitionSyncContract {
       }
       final homePlayer = _player(entry['homePlayer']);
       final awayPlayer = _player(entry['awayPlayer']);
+      _validateDummy(entry['homePlayer'], home);
+      _validateDummy(entry['awayPlayer'], away);
       if (!seenHome.add(homePlayer) || !seenAway.add(awayPlayer)) {
         throw const FormatException('A starter appears more than once');
       }
@@ -90,6 +93,19 @@ class CompetitionSyncContract {
     }
     _required(value, 'name');
     return _required(value, 'id');
+  }
+
+  static void _validateDummy(dynamic raw, String teamId) {
+    final value = raw as Map<String, dynamic>;
+    final id = value['id'] as String;
+    final isDummy = CompetitionDummyIdentity.isDummyBond(value['bondNumber'] as String?);
+    if (isDummy) {
+      if (id != CompetitionDummyIdentity.participantId(teamId)) {
+        throw const FormatException('Dummy heeft onjuiste teamidentiteit');
+      }
+    } else if (CompetitionDummyIdentity.isParticipantId(id)) {
+      throw const FormatException('Echte speler mag geen Dummy-identiteit gebruiken');
+    }
   }
 
   static String _player(dynamic value) {

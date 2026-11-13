@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'b74_match_rules_contract.dart';
 import 'b74_competition_reglement.dart';
+import 'competition_dummy_identity.dart';
 
 /// C1B4 teamwedstrijd-contract. Staat los van het bestaande singles-v1-contract.
 /// Dit contract valideert de berichtstructuur; speelgerechtigdheid en revisies
@@ -118,7 +119,7 @@ class B74TeamMatchContract {
     if (home.$1 == away.$1) {
       throw const FormatException('Thuis- en uitteam zijn identiek');
     }
-    if (home.$2.intersection(away.$2).isNotEmpty) {
+    if (home.$2.intersection(away.$2).any((bond) => bond != 'DUMMY')) {
       throw const FormatException('Speler aan beide zijden');
     }
   }
@@ -147,9 +148,18 @@ class B74TeamMatchContract {
       if (player is! Map<String, dynamic>) {
         throw const FormatException('Ongeldige speler');
       }
-      _text(player, 'playerId');
+      final playerId = _text(player, 'playerId');
       _text(player, 'name');
-      final bond = _text(player, 'bondNumber');
+      final bond = _text(player, 'bondNumber').toUpperCase();
+      // Wire identity is scoped to the team. A registered player ID must
+      // never masquerade as a synthetic Dummy participant (or vice versa).
+      if (bond == 'DUMMY') {
+        if (playerId != CompetitionDummyIdentity.participantId(id)) {
+          throw const FormatException('DUMMY heeft geen teamgebonden identiteit');
+        }
+      } else if (CompetitionDummyIdentity.isParticipantId(playerId)) {
+        throw const FormatException('Dummy-identiteit bij echte speler');
+      }
       if (!bonds.add(bond)) {
         throw const FormatException('Dubbel bondsnummer binnen team');
       }

@@ -34,7 +34,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 34;
+  static const int schemaVersion = 35;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -924,6 +924,9 @@ class DbHelper {
     if (oldVersion < 34) {
       await _createCompetitionSingleDecidingBulls(db);
     }
+    if (oldVersion < 35) {
+      await _migrateCompetitionSingleResultsToMatchForeignKey(db);
+    }
   }
 
   /// Recomputes `dart_throws.checkout_darts` for every visit already on the
@@ -1206,9 +1209,23 @@ class DbHelper {
       "status TEXT NOT NULL DEFAULT 'completed', "
       'payload TEXT NOT NULL, acknowledged_at INTEGER, '
       'PRIMARY KEY(match_id, slot), '
-      'FOREIGN KEY(match_id, slot) '
-      'REFERENCES competition_game_links(match_id, slot))',
+      'FOREIGN KEY(match_id) REFERENCES competition_inbox(match_id))',
     );
+  }
+
+  /// Version 35: a regulatory Dummy single has no X01 game link.
+  /// Preserve all queued/acknowledged results while replacing only this FK.
+  /// SQLite's onUpgrade callback runs in a transaction, so a failure rolls back.
+  Future<void> _migrateCompetitionSingleResultsToMatchForeignKey(Database db) async {
+    await db.execute('ALTER TABLE competition_single_results RENAME TO competition_single_results_v34');
+    await _createCompetitionSingleResults(db);
+    await db.execute(
+      'INSERT INTO competition_single_results '
+      '(match_id, slot, status, payload, acknowledged_at) '
+      'SELECT match_id, slot, status, payload, acknowledged_at '
+      'FROM competition_single_results_v34',
+    );
+    await db.execute('DROP TABLE competition_single_results_v34');
   }
 
   /// C1B4.2B.2b: teamwedstrijd-inbox is gescheiden van singles en game-links.

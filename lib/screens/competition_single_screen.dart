@@ -6,6 +6,7 @@ import '../models/player.dart';
 import '../providers/game_provider.dart';
 import '../services/competition_match_catalog.dart';
 import '../services/competition_single_launcher.dart';
+import '../services/competition_dummy_single_rules.dart';
 import '../services/competition_single_result_builder.dart';
 import '../services/competition_single_result_sender.dart';
 import '../services/b74_session_manager.dart';
@@ -36,19 +37,28 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
   final _builder = CompetitionSingleResultBuilder();
   final _sender = CompetitionSingleResultSender();
   String? _sendMessage;
+  bool _regulatorySaved = false;
 
   @override
   void initState() {
     super.initState();
-    // An already finished single is queued for return automatically when
-    // this entry page is opened. Failed delivery remains retryable.
+    // Reuse the established paired sender for both ordinary X01 and
+    // reglementary singles. A reglementary result has no X01 game by design.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted || b74Session.peerHost == null ||
           b74Session.peerPort == null) return;
       try {
         final existing = await DbHelper.instance.competitionSingleResult(
             widget.match.id, widget.single.slot);
-        if (!mounted || existing?['status'] == 'archived') return;
+        if (!mounted || existing?['status'] != 'completed') return;
+        final decision = CompetitionDummySingleRules.decide(
+          homeBond: widget.single.homeBond,
+          awayBond: widget.single.awayBond,
+        );
+        if (decision != DummySingleDecision.normalGame) {
+          await _sendPairedResult();
+          return;
+        }
         final gameId = await _launcher.existingGameId(
             widget.match.id, widget.single.slot);
         if (gameId == null) return;
@@ -57,7 +67,7 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
           await _sendPairedResult();
         }
       } catch (_) {
-        // Keep manual retry available if the automatic attempt fails.
+        // The existing paired retry button remains available.
       }
     });
   }
@@ -81,7 +91,11 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
     try {
       final match = widget.match;
       final single = widget.single;
-      await _builder.prepare(match, single);
+      if (CompetitionDummySingleRules.decide(
+        homeBond: single.homeBond, awayBond: single.awayBond,
+      ) == DummySingleDecision.normalGame) {
+        await _builder.prepare(match, single);
+      }
       final status = await _sender.send(
         matchId: match.id,
         slot: single.slot,
@@ -106,11 +120,42 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
     if (_busy) return;
     setState(() { _busy = true; _error = null; _sendMessage = null; });
     try {
-      await _builder.prepare(widget.match, widget.single);
+      if (CompetitionDummySingleRules.decide(
+        homeBond: widget.single.homeBond, awayBond: widget.single.awayBond,
+      ) == DummySingleDecision.normalGame) {
+        await _builder.prepare(widget.match, widget.single);
+      }
       final status = await _sender.sendPaired(
           matchId: widget.match.id, slot: widget.single.slot);
       if (mounted) setState(() => _sendMessage =
           'Dashboard heeft het resultaat beveiligd opgeslagen ($status).');
+    } catch (error) {
+      if (mounted) setState(() => _error = '$error');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _finishRegulatory({bool? homeWonBull}) async {
+    if (_busy) return;
+    setState(() { _busy = true; _error = null; _sendMessage = null; });
+    try {
+      await _builder.prepareRegulatory(
+        widget.match, widget.single, homeWonBull: homeWonBull,
+      );
+      if (!mounted) return;
+      setState(() {
+        _regulatorySaved = true;
+        _sendMessage = 'Reglementaire uitslag opgeslagen.';
+      });
+      // Do not introduce a second transport: use the exact same paired
+      // outbox/sender and acknowledgement path as an ordinary single.
+      if (b74Session.peerHost != null && b74Session.peerPort != null) {
+        // _busy is released by finally; schedule after this operation.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _sendPairedResult();
+        });
+      }
     } catch (error) {
       if (mounted) setState(() => _error = '$error');
     } finally {
@@ -184,6 +229,9 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final dummyDecision = CompetitionDummySingleRules.decide(
+      homeBond: widget.single.homeBond, awayBond: widget.single.awayBond,
+    );
     final fixed = CompetitionSingleLauncher.homeStarts(
       widget.match,
       widget.single,
@@ -201,6 +249,62 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           final existing = snapshot.data != null;
+          if (dummyDecision != DummySingleDecision.normalGame) {
+            return FutureBuilder<Map<String, Object?>?>(
+              future: DbHelper.instance.competitionSingleResult(
+                widget.match.id, widget.single.slot),
+              builder: (context, result) {
+                if (result.hasError) return Center(child: Text('Fout: ${result.error}'));
+                if (result.connectionState != ConnectionState.done) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                final saved = result.data != null || _regulatorySaved;
+                final archived = result.data?['status'] == 'archived';
+                return Center(child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 480),
+                  child: Padding(padding: const EdgeInsets.all(24), child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text('${widget.match.home}: ${widget.single.homePlayer}',
+                        style: Theme.of(context).textTheme.titleLarge),
+                      const Center(child: Padding(
+                        padding: EdgeInsets.all(12), child: Text('VS'))),
+                      Text('${widget.match.away}: ${widget.single.awayPlayer}',
+                        style: Theme.of(context).textTheme.titleLarge),
+                      const SizedBox(height: 24),
+                      if (archived) const Text('Reglementair resultaat ontvangen en gearchiveerd.')
+                      else if (saved) ...[
+                        const Text('Reglementaire uitslag opgeslagen (geen individuele statistieken).'),
+                        const SizedBox(height: 12),
+                        if (b74Session.peerHost != null && b74Session.peerPort != null)
+                          FilledButton.icon(
+                            onPressed: _busy ? null : _sendPairedResult,
+                            icon: const Icon(Icons.sync),
+                            label: const Text('OPNIEUW VERZENDEN VIA BESTAANDE KOPPELING'),
+                          )
+                        else
+                          const Text('Geen actieve Dashboard-koppeling beschikbaar. Herstel de bestaande koppeling om het bewaarde resultaat te verzenden.'),
+                      ] else if (existing) const Text('Er bestaat al een X01-wedstrijd; reglementair afronden is geblokkeerd.')
+                      else if (dummyDecision == DummySingleDecision.bullRequired) ...[
+                        const Text('Laat één echte speler van elk team bullen. Kies daarna het winnende team.'),
+                        const SizedBox(height: 12),
+                        FilledButton(onPressed: _busy ? null : () => _finishRegulatory(homeWonBull: true),
+                          child: Text('${widget.match.home} wint bull')),
+                        const SizedBox(height: 8),
+                        FilledButton(onPressed: _busy ? null : () => _finishRegulatory(homeWonBull: false),
+                          child: Text('${widget.match.away} wint bull')),
+                      ] else
+                        FilledButton(onPressed: _busy ? null : _finishRegulatory,
+                          child: Text('Bevestig reglementaire winst — ${dummyDecision == DummySingleDecision.homeWins ? widget.match.home : widget.match.away}')),
+                      if (_busy) const LinearProgressIndicator(),
+                      if (_sendMessage != null) Text(_sendMessage!),
+                      if (_error != null) Text(_error!, style: const TextStyle(color: Colors.red)),
+                    ],
+                  ))));
+              },
+            );
+          }
           return Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 480),

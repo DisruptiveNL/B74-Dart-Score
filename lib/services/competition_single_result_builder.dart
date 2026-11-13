@@ -1,6 +1,7 @@
 import '../database/db_helper.dart';
 import '../models/dart_throw.dart';
 import 'competition_match_catalog.dart';
+import 'competition_dummy_single_rules.dart';
 import 'competition_single_result_contract.dart';
 
 /// Creates a reproducible result from persisted X01 visits, never from UI
@@ -111,6 +112,52 @@ class CompetitionSingleResultBuilder {
       result,
     );
     return result;
+  }
+
+  /// Reglementary result: no X01 game, visits or individual statistics.
+  /// Reuses the same durable result and authenticated transport as normal singles.
+  Future<String> prepareRegulatory(
+    CompetitionMatchSummary match,
+    CompetitionSingleSummary single, {
+    bool? homeWonBull,
+  }) async {
+    final decision = CompetitionDummySingleRules.decide(
+      homeBond: single.homeBond,
+      awayBond: single.awayBond,
+    );
+    if (decision == DummySingleDecision.normalGame) {
+      throw StateError('Deze single vereist een gewone X01-wedstrijd');
+    }
+    final existing = await _db.competitionSingleResult(match.id, single.slot);
+    if (existing != null) {
+      return existing['payload'] as String;
+    }
+    if (await _db.isCompetitionMatchLocked(match.id)) {
+      throw StateError('Wedstrijd is afgesloten');
+    }
+    if (await _db.competitionGameId(match.id, single.slot) != null) {
+      throw StateError('Er bestaat al een X01-wedstrijd voor deze single');
+    }
+    final legs = CompetitionDummySingleRules.regulatoryLegs(
+      bestOf: match.rules['bestOf'] as int,
+      decision: decision,
+      homeWonBull: homeWonBull,
+    );
+    final payload = CompetitionSingleResultContract.encode({
+      'type': CompetitionSingleResultContract.type,
+      'version': CompetitionSingleResultContract.version,
+      'resultId': CompetitionSingleResultContract.resultId(match.id, single.slot),
+      'matchId': match.id,
+      'slot': single.slot,
+      'homePlayerId': single.homeId,
+      'awayPlayerId': single.awayId,
+      'homeLegs': legs.homeLegs,
+      'awayLegs': legs.awayLegs,
+      'winnerPlayerId': legs.homeLegs > legs.awayLegs ? single.homeId : single.awayId,
+      'statistics': {'home': null, 'away': null},
+    });
+    await _db.saveCompletedCompetitionSingleResult(match.id, single.slot, payload);
+    return payload;
   }
 
   static int _countCheckouts(List<DartThrow> throws, int playerId) => throws

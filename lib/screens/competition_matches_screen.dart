@@ -9,6 +9,7 @@ import '../services/competition_single_result_contract.dart';
 import '../services/competition_match_catalog.dart';
 import '../services/b74_doubles_session.dart';
 import '../services/competition_sync_contract.dart';
+import '../services/competition_result_sync_service.dart';
 import 'competition_single_screen.dart';
 import 'competition_doubles_screen.dart';
 import 'competition_receive_screen.dart';
@@ -152,9 +153,12 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
           },
         ),
         IconButton(
-          tooltip: 'Vernieuwen',
+          tooltip: 'Synchroniseren en vernieuwen',
           icon: const Icon(Icons.refresh),
-          onPressed: () => setState(_reload),
+          onPressed: () async {
+            await competitionResultSync.syncOnce();
+            if (mounted) setState(_reload);
+          },
         ),
         // Reserveer de rechterbovenhoek voor de permanente B74-indicator.
         // Deze staat in de Navigator-overlay (Patch D).
@@ -300,11 +304,32 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                 '${resultSnapshot.hasError || syncSnapshot.hasError ? '\nStatus laden mislukt' : ''}',
               ),
               isThreeLine: true,
-              trailing: Icon(
-                finished
-                    ? (synced ? Icons.cloud_done : Icons.cloud_upload_outlined)
-                    : Icons.chevron_right,
-              ),
+              trailing: finished && !synced && !archived
+                  ? IconButton(
+                      tooltip: 'Resultaat opnieuw synchroniseren',
+                      icon: const Icon(Icons.cloud_upload_outlined),
+                      onPressed: () async {
+                        await competitionResultSync.syncOnce();
+                        if (!context.mounted) return;
+                        final row = await DbHelper.instance
+                            .competitionDoublesResult(item.gameId);
+                        if (!context.mounted) return;
+                        if (row?['status'] != 'archived') {
+                          final reason = competitionResultSync.teamError(item.gameId)
+                              ?? competitionResultSync.generalError
+                              ?? 'Nog niet bevestigd door Dashboard. Controleer de verbinding en probeer opnieuw.';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Koppel/biergame synchronisatie: $reason')),
+                          );
+                        }
+                        (context as Element).markNeedsBuild();
+                      },
+                    )
+                  : Icon(
+                      finished
+                          ? Icons.cloud_done
+                          : Icons.chevron_right,
+                    ),
               onTap: archived
                   ? null
                   : () async {
@@ -360,11 +385,32 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                 '${resultSnapshot.hasError ? '\nUitslag laden mislukt' : ''}',
               ),
               isThreeLine: true,
-              trailing: Icon(
-                finished
-                    ? (synced ? Icons.cloud_done : Icons.cloud_upload_outlined)
-                    : Icons.chevron_right,
-              ),
+              trailing: finished && !synced && !archived
+                  ? IconButton(
+                      tooltip: 'Resultaat opnieuw synchroniseren',
+                      icon: const Icon(Icons.cloud_upload_outlined),
+                      onPressed: () async {
+                        await competitionResultSync.syncOnce();
+                        if (!context.mounted) return;
+                        final row = await DbHelper.instance
+                            .competitionDoublesResult(item.gameId);
+                        if (!context.mounted) return;
+                        if (row?['status'] != 'archived') {
+                          final reason = competitionResultSync.teamError(item.gameId)
+                              ?? competitionResultSync.generalError
+                              ?? 'Nog niet bevestigd door Dashboard. Controleer de verbinding en probeer opnieuw.';
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Koppel/biergame synchronisatie: $reason')),
+                          );
+                        }
+                        (context as Element).markNeedsBuild();
+                      },
+                    )
+                  : Icon(
+                      finished
+                          ? Icons.cloud_done
+                          : Icons.chevron_right,
+                    ),
               onTap: archived
                   ? null
                   : () async {

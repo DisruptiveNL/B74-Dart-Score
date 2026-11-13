@@ -33,6 +33,18 @@ void main() {
     );
   });
 
+  test('reglementaire Dummy-uitslag zonder individuele statistieken', () {
+    final value = sample()
+      ..['homePlayerId'] = 'b74:dummy:team:home'
+      ..['awayPlayerId'] = 'away-1'
+      ..['homeLegs'] = 0
+      ..['awayLegs'] = 3
+      ..['winnerPlayerId'] = 'away-1'
+      ..['statistics'] = {'home': null, 'away': null};
+    expect(CompetitionSingleResultContract.decode(
+      CompetitionSingleResultContract.encode(value)), value);
+  });
+
   test('wrong winner is rejected', () {
     final value = sample()..['winnerPlayerId'] = 'away-1';
     expect(

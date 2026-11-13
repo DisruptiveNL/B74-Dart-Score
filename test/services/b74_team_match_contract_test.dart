@@ -72,4 +72,34 @@ void main() {
     final packet = fixture()..['type'] = 'b74.competition.match.v1';
     expect(() => B74TeamMatchContract.validate(packet), throwsFormatException);
   });
+  test('DUMMY mag aan beide kanten voorkomen', () {
+    final packet = fixture();
+    (packet['home']['players'][0] as Map<String, dynamic>)['bondNumber'] = 'dummy';
+    (packet['home']['players'][0] as Map<String, dynamic>)['playerId'] = 'b74:dummy:team:home';
+    (packet['away']['players'][0] as Map<String, dynamic>)['bondNumber'] = 'DUMMY';
+    (packet['away']['players'][0] as Map<String, dynamic>)['playerId'] = 'b74:dummy:team:away';
+    expect(() => B74TeamMatchContract.validate(packet), returnsNormally);
+  });
+  test('DUMMY met gewone speler-ID wordt geweigerd', () {
+    final packet = fixture();
+    (packet['home']['players'][0] as Map<String, dynamic>)['bondNumber'] = 'DUMMY';
+    expect(() => B74TeamMatchContract.validate(packet), throwsFormatException);
+  });
+  test('teamgebonden Dummy-ID bij echte speler wordt geweigerd', () {
+    final packet = fixture();
+    (packet['home']['players'][0] as Map<String, dynamic>)['playerId'] = 'b74:dummy:team:home';
+    expect(() => B74TeamMatchContract.validate(packet), throwsFormatException);
+  });
+  test('echte speler mag niet aan beide kanten voorkomen', () {
+    final packet = fixture();
+    (packet['away']['players'][0] as Map<String, dynamic>)['bondNumber'] = '101';
+    expect(() => B74TeamMatchContract.validate(packet), throwsFormatException);
+  });
+  test('DUMMY mag niet tweemaal binnen hetzelfde team voorkomen', () {
+    final packet = fixture();
+    (packet['home']['players'][0] as Map<String, dynamic>)['bondNumber'] = 'DUMMY';
+    (packet['home']['players'][1] as Map<String, dynamic>)['bondNumber'] = 'dummy';
+    expect(() => B74TeamMatchContract.validate(packet), throwsFormatException);
+  });
+
 }

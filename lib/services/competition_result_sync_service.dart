@@ -38,6 +38,12 @@ class CompetitionResultSyncService {
   bool _started = false;
   bool _recovered = false;
 
+  /// Latest team delivery/build errors for the recovery UI. Never log tokens.
+  final Map<String, String> _teamErrors = {};
+  String? teamError(String gameId) => _teamErrors[gameId];
+  String? _generalError;
+  String? get generalError => _generalError;
+
   void start() {
     if (_started) return;
     _started = true;
@@ -106,7 +112,10 @@ class CompetitionResultSyncService {
         try {
           final gameId = row['game_id'] as String;
           var result = await _db.competitionDoublesResult(gameId);
-          if (result?['status'] == 'archived') continue;
+          if (result?['status'] == 'archived') {
+            _teamErrors.remove(gameId);
+            continue;
+          }
           if (result == null) {
             final session = await B74DoublesSession.load(gameId);
             if (session.engine.winner == null) continue;
@@ -128,12 +137,15 @@ class CompetitionResultSyncService {
           if (result?['status'] != 'completed') continue;
           if (b74Session.peerHost == null || b74Session.peerPort == null) continue;
           await _doublesSender.sendPaired(gameId);
-        } catch (_) {
-          // Preserve retryable SQLite payload; never block scoring.
+          _teamErrors.remove(gameId);
+        } catch (error) {
+          // Keep the outbox intact and expose the failure for manual recovery.
+          _teamErrors[row['game_id'] as String] = error.toString();
         }
       }
-    } catch (_) {
+    } catch (error) {
       // Startup/migration or transient database errors are retried later.
+      _generalError = error.toString();
     } finally {
       _busy = false;
     }

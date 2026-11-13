@@ -6,6 +6,7 @@ import 'b74_doubles_checkout.dart';
 import 'b74_match_rules_contract.dart';
 import 'b74_team_match_contract.dart';
 import 'competition_team_rules_guard.dart';
+import 'competition_dummy_identity.dart';
 
 /// Durable 701 doubles session. Each command is validated by replaying the
 /// saved journal before an atomic append; an unsuccessful write changes no
@@ -18,6 +19,7 @@ class B74DoublesSession {
     this.openingBullRequired,
     this.events,
     this.engine,
+    this.dummyPositions,
   );
 
   final String gameId;
@@ -26,6 +28,13 @@ class B74DoublesSession {
   final bool openingBullRequired;
   final List<String> events;
   final B74Doubles701 engine;
+  /// Snapshot of Dummy positions, read from the immutable match contract.
+  final List<List<bool>> dummyPositions;
+  bool isDummy(int team, int player) => dummyPositions[team][player];
+  bool get isDummyTurn => engine.winner == null &&
+      !engine.awaitingStarter &&
+      isDummy(engine.currentVisit.team, engine.currentVisit.player);
+
   int get startingScore => engine.startingScore;
   int get playersPerTeam => engine.playersPerTeam;
   String get checkIn => engine.checkIn;
@@ -171,6 +180,15 @@ class B74DoublesSession {
       policy == 'bull',
       saved,
       engine,
+      [
+        for (final side in ['home', 'away'])
+          [
+            for (final player in (packet[side] as Map<String, dynamic>)['players'] as List)
+              CompetitionDummyIdentity.isDummyBond(
+                (player as Map<String, dynamic>)['bondNumber'] as String?,
+              ),
+          ],
+      ],
     );
   }
 
@@ -259,6 +277,12 @@ class B74DoublesSession {
     if (!validCheckout && (checkoutDarts != null || checkoutDart != null)) {
       throw StateError('Dartgegevens zonder checkout');
     }
+    if (fresh.isDummyTurn &&
+        (score != 0 || bust || validCheckout || checkoutDarts != null ||
+            checkoutDart != null || openingDouble != null ||
+            openingDart != null)) {
+      throw StateError('Dummy-beurt is altijd 0 punten met 3 darts');
+    }
     fresh.engine.completeVisit(
       score: score,
       bust: bust,
@@ -271,6 +295,7 @@ class B74DoublesSession {
       expectedSequence: events.length,
       eventJson: jsonEncode({
         'type': 'visit',
+        if (fresh.isDummyTurn) 'dummy': true,
         'score': score,
         'bust': bust,
         'validCheckout': validCheckout,
@@ -362,6 +387,7 @@ class B74DoublesSession {
       final original = jsonDecode(events[i]) as Map<String, dynamic>;
       if (original['type'] == 'starter' && !revoked.contains(i)) break;
       if (original['type'] != 'visit' || revoked.contains(i)) continue;
+      if (original['dummy'] == true) continue;
       final visit = overrides[i] ?? original;
       result.add((
         sequence: i,
@@ -394,7 +420,12 @@ class B74DoublesSession {
         'Double In: gebruik TERUGDRAAIEN en voer de beurt opnieuw in',
       );
     }
+    // The immutable contract determines whether this visit belongs to Dummy.
+    // Never permit editing an automatic zero into a scored visit.
     final original = jsonDecode(events[sequence]) as Map<String, dynamic>;
+    if (original['dummy'] == true) {
+      throw StateError('Dummy-beurt kan niet worden gecorrigeerd');
+    }
     if (original['validCheckout'] == true) {
       throw StateError('Gebruik terugdraaien voor een winnende checkout');
     }

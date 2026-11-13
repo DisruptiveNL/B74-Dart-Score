@@ -23,6 +23,7 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
   B74DoublesSession? _session;
   String? _error;
   bool _busy = false;
+  bool _dummyAutoPending = false;
 
   @override
   void initState() {
@@ -43,10 +44,32 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
           _session = session;
           _error = null;
         });
+        _queueDummyVisit();
       }
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     }
+  }
+
+  void _queueDummyVisit() {
+    if (!mounted || _busy || _dummyAutoPending ||
+        _session?.isDummyTurn != true) {
+      return;
+    }
+    _dummyAutoPending = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      try {
+        if (mounted && !_busy && _session?.isDummyTurn == true) {
+          await _run((s) => s.completeVisit(score: 0));
+        }
+      } finally {
+        _dummyAutoPending = false;
+        // Covers consecutive Dummy positions without requiring a tap.
+        if (mounted && _session?.isDummyTurn == true && _error == null) {
+          _queueDummyVisit();
+        }
+      }
+    });
   }
 
   Future<void> _run(Future<void> Function(B74DoublesSession) action) async {
@@ -69,7 +92,14 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     } finally {
-      if (mounted) setState(() => _busy = false);
+      if (mounted) {
+        setState(() => _busy = false);
+        // _reload() runs while _busy is true, so it cannot schedule a
+        // Dummy visit itself. Queue it only after the command finishes.
+        if (_error == null) {
+          _queueDummyVisit();
+        }
+      }
     }
   }
 
@@ -516,7 +546,12 @@ class _CompetitionDoublesScreenState extends State<CompetitionDoublesScreen> {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: 8),
-                  if (isTabletLayout(context))
+                  if (session.isDummyTurn)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Text('Dummy: 0 punten / 3 darts worden automatisch geregistreerd'),
+                    )
+                  else if (isTabletLayout(context))
                     SizedBox(
                       height: 570,
                       child: Row(

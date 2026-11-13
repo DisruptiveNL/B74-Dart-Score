@@ -1,3 +1,4 @@
+import 'competition_dummy_identity.dart';
 import 'dart:convert';
 
 import '../database/db_helper.dart';
@@ -60,6 +61,10 @@ class CompetitionMatchInbox {
       for (final entry in participants.entries) {
         final externalId = entry.key;
         final data = entry.value;
+        if (CompetitionDummyIdentity.isDummyBond(data['bondNumber'] as String?)) {
+          // Regulatory participant only: never create a local player or link.
+          continue;
+        }
         final bondValue = (data['bondNumber'] as String?)?.trim();
         final bond = bondValue == null || bondValue.isEmpty ? null : bondValue;
         final name = (data['name'] as String).trim();
