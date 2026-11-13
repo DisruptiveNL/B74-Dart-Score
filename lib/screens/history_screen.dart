@@ -119,7 +119,21 @@ class _HistoryScreenState extends State<HistoryScreen>
         if (byId[id] != null) byId[id]!,
     ];
 
+    // Competition X01 games are managed exclusively through
+    // Competities & Toernooien, not through ordinary game history.
+    final database = await db.db;
+    final linkedGames = await database.query(
+      'competition_game_links',
+      columns: ['game_id'],
+    );
+
+    final competitionGameIds = linkedGames
+        .map((row) => row['game_id'] as int)
+        .toSet();
+
     for (final g in await db.getGames()) {
+      if (competitionGameIds.contains(g.id)) continue;
+
       entries.add(_HistoryEntry.x01(g, resolve(byGame[g.id!] ?? const [])));
     }
     for (final g in await db.getCricketGames()) {
