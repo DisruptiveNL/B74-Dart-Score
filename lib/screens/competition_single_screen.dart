@@ -9,6 +9,7 @@ import '../services/competition_single_launcher.dart';
 import '../services/competition_dummy_single_rules.dart';
 import '../services/competition_single_result_builder.dart';
 import '../services/competition_single_result_sender.dart';
+import '../services/competition_single_send_guard.dart';
 import '../services/b74_session_manager.dart';
 import 'game_screen.dart';
 
@@ -81,6 +82,53 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
     super.dispose();
   }
 
+  Future<CompetitionSingleSendAction> _currentSendAction() async {
+    final row = await DbHelper.instance.competitionSingleResult(
+      widget.match.id, widget.single.slot,
+    );
+    return CompetitionSingleSendGuard.evaluate(row?['status']);
+  }
+
+  /// Only an acknowledged archived result is successful. A concurrent send
+  /// is not an error, but must never be reported as acknowledged.
+  Future<bool> _skipAlreadyHandledSend() async {
+    final action = await _currentSendAction();
+    if (!mounted) return true;
+    if (action == CompetitionSingleSendAction.alreadyArchived) {
+      setState(() {
+        _error = null;
+        _sendMessage = 'Resultaat ontvangen en gearchiveerd.';
+      });
+      return true;
+    }
+    if (action == CompetitionSingleSendAction.inProgress) {
+      setState(() {
+        _error = null;
+        _sendMessage = 'Verzending is al bezig; wacht op de ontvangstbevestiging.';
+      });
+      return true;
+    }
+    return false;
+  }
+
+  Future<void> _handleSendFailure(Object error) async {
+    final action = await _currentSendAction();
+    if (!mounted) return;
+
+    if (action == CompetitionSingleSendAction.alreadyArchived) {
+      setState(() {
+        _error = null;
+        _sendMessage = 'Resultaat ontvangen en gearchiveerd.';
+      });
+      return;
+    }
+
+    setState(() {
+      _sendMessage = null;
+      _error = '$error';
+    });
+  }
+
   Future<void> _sendResult() async {
     if (_busy) return;
     setState(() {
@@ -91,11 +139,13 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
     try {
       final match = widget.match;
       final single = widget.single;
+      if (await _skipAlreadyHandledSend()) return;
       if (CompetitionDummySingleRules.decide(
         homeBond: single.homeBond, awayBond: single.awayBond,
       ) == DummySingleDecision.normalGame) {
         await _builder.prepare(match, single);
       }
+      if (await _skipAlreadyHandledSend()) return;
       final status = await _sender.send(
         matchId: match.id,
         slot: single.slot,
@@ -104,13 +154,11 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
         token: _token.text.trim(),
       );
       if (mounted) {
-        setState(
-          () => _sendMessage =
-              'Dashboard heeft het resultaat opgeslagen ($status).',
-        );
+        setState(() => _sendMessage =
+            'Dashboard heeft het resultaat opgeslagen ($status).');
       }
     } catch (error) {
-      if (mounted) setState(() => _error = '$error');
+      await _handleSendFailure(error);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -120,17 +168,19 @@ class _CompetitionSingleScreenState extends State<CompetitionSingleScreen> {
     if (_busy) return;
     setState(() { _busy = true; _error = null; _sendMessage = null; });
     try {
+      if (await _skipAlreadyHandledSend()) return;
       if (CompetitionDummySingleRules.decide(
         homeBond: widget.single.homeBond, awayBond: widget.single.awayBond,
       ) == DummySingleDecision.normalGame) {
         await _builder.prepare(widget.match, widget.single);
       }
+      if (await _skipAlreadyHandledSend()) return;
       final status = await _sender.sendPaired(
           matchId: widget.match.id, slot: widget.single.slot);
       if (mounted) setState(() => _sendMessage =
           'Dashboard heeft het resultaat beveiligd opgeslagen ($status).');
     } catch (error) {
-      if (mounted) setState(() => _error = '$error');
+      await _handleSendFailure(error);
     } finally {
       if (mounted) setState(() => _busy = false);
     }
