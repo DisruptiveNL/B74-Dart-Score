@@ -1,15 +1,35 @@
 # B74 Dart Competition Platform — TODO & voortgang
 
-**Bijgewerkt:** 2026-11-12
-**Status:** C1B11 reguliere fysieke keten (9/9, MATCH_LOCKED en read-only competitiearchief) geslaagd op 2026-11-11/12; archief-verwijderregressie, overige spelregel-/migratiegevallen en definitieve releasecontrole open. C1B7 Live TV blijft een werkende tussenversie met openstaande beveiligings-/releasetests.
+**Bijgewerkt:** 2026-11-14
+**Status:** C1B11 reguliere fysieke keten (9/9, MATCH_LOCKED en read-only competitiearchief) geslaagd op 2026-11-11/12; Dummy Patches 02B/02C en geteste delen van 02D verwerkt op 2026-11-13. Op 2026-11-14 is de archief-verwijdercorrectie inclusief beveiligde `removed`-ACK geautomatiseerd regressiegetest en gepusht; afzonderlijke fysieke hertest bewust niet vereist voor deze correctie. Overige spelregel-/migratiegevallen, offline-/foutscenario’s en definitieve releasecontrole blijven open. C1B7 Live TV blijft een werkende tussenversie met openstaande beveiligings-/releasetests.
 
 **Leeswijzer:** `[x]` = afgerond binnen de genoemde scope (waar van toepassing door gebruiker als fysiek getest aangegeven); `[ ]` = open of nog onvoldoende bewezen. Bij gedeeltelijke realisatie staat expliciet wat nog ontbreekt. Tests in een tijdelijke database bewijzen geen fysieke end-to-end-keten. **Vinkjes door gebruiker toegevoegd op 2026-11-09 zijn als praktijkbevestiging overgenomen, tenzij zij strijdig zijn met de vastgelegde patchstatus.**
 
-### Actuele gecontroleerde herstelpunten (2026-11-12)
+### Actuele gecontroleerde herstelpunten (t/m 2026-11-14)
 - [x] **Dart Score:** commit `53ece61` gepusht; **1049/1049 tests** geslaagd; starterbevestiging Patch 04B.3C getest.
 - [x] **Competition Dashboard:** commit `bf602ae` gepusht op `feature/c1b3-match-types-rules`; working tree schoon; **160/160 tests** geslaagd.
-- [x] **Samen:** 1209 geslaagde tests in de laatst gerapporteerde suites; dit zijn geen end-to-end-tests over alle drie apparaten.
+- [x] **Actuele regressiestand (2026-11-14):** Dart Score **1095/1095**, Competition Dashboard **209/209**; samen **1304 geslaagde tests**. Dart Score-analyzer: 49 infos, geen errors/warnings; Dashboard-analyzer: 42 infos, 2 warnings, geen errors. `git diff --check` in beide projecten schoon. Dit zijn geautomatiseerde tests, geen fysieke end-to-end-tests over alle drie apparaten.
 - [ ] **Live Receiver:** na C1B11-wijzigingen opnieuw volledige regressie en fysieke ketentest uitvoeren; laatst hier vastgelegde receiver-commit `3f94655`.
+
+### Aanvulling fysieke validatie en Git (2026-11-13)
+- [x] **Patch 02C — Dummy aan beide teamzijden:** Dashboard-commit `66699a3` op `feature/c1b3-match-types-rules`, gepusht. Beide teamgebonden Dummy-selecties opgeslagen en naar Dart Score verzonden; fysieke test geslaagd. Dashboard-migratie naar databaseversie 16 functioneert in dit geteste scenario.
+- [x] **Patch 02D — leesbare winnaar en reguliere resultaatretour:** Dashboard toont na Dummy-vs-Dummy-bullbeslissing `Dummy (Testteam)` in plaats van de technische ID; 3–0 verwerkt, 1/4 singles ontvangen, tussenstand 1–0. Dart Score-commit `efc1716` op `feature/c1b11-competition-rules` gepusht; Dashboard-wijziging in commit `66699a3`.
+- [x] **Herstartproef:** na afsluiten en opnieuw openen van Dashboard en Dart Score blijven de uitslag en wedstrijdgegevens correct zichtbaar. Afgeronde Single 1 is in Dart Score niet opnieuw aanklikbaar; dit bewijst niet afzonderlijk de technische retry-/ACK-archiveringsstatus.
+- [x] **Geautomatiseerde controles bij patches:** Dart Score 1083/1083 tests, Dashboard 207/207 tests; samen 1290 tests geslaagd. Dart Score-analyzer: 46 infos, geen errors/warnings; Dashboard-analyzer: 42 infos, 2 warnings, geen errors. `git diff --check` schoon bij controles.
+- [ ] **Patch 02D resterend:** verloren ACK, tijdelijke netwerkuitval, opnieuw aanbieden en geen dubbele resultaatregistratie afzonderlijk aantonen. Niet als fysiek bewezen afvinken op basis van de reguliere herstartproef.
+- [ ] **UI-aandachtspunt:** Dart Score toont bij Dummy-vs-Dummy `Winnaar: Dummy`; Dashboard toont de teamgebonden winnaar leesbaar. Eventuele expliciete teamvermelding op Score is een afzonderlijke verbetering, geen blokkade voor de geteste uitslagverwerking.
+
+
+## Werkvolgorde vanaf 2026-11-14 — C1B11 → C1B12
+
+- [x] **Dummy Patch 02B:** eerder door gebruiker bevestigd als afgerond en gepusht; de afzonderlijke historische commit-/testdekking blijft hier niet gespecificeerd. **Patch 02C** fysiek geslaagd; **Patch 02D** voor reguliere resultaatverwerking en winnaarweergave geslaagd. Zie aanvulling 2026-11-13. Andere Dummy-acceptatiescenario’s blijven open.
+- [x] **Archief-verwijderregressie — technisch geaccepteerd (2026-11-14):** geautomatiseerde database-/HTTP-regressies voor verwijderde wedstrijden, archiefzichtbaarheid en late `MATCH_LOCKED`-berichten geslaagd. Afzonderlijke fysieke hertest met wegwerpwedstrijd bewust niet uitgevoerd en niet langer vereist voor deze correctie. De geslaagde Steady–Testteam 9–0-referentiewedstrijd behouden.
+- [ ] **RETAIN/REMOVE — functionele statistiekcontrole:** technische verwerking van beide verwijderkeuzes en de beveiligde terminale `removed`-ACK regressiegetest; afzonderlijke volledige verificatie van behouden statistische bijdragen bij RETAIN en verwijderde bijdragen bij REMOVE blijft open. In beide gevallen blijft de wedstrijd buiten Actief/Afgesloten. Gebruik de bestaande C1B9-keten; geen tweede verwijdermechanisme bouwen.
+- [ ] **Overige verwijder-/herstelgevallen:** regressies voor archiefzichtbaarheid, tombstones, late `MATCH_LOCKED` en beveiligde `removed`-ACK zijn geslaagd. Volledige fysieke/offline-herstelmatrix (netwerkuitval, herstart, hertransmissie en observatie van de outbox) en statistische neveneffecten blijven onderdeel van de bredere C1B11-releasecontrole; geen afzonderlijke fysieke archief-verwijderhertest als blokkade.
+- [ ] **Eerstvolgend: C1B11 afwerken:** openstaande Dummy-acceptatiescenario’s, bull, X01/Bo/in-out, wissels/verzendslot, snapshot-onveranderlijkheid, legacy `TYPE ONBEKEND`, idempotentie/ACK-fouten, offline/herstart, Live Receiver en fysieke releasecontrole.
+- [ ] **Pas daarna C1B12:** eerst inventarisatie en afhankelijkheidsanalyse; daarna gecontroleerd zelfstandige lokale spellen uitfaseren met behoud van de gedeelde score-engine, data, beveiligde koppelingen en archief.
+
+**Invariant:** `MATCH_LOCKED` bewaart een wedstrijd read-only; een expliciete Dashboard-verwijdering verwijdert de wedstrijd uit beide Score-lijsten. RETAIN/REMOVE betreft de statistiekkeuze, niet de zichtbaarheid van de verwijderde wedstrijd. Geen bestaande werkende functionaliteit aanpassen zonder aangetoonde noodzaak en regressietest.
 
 ## C1B7 — Live TV
 
@@ -86,12 +106,12 @@
 - [x] Dart Score: databaseondersteuning RETAIN naar REMOVE; 966 tests geslaagd.
 - [x] Officiele wedstrijden: verwijderverzoek vanuit Wedstrijdbeheer.
 - [x] Opruimlogboek: wedstrijd selecteren, PIN, RETAIN of REMOVE en bevestigen.
-- [x] RETAIN blijft selecteerbaar voor latere REMOVE.
+- [x] RETAIN bewaart brongegevens/statistische bijdragen; een latere REMOVE vereist een nieuwe beheerdersautorisatie.
 - [x] Beveiligde synchronisatie en fysieke end-to-end-test afronden.
 
 ## C1B11 — Competitiereglement Regulier en Beker (actieve bouwopdracht)
 
-**Status (2026-11-12):** reguliere negen-onderdelenketen (4 singles, 4 koppels, biergame), resultaatretour, Dashboard-afsluiting, beveiligde MATCH_LOCKED-ACK en read-only Score-archief fysiek geslaagd. Overige reglementcombinaties, Dummy, migratie, archief-verwijderregressie en releasecontrole blijven open.
+**Status (2026-11-14):** Dummy Patch 02B afgerond/gepusht volgens gebruiker; Patch 02C fysiek geslaagd en Patch 02D gedeeltelijk fysiek bevestigd. Reguliere negen-onderdelenketen (4 singles, 4 koppels, biergame), resultaatretour, Dashboard-afsluiting, beveiligde `MATCH_LOCKED`-ACK en read-only Score-archief fysiek geslaagd. Archief-verwijdercorrectie en beveiligde `removed`-ACK geautomatiseerd getest en gepusht; afzonderlijke fysieke hertest hiervoor bewust niet vereist. Overige reglementcombinaties, Dummy-scenario’s, statistiekcontrole, migratie, offline-/foutscenario’s en definitieve releasecontrole blijven open.
 **Aanpak:** eerst Dashboard-reglement en wedstrijdsnapshot, daarna Score-verwerking en integratietests. Bestaande werking niet onnodig wijzigen.
 
 ### 1. Reglement en opslag
@@ -129,7 +149,7 @@
 ### 5. Dummy en wedstrijdresultaten
 - [ ] Dummy is een afzonderlijke speler met naam **Dummy**; bij drie echte spelers toegestaan als vierde.
 - [ ] Dummy in Singles: reglementair verlies zonder darts of individuele statistieken, met legs **2–0 / 3–0 / 4–0 / 5–0 / 6–0** voor respectievelijk Bo3/5/7/9/11. Alleen teamresultaat telt.
-- [ ] Dummy tegenover Dummy: een echte speler van elk team bullt om het reglementaire teampunt; geen individuele statistieken.
+- [x] Dummy tegenover Dummy: bullbeslissing zonder score-invoer, reglementaire 3–0 en resultaatretour op S25/tablet fysiek bevestigd op 2026-11-13; overige Bo-varianten en expliciete controle van individuele statistiekbijdragen nog open.
 - [ ] Dummy in Koppels/Biergame: normale rotatie, per Dummy-beurt **0 punten en 3 darts**; Dummy kan niet uitgooien; team-/koppelgemiddelde wordt hierdoor beïnvloed.
 - [ ] Geen wedstrijd aanmaken bij slechts twee echte spelers; geen automatische 9–0.
 - [x] Teamuitslag berekenen met ingestelde puntgewichten; standaard maximaal **9–0** bij gewicht 1 per onderdeel. Berekening en opslag getest; bij andere gewichten kan de puntensom hoger zijn (04C.1B/04C.2).
@@ -168,7 +188,7 @@
 - [ ] Conflicterende payload bij bestaande resultaat-ID expliciet afwijzen of volgens vastgelegd contract afhandelen.
 - [ ] Resultaten en ontvangststatus na Dashboard-/Score-herstart behouden. **Deels:** Dashboard-afsluiting/ACK na herstart bevestigd en Score-archief na herstart zichtbaar; volledige afzonderlijke ontvangst-/retry-matrix nog open.
 - [x] Volledige reguliere keten van 9 resultaten via synchronisatie tot Dashboard-afsluiting en `MATCH_LOCKED`-verwerking fysiek aangetoond (Steady – Testteam, 9–0, 2026-11-11). Dit dekt niet alle fout-/offlinevarianten.
-- [ ] Testresultaten, analyzer en Git-status vastleggen; afzonderlijke patch committen/pushen na groen resultaat.
+- [ ] **04C.3B resterende foutscenario’s:** testresultaten, analyzer en Git-status per nog uit te voeren fout-/retry-patch vastleggen en pas na expliciet akkoord committen/pushen. De actuele 2026-11-14-regressiestand en commits staan bovenaan; dit punt betreft uitsluitend resterende scenario’s.
 
 ### Aandachtspunten voor afronding C1B11
 - [x] **Gebruiker bevestigt:** laatst gebruikte reglementinstellingen komen bij nieuwe wedstrijd terug. **Aanvullend:** regressietest voor opslaan/heropenen kan nog worden toegevoegd.
@@ -191,11 +211,11 @@
 - [x] **Wedstrijd Steady – Testteam** (`F2C6513F`; volledige ID op apparaat): 4 singles 501, 4 koppels 701 en 1 biergame 1001 gespeeld; Dashboard ontving **9/9** en berekende **9–0**.
 - [x] **Definitieve afsluiting:** alleen Dashboard sloot af; `MATCH_LOCKED` veilig aan Dart Score verzonden en beveiligde ACK door Dashboard bevestigd. Na herstart Dashboard bleef `DEFINITIEF AFGESLOTEN · 9–0` met ACK zichtbaar.
 - [x] **Competitiearchief Patch 01 op Score-tablet:** keuze **Actief / Afgesloten**; twee afgesloten Steady–Testteam-wedstrijden zichtbaar; alle vier singles, vier koppels en biergame met historische uitslagen aanwezig. Groene, afgeronde onderdelen niet selecteerbaar (read-only).
-- [x] **Technische controle Score na Patch 01:** `flutter test --no-pub` **1054 tests geslaagd**; `flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings` **44 info, geen errors/warnings**; `git diff --check` schoon. Dit is nog **niet gecommit/gepusht** in deze registratie.
-- [ ] **Laatste archief-verwijderregressie:** vanuit Dashboard een afzonderlijke, veilig te verwijderen **testwedstrijd** verwijderen; bevestigen dat die niet meer in Score onder **Actief** of **Afgesloten** staat. Bestaande C1B9-verwijderketen was eerder fysiek geslaagd; deze nieuwe archiefweergave nog niet apart gecontroleerd. **Niet** de geslaagde 9–0-referentiewedstrijd verwijderen.
-- [ ] **Statistiekkeuze bij verwijderen:** Dashboard-keuze RETAIN versus REMOVE blijft leidend; archief mag geen verwijderde wedstrijd tonen, ongeacht keuze. Test afzonderlijk dat RETAIN statistieken bewaart en REMOVE statistieken verwijdert; geen nieuwe verwijderlogica bouwen.
+- [x] **Technische controle Score na Patch 01:** `flutter test --no-pub` **1054 tests geslaagd**; `flutter analyze --no-pub --no-fatal-infos --no-fatal-warnings` **44 info, geen errors/warnings**; `git diff --check` schoon. Historische testmomentopname; de actuele code is inmiddels in latere commits gepusht (zie checkpoint 2026-11-14).
+- [x] **Archief-verwijderregressie (2026-11-14, geautomatiseerd geaccepteerd):** database-/HTTP-regressies dekken archiefzichtbaarheid en late `MATCH_LOCKED` na afgeronde REMOVE/RETAIN; een nog lopende verwijdering geeft geen terminale ACK. Afzonderlijke fysieke hertest niet uitgevoerd en op besluit van gebruiker niet langer vereist voor deze correctie. **Niet** de geslaagde 9–0-referentiewedstrijd verwijderen.
+- [ ] **Statistiekkeuze bij verwijderen:** Dashboard-keuze RETAIN versus REMOVE blijft leidend; archief mag geen verwijderde wedstrijd tonen, ongeacht keuze. De technische afhandeling en beveiligde `removed`-ACK zijn regressiegetest; controle van alle statistische bijdragen (RETAIN bewaart, REMOVE verwijdert) blijft afzonderlijk open. Geen nieuwe verwijderlogica bouwen.
 - [ ] **Legacy-weergave:** tweede afgesloten wedstrijd toont `TYPE ONBEKEND`; oude metadata/migratie onderzoeken zonder gegevens te verliezen.
-- [ ] **Commit/push:** na archief-verwijdercontrole TODO en wijzigingen in Score gecontroleerd stagen, committen en pushen; working tree controleren.
+- [x] **Commit/push (2026-11-14):** C1B11-correcties gecommit en gepusht: Dart Score `7f570e9` (`feature/c1b11-competition-rules`) en Competition Dashboard `c93dad7` (`feature/c1b3-match-types-rules`). Dashboard-working-tree schoon; bij Dart Score is uitsluitend `TODO.md` nog lokaal gewijzigd. Deze TODO-actualisatie is nog **niet** gecommit/gepusht.
 
 ## C1B12 — Beperking tot Dashboard-gestuurde wedstrijden en opschonen lokale spellen
 
