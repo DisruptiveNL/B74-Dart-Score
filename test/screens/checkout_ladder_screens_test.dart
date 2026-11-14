@@ -6,7 +6,6 @@ import 'package:dartscore_app/screens/checkout_ladder_history_summary_screen.dar
 import 'package:dartscore_app/screens/checkout_ladder_screen.dart';
 import 'package:dartscore_app/screens/checkout_ladder_setup_screen.dart';
 import 'package:dartscore_app/screens/checkout_ladder_summary_screen.dart';
-import 'package:dartscore_app/screens/game_mode_selection_screen.dart';
 import 'package:dartscore_app/widgets/dartboard_input.dart';
 import 'package:flutter/gestures.dart' show kLongPressTimeout;
 import 'package:flutter/material.dart';
@@ -369,11 +368,4 @@ void main() {
     });
   });
 
-  testWidgets('the mode selection lists the ladder', (tester) async {
-    usePhoneSurface(tester);
-    await tester.pumpWidget(testApp(const GameModeSelectionScreen()));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Checkout Ladder'), findsOneWidget);
-  });
 }

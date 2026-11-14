@@ -8,10 +8,6 @@ import 'package:provider/provider.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/players_provider.dart';
 import 'providers/game_provider.dart';
-import 'providers/cricket_provider.dart';
-import 'providers/shanghai_provider.dart';
-import 'providers/around_the_clock_provider.dart';
-import 'providers/checkout_ladder_provider.dart';
 import 'providers/theme_provider.dart';
 import 'providers/language_provider.dart';
 import 'providers/tablet_layout_provider.dart';
@@ -322,10 +318,6 @@ class DartScoreApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => DonationProvider()),
         ChangeNotifierProvider(create: (_) => PlayersProvider()..load()),
         ChangeNotifierProvider(create: (_) => GameProvider()),
-        ChangeNotifierProvider(create: (_) => CricketProvider()),
-        ChangeNotifierProvider(create: (_) => ShanghaiProvider()),
-        ChangeNotifierProvider(create: (_) => AroundTheClockProvider()),
-        ChangeNotifierProvider(create: (_) => CheckoutLadderProvider()),
       ],
       child: Consumer2<ThemeProvider, LanguageProvider>(
         builder: (context, tp, lp, child) => MaterialApp(
