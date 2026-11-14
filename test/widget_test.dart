@@ -39,12 +39,12 @@ void main() {
       await tester.pumpAndSettle();
     }
 
-    testWidgets('offers the four ways into the app', (tester) async {
+    testWidgets('offers competition and the two management actions', (tester) async {
       await pumpHome(tester);
 
       expect(find.text('New Game'), findsNothing);
       expect(find.text('Manage Players'), findsOneWidget);
-      expect(find.text('Game History'), findsOneWidget);
+      expect(find.text('Game History'), findsNothing);
       expect(find.text('Settings'), findsOneWidget);
     });
 
@@ -54,7 +54,7 @@ void main() {
       expect(find.text('Competities & Toernooien'), findsOneWidget);
       expect(find.text('New Game'), findsNothing);
       expect(find.text('Manage Players'), findsOneWidget);
-      expect(find.text('Game History'), findsOneWidget);
+      expect(find.text('Game History'), findsNothing);
       expect(find.text('Settings'), findsOneWidget);
 
       expect(

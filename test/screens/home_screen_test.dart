@@ -32,11 +32,11 @@ void main() {
       final players = tester.getRect(
         find.widgetWithText(OutlinedButton, 'Manage Players'),
       );
-      final history = tester.getRect(
-        find.widgetWithText(OutlinedButton, 'Game History'),
+      final settings = tester.getRect(
+        find.widgetWithText(OutlinedButton, 'Settings'),
       );
 
-      expect(history.top, greaterThan(players.bottom));
+      expect(settings.top, greaterThan(players.bottom));
     });
 
     testWidgets('puts them in a row on a tablet', (tester) async {
@@ -45,12 +45,12 @@ void main() {
       final players = tester.getRect(
         find.widgetWithText(OutlinedButton, 'Manage Players'),
       );
-      final history = tester.getRect(
-        find.widgetWithText(OutlinedButton, 'Game History'),
+      final settings = tester.getRect(
+        find.widgetWithText(OutlinedButton, 'Settings'),
       );
 
-      expect(history.left, greaterThan(players.right));
-      expect((history.top - players.top).abs(), lessThan(1));
+      expect(settings.left, greaterThan(players.right));
+      expect((settings.top - players.top).abs(), lessThan(1));
     });
 
     testWidgets('uses the wider column on a tablet', (tester) async {
@@ -75,6 +75,7 @@ void main() {
       );
 
       expect(find.text('New Game'), findsNothing);
+      expect(find.text('Game History'), findsNothing);
     });
   });
 }

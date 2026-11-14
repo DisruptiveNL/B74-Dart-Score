@@ -7,11 +7,10 @@ import '../providers/donation_provider.dart';
 import 'players_screen.dart';
 import 'competition_matches_screen.dart';
 
-import 'history_screen.dart';
 import 'settings_screen.dart';
 import '../utils/layout.dart';
 
-/// App home screen with navigation to game setup, history, players, and settings.
+/// Competition-focused home screen with player management and settings.
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
@@ -31,15 +30,6 @@ class HomeScreen extends StatelessWidget {
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const PlayersScreen()),
-        ),
-      ),
-      _HomeButton(
-        stacked: tablet,
-        icon: Icons.history_rounded,
-        label: l.gameHistory,
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const HistoryScreen()),
         ),
       ),
       _HomeButton(
@@ -90,7 +80,7 @@ class HomeScreen extends StatelessWidget {
                     primary: true,
                   ),
                   const SizedBox(height: 14),
-                  // The three that are not starting a game sit side by side
+                  // The secondary actions sit side by side
                   // where there is width for it, so the column does not read
                   // as a phone screen stretched tall.
                   if (tablet)
@@ -121,8 +111,8 @@ class HomeScreen extends StatelessWidget {
 /// A large labeled icon button on the home screen.
 ///
 /// [stacked] puts the icon above the label instead of beside it, which is what
-/// lets three of them share a row: the labels are long enough that side by side
-/// they would each need most of a phone width.
+/// lets the secondary actions share a row: labels can be long
+/// on a phone-width layout.
 class _HomeButton extends StatelessWidget {
   final IconData icon;
   final String label;
