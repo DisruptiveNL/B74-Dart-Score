@@ -833,6 +833,24 @@ class DbHelper {
     final payload = jsonEncode(message);
     final database = await db;
     return database.transaction((txn) async {
+      // C1B11: a deleted competition match must never be re-locked
+      // by a delayed or retried MATCH_LOCKED delivery.
+      // The durable tombstone is authoritative for both RETAIN and REMOVE.
+      final tombstones = await txn.query(
+        'competition_deletion_tombstones',
+        columns: ['cleaned_at'],
+        where: 'match_id = ?',
+        whereArgs: [matchId],
+        limit: 1,
+      );
+      if (tombstones.isNotEmpty) {
+        // An intent blocks late locks immediately, but only a completed
+        // cleanup may terminally acknowledge the Dashboard's durable outbox.
+        if (tombstones.single['cleaned_at'] != null) return 'removed';
+        throw StateError(
+          'MATCH_LOCKED geweigerd: administratieve verwijdering loopt nog',
+        );
+      }
       await txn.execute(
         'CREATE TABLE IF NOT EXISTS competition_match_locks ('
         'match_id TEXT PRIMARY KEY, payload TEXT NOT NULL, received_at INTEGER NOT NULL)',

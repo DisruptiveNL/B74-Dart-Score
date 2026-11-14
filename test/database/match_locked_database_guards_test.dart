@@ -104,5 +104,93 @@ void main() {
         expect(await helper.competitionDoublesEvents(gameId), isEmpty);
       }
     });
+
+
+    test('pending deletion intent rejects LOCKED without terminal ACK', () async {
+      final helper = DbHelper.instance;
+      final database = await helper.db;
+      await helper.receiveCompetitionDeletion(
+        matchId: 'match-locked-test',
+        revision: 1,
+        division: 'test',
+        retainOfficialStatistics: false,
+      );
+      await expectLater(helper.receiveMatchLocked(lockPacket()), throwsStateError);
+      expect(await helper.isCompetitionMatchLocked('match-locked-test'), isFalse);
+      final tombstone = (await database.query('competition_deletion_tombstones')).single;
+      expect(tombstone['cleaned_at'], isNull);
+    });
+
+    test('completed RETAIN returns removed without touching source data', () async {
+      final helper = DbHelper.instance;
+      final database = await helper.db;
+      await database.insert('competition_inbox', {
+        'match_id': 'match-locked-test',
+        'payload': jsonEncode({'division': 'Eredivisie'}),
+        'received_at': 1,
+      });
+      await helper.stageAdminDeletionIntent(
+        matchId: 'match-locked-test', revision: 1, scope: 'official',
+        statisticsMode: 'retain', authorizationId: 'auth-retain-locked',
+      );
+      expect(
+        await helper.retainStagedAdminMatchForVerifiedCoordinator(
+          matchId: 'match-locked-test', revision: 1,
+          authorizationId: 'auth-retain-locked',
+        ),
+        'retained',
+      );
+      expect(await helper.receiveMatchLocked(lockPacket()), 'removed');
+      expect(await helper.receiveMatchLocked(lockPacket()), 'removed');
+      expect(await helper.isCompetitionMatchLocked('match-locked-test'), isFalse);
+      expect(await database.query('competition_inbox',
+        where: 'match_id = ?', whereArgs: ['match-locked-test']), hasLength(1));
+    });
+
+    test('vertraagde MATCH_LOCKED na REMOVE mag wedstrijd niet herstellen', () async {
+      final helper = DbHelper.instance;
+      final database = await helper.db;
+
+      await database.insert('competition_inbox', {
+        'match_id': 'match-locked-test',
+        'payload': jsonEncode({'division': 'Eredivisie'}),
+        'received_at': 1,
+      });
+
+      expect(await helper.receiveMatchLocked(lockPacket()), 'stored');
+
+      await helper.stageAdminDeletionIntent(
+        matchId: 'match-locked-test',
+        revision: 1,
+        scope: 'official',
+        statisticsMode: 'remove',
+        authorizationId: 'auth-remove-locked',
+      );
+
+      expect(
+        await helper.purgeStagedAdminRemoveForVerifiedCoordinator(
+          matchId: 'match-locked-test',
+          revision: 1,
+          authorizationId: 'auth-remove-locked',
+        ),
+        'purged',
+      );
+
+      expect(await helper.isCompetitionMatchLocked('match-locked-test'), isFalse);
+
+      expect(await helper.receiveMatchLocked(lockPacket()), 'removed');
+      expect(await helper.receiveMatchLocked(lockPacket()), 'removed');
+
+      expect(await helper.isCompetitionMatchLocked('match-locked-test'), isFalse);
+
+      expect(
+        await database.query(
+          'competition_deletion_tombstones',
+          where: 'match_id = ?',
+          whereArgs: ['match-locked-test'],
+        ),
+        hasLength(1),
+      );
+    });
   });
 }

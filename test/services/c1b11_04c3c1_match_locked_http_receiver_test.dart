@@ -152,6 +152,63 @@ void main() {
     },
   );
 
+  test('completed REMOVE and RETAIN return signed terminal removed ACK', () async {
+    final database = await DbHelper.instance.db;
+    for (final mode in ['remove', 'retain']) {
+      final matchId = '${packet['matchId']}-$mode';
+      final message = {...packet, 'matchId': matchId};
+      await database.insert('competition_deletion_tombstones', {
+        'match_id': matchId,
+        'revision': 1,
+        'division': 'Eredivisie',
+        'retain_official_statistics': mode == 'retain' ? 1 : 0,
+        'received_at': 100,
+        'cleaned_at': 101,
+      });
+      final invalidNonce = mode == 'remove'
+          ? 'LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL'
+          : 'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM';
+      expect((await send(invalidNonce, message, invalidProof: true)).$1,
+          HttpStatus.forbidden);
+      for (final nonce in [
+        mode == 'remove' ? 'GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG' :
+          'IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII',
+        mode == 'remove' ? 'HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH' :
+          'JJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJJ',
+      ]) {
+        final response = await send(nonce, message);
+        expect(response.$1, HttpStatus.ok);
+        final deliveryId = B74MatchLockedContract.deliveryId(message);
+        expect(response.$2!['status'], 'removed');
+        expect(response.$2!['nonce'], nonce);
+        expect(response.$2!['deliveryId'], deliveryId);
+        expect(b74Session.verifyOperation('tablet',
+          'competition-match-locked-ack-v1\n$nonce\n$deliveryId\nremoved',
+          response.$2!['proof'] as String), isTrue);
+      }
+      expect(await DbHelper.instance.isCompetitionMatchLocked(matchId), isFalse);
+      expect(await database.query('competition_deletion_tombstones',
+        where: 'match_id = ?', whereArgs: [matchId]), hasLength(1));
+    }
+  });
+
+  test('pending deletion cannot yield terminal ACK', () async {
+    final database = await DbHelper.instance.db;
+    await database.insert('competition_deletion_tombstones', {
+      'match_id': packet['matchId'],
+      'revision': 1,
+      'division': 'test',
+      'retain_official_statistics': 0,
+      'received_at': 100,
+    });
+    const nonce = 'KKKKKKKKKKKKKKKKKKKKKKKKKKKKKKKK';
+    final response = await send(nonce, packet);
+    expect(response.$1, HttpStatus.conflict);
+    expect(response.$2, isNull);
+    expect(await DbHelper.instance.isCompetitionMatchLocked(
+      packet['matchId'] as String), isFalse);
+  });
+
   test(
     'conflicting LOCKED rejected; restart receiver preserves durable closure',
     () async {
