@@ -6,7 +6,7 @@ import '../providers/donation_provider.dart';
 /// import '../widgets/dartboard_icon.dart';
 import 'players_screen.dart';
 import 'competition_matches_screen.dart';
-import 'game_mode_selection_screen.dart';
+
 import 'history_screen.dart';
 import 'settings_screen.dart';
 import '../utils/layout.dart';
@@ -79,18 +79,6 @@ class HomeScreen extends StatelessWidget {
                   ],
                   const SizedBox(height: 48),
                   _HomeButton(
-                    icon: Icons.play_arrow_rounded,
-                    label: l.newGame,
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const GameModeSelectionScreen(),
-                      ),
-                    ),
-                    primary: true,
-                  ),
-                  const SizedBox(height: 14),
-                  _HomeButton(
                     icon: Icons.emoji_events_outlined,
                     label: 'Competities & Toernooien',
                     onTap: () => Navigator.push(
@@ -99,6 +87,7 @@ class HomeScreen extends StatelessWidget {
                         builder: (_) => const CompetitionMatchesScreen(),
                       ),
                     ),
+                    primary: true,
                   ),
                   const SizedBox(height: 14),
                   // The three that are not starting a game sit side by side

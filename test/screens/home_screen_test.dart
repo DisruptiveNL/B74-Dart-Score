@@ -57,13 +57,24 @@ void main() {
       await pumpHome(tester, const Size(820, 1180));
 
       final start = tester.getRect(
-        find.widgetWithText(FilledButton, 'New Game'),
+        find.widgetWithText(FilledButton, 'Competities & Toernooien'),
       );
 
-      // Wider than the phone column it used to be held to, and still short of
-      // the full width of the tablet.
+      // Wider than the phone column, but not the full tablet width.
       expect(start.width, greaterThan(500));
       expect(start.width, lessThan(700));
+    });
+
+
+    testWidgets('shows competition as primary action on a tablet', (tester) async {
+      await pumpHome(tester, const Size(820, 1180));
+
+      expect(
+        find.widgetWithText(FilledButton, 'Competities & Toernooien'),
+        findsOneWidget,
+      );
+
+      expect(find.text('New Game'), findsNothing);
     });
   });
 }

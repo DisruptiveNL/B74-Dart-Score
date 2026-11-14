@@ -1,5 +1,5 @@
 import 'package:dartscore_app/providers/donation_provider.dart';
-import 'package:dartscore_app/screens/game_mode_selection_screen.dart';
+import 'package:dartscore_app/screens/competition_matches_screen.dart';
 import 'package:dartscore_app/screens/home_screen.dart';
 import 'package:dartscore_app/screens/players_screen.dart';
 import 'package:flutter/material.dart';
@@ -42,19 +42,35 @@ void main() {
     testWidgets('offers the four ways into the app', (tester) async {
       await pumpHome(tester);
 
-      expect(find.text('New Game'), findsOneWidget);
+      expect(find.text('New Game'), findsNothing);
       expect(find.text('Manage Players'), findsOneWidget);
       expect(find.text('Game History'), findsOneWidget);
       expect(find.text('Settings'), findsOneWidget);
     });
 
-    testWidgets('opens the mode picker from New Game', (tester) async {
+    testWidgets('offers competition and management navigation', (tester) async {
       await pumpHome(tester);
 
-      await tester.tap(find.text('New Game'));
-      await tester.pumpAndSettle();
+      expect(find.text('Competities & Toernooien'), findsOneWidget);
+      expect(find.text('New Game'), findsNothing);
+      expect(find.text('Manage Players'), findsOneWidget);
+      expect(find.text('Game History'), findsOneWidget);
+      expect(find.text('Settings'), findsOneWidget);
 
-      expect(find.byType(GameModeSelectionScreen), findsOneWidget);
+      expect(
+        find.widgetWithText(FilledButton, 'Competities & Toernooien'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('opens competition matches from the home screen', (tester) async {
+      await pumpHome(tester);
+
+      await tester.tap(find.text('Competities & Toernooien'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(CompetitionMatchesScreen), findsOneWidget);
     });
 
     testWidgets('opens the player list from Manage Players', (tester) async {
