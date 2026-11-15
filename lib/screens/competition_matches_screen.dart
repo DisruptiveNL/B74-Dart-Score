@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../services/b74_live_tv.dart';
+import '../services/b74_online_live.dart';
 import '../widgets/wifi_pairing.dart';
 import '../database/db_helper.dart';
 import '../services/competition_single_result_contract.dart';
@@ -135,6 +136,74 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
                   ),
                 ),
               );
+            }
+            if (mounted) setState(() {});
+          },
+        ),
+        IconButton(
+          tooltip: !B74LiveTv.instance.connected
+              ? 'Online Live: TV niet verbonden'
+              : B74OnlineLive.instance.enabled
+                  ? 'Online Live uitschakelen'
+                  : 'Online Live inschakelen',
+          icon: Icon(
+            B74OnlineLive.instance.enabled && B74LiveTv.instance.connected
+                ? Icons.cloud
+                : Icons.cloud_outlined,
+            color: B74OnlineLive.instance.enabled && B74LiveTv.instance.connected
+                ? Colors.green
+                : null,
+          ),
+          onPressed: !B74LiveTv.instance.connected ? null : () async {
+            final online = B74OnlineLive.instance;
+            if (online.enabled) {
+              await online.disable();
+            } else {
+              String? activationCode;
+              if (!await online.hasToken()) {
+                if (!context.mounted) return;
+                final controller = TextEditingController();
+                try {
+                  activationCode = await showDialog<String>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Online Live activeren'),
+                      content: TextField(
+                        controller: controller,
+                        obscureText: true,
+                        autocorrect: false,
+                        enableSuggestions: false,
+                        decoration: const InputDecoration(
+                          labelText: 'Activatiecode',
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Annuleren'),
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(
+                            dialogContext, controller.text.trim()),
+                          child: const Text('Activeren'),
+                        ),
+                      ],
+                    ),
+                  );
+                } finally {
+                  controller.dispose();
+                }
+                if (activationCode == null || activationCode.isEmpty) return;
+              }
+              try {
+                await online.enable(activationCode: activationCode);
+              } catch (e) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Online Live niet gestart: $e')),
+                  );
+                }
+              }
             }
             if (mounted) setState(() {});
           },

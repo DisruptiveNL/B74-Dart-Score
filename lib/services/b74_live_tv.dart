@@ -8,6 +8,8 @@ import '../models/dart_throw.dart';
 import 'b74_doubles_session.dart';
 import 'b74_doubles_live_stats.dart';
 import 'b74_doubles_701.dart';
+import 'b74_online_live.dart';
+import 'b74_live_leg_score.dart';
 
 /// Independent TV-only connection. Never substitutes for Dashboard pairing.
 class B74LiveTv {
@@ -169,6 +171,7 @@ class B74LiveTv {
       }
       _reconnectTimer?.cancel();
       _socket = ws;
+      B74OnlineLive.instance.tvConnectionChanged(true);
       _session = DateTime.now().microsecondsSinceEpoch.toString();
       _sequence = 0;
       _last180ThrowId = null;
@@ -208,6 +211,7 @@ class B74LiveTv {
   void _onSocketClosed(WebSocket ws) {
     if (!identical(_socket, ws)) return;
     _socket = null;
+    B74OnlineLive.instance.tvConnectionChanged(false);
     _provider?.removeListener(_publish);
     if (_manualDisconnect || !_registrationValid) return;
     _reconnectTimer?.cancel();
@@ -271,7 +275,12 @@ class B74LiveTv {
         'displayName': s.displayName,
         'playerNames': s.players.map((v) => v.name).toList(),
         'remaining': i == active ? p.liveDisplayRemaining : s.remaining,
-        'legsWon': s.legsWon,
+        'legsWon': B74LiveLegScore.forScoreboard(
+          gameLegs: game.legs,
+          gameSets: game.sets,
+          setsWon: s.setsWon,
+          legsWon: s.legsWon,
+        ),
         'stats': {
           'threeDartAverage': s.totalDarts == 0 ? null : s.average,
           'firstNineAverage': firstNine,
@@ -284,7 +293,7 @@ class B74LiveTv {
         },
       };
     });
-    ws.add(jsonEncode({
+    final snapshot = <String, dynamic>{
       'protocol': 'b74.live.score', 'version': 1, 'type': 'score.snapshot',
       'sessionId': _session, 'laneId': 'lane-1',
       'matchId': 'x01-${game.id ?? 'current'}', 'sequence': ++_sequence,
@@ -295,7 +304,9 @@ class B74LiveTv {
         'statusText': '',
         if (celebrate) 'celebration': {'type': '180', 'trigger': true},
       },
-    }));
+    };
+    ws.add(jsonEncode(snapshot));
+    B74OnlineLive.instance.onTvSnapshot(snapshot);
   }
 
   void _publishDoubles() {
@@ -393,7 +404,7 @@ class B74LiveTv {
           ? names[active][engine.currentVisit.player] : '';
     final celebrate = _doublesCelebrate180;
     _doublesCelebrate180 = false;
-    ws.add(jsonEncode({
+    final snapshot = <String, dynamic>{
       'protocol': 'b74.live.score', 'version': 1, 'type': 'score.snapshot',
       'sessionId': _session, 'laneId': 'lane-1',
       'matchId': 'competition-${s.gameId}', 'sequence': ++_sequence,
@@ -406,7 +417,9 @@ class B74LiveTv {
         'statusText': engine.awaitingStarter && engine.winner == null ? 'Kies starter' : '',
         if (celebrate) 'celebration': {'type': '180', 'trigger': true},
       },
-    }));
+    };
+    ws.add(jsonEncode(snapshot));
+    B74OnlineLive.instance.onTvSnapshot(snapshot);
   }
 
   static double? _teamFirstNine(List<({int score, int darts})> visits) {
@@ -450,5 +463,6 @@ class B74LiveTv {
     _messages = null;
     await _socket?.close();
     _socket = null;
+    B74OnlineLive.instance.tvConnectionChanged(false);
   }
 }
