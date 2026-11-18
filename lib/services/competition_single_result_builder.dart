@@ -79,6 +79,15 @@ class CompetitionSingleResultBuilder {
         'darts': darts,
         'scored': scored,
         'average3Dart': darts == 0 ? 0.0 : scored * 3 / darts,
+        // Visit counters are disjoint: 100-139, 140-179 and exactly 180.
+        // Legacy consumers ignore these optional statistical fields.
+        'hundreds': visits
+            .where((t) => !t.bust && t.score >= 100 && t.score < 140)
+            .length,
+        'oneForties': visits
+            .where((t) => !t.bust && t.score >= 140 && t.score < 180)
+            .length,
+        'oneEighties': visits.where((t) => !t.bust && t.score == 180).length,
         'highestVisit': visits.fold<int>(
           0,
           (best, t) => !t.bust && t.score > best ? t.score : best,
@@ -146,17 +155,26 @@ class CompetitionSingleResultBuilder {
     final payload = CompetitionSingleResultContract.encode({
       'type': CompetitionSingleResultContract.type,
       'version': CompetitionSingleResultContract.version,
-      'resultId': CompetitionSingleResultContract.resultId(match.id, single.slot),
+      'resultId': CompetitionSingleResultContract.resultId(
+        match.id,
+        single.slot,
+      ),
       'matchId': match.id,
       'slot': single.slot,
       'homePlayerId': single.homeId,
       'awayPlayerId': single.awayId,
       'homeLegs': legs.homeLegs,
       'awayLegs': legs.awayLegs,
-      'winnerPlayerId': legs.homeLegs > legs.awayLegs ? single.homeId : single.awayId,
+      'winnerPlayerId': legs.homeLegs > legs.awayLegs
+          ? single.homeId
+          : single.awayId,
       'statistics': {'home': null, 'away': null},
     });
-    await _db.saveCompletedCompetitionSingleResult(match.id, single.slot, payload);
+    await _db.saveCompletedCompetitionSingleResult(
+      match.id,
+      single.slot,
+      payload,
+    );
     return payload;
   }
 
