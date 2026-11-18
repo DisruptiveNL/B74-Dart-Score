@@ -141,20 +141,18 @@ class _CompetitionMatchesScreenState extends State<CompetitionMatchesScreen> {
           },
         ),
         IconButton(
-          tooltip: !B74LiveTv.instance.connected
-              ? 'Online Live: TV niet verbonden'
-              : B74OnlineLive.instance.enabled
-                  ? 'Online Live uitschakelen'
-                  : 'Online Live inschakelen',
+          tooltip: B74OnlineLive.instance.enabled
+              ? 'Online Live uitschakelen'
+              : 'Online Live inschakelen',
           icon: Icon(
-            B74OnlineLive.instance.enabled && B74LiveTv.instance.connected
+            B74OnlineLive.instance.enabled
                 ? Icons.cloud
                 : Icons.cloud_outlined,
-            color: B74OnlineLive.instance.enabled && B74LiveTv.instance.connected
+            color: B74OnlineLive.instance.enabled
                 ? Colors.green
                 : null,
           ),
-          onPressed: !B74LiveTv.instance.connected ? null : () async {
+          onPressed: () async {
             final online = B74OnlineLive.instance;
             if (online.enabled) {
               await online.disable();

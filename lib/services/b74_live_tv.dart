@@ -50,17 +50,15 @@ class B74LiveTv {
     }
     _provider?.removeListener(_publish);
     _provider = provider;
-    if (connected) {
-      provider.addListener(_publish);
-      _last180ThrowId = null;
-      _publish();
-    }
+    provider.addListener(_publish);
+    _last180ThrowId = null;
+    _publish();
   }
-
 
   /// Publish the competition doubles/beer-game journal over the SAME TV socket.
   /// The UI calls this after loading the session, including corrections/undo.
-  void attachDoubles(B74DoublesSession session, {
+  void attachDoubles(
+    B74DoublesSession session, {
     required String homeTeam,
     required String awayTeam,
     required List<String> homePlayers,
@@ -69,14 +67,17 @@ class B74LiveTv {
     _provider?.removeListener(_publish);
     _provider = null;
     final previous = _doublesSession;
-    _doublesCelebrate180 = previous != null &&
-      previous.gameId == session.gameId &&
-      session.events.length > previous.events.length &&
-      session.events.isNotEmpty &&
-      (() {
-        final last = jsonDecode(session.events.last) as Map<String, dynamic>;
-        return last['type'] == 'visit' && last['bust'] != true && last['score'] == 180;
-      })();
+    _doublesCelebrate180 =
+        previous != null &&
+        previous.gameId == session.gameId &&
+        session.events.length > previous.events.length &&
+        session.events.isNotEmpty &&
+        (() {
+          final last = jsonDecode(session.events.last) as Map<String, dynamic>;
+          return last['type'] == 'visit' &&
+              last['bust'] != true &&
+              last['score'] == 180;
+        })();
     _doublesSession = session;
     _doublesHomeTeam = homeTeam;
     _doublesAwayTeam = awayTeam;
@@ -111,12 +112,19 @@ class B74LiveTv {
   }
 
   bool get _registrationValid =>
-      _host != null && InternetAddress.tryParse(_host!) != null &&
-      _port != null && _port! > 0 && _port! <= 65535 &&
-      _fingerprint != null && RegExp(r'^[0-9a-f]{64}$').hasMatch(_fingerprint!) &&
-      _deviceId != null && _deviceId!.isNotEmpty &&
-      _secret != null && _secret!.isNotEmpty &&
-      _expiresAt != null && DateTime.now().millisecondsSinceEpoch < _expiresAt!;
+      _host != null &&
+      InternetAddress.tryParse(_host!) != null &&
+      _port != null &&
+      _port! > 0 &&
+      _port! <= 65535 &&
+      _fingerprint != null &&
+      RegExp(r'^[0-9a-f]{64}$').hasMatch(_fingerprint!) &&
+      _deviceId != null &&
+      _deviceId!.isNotEmpty &&
+      _secret != null &&
+      _secret!.isNotEmpty &&
+      _expiresAt != null &&
+      DateTime.now().millisecondsSinceEpoch < _expiresAt!;
 
   Future<void> connect(String qr, [GameProvider? provider]) async {
     final uri = Uri.parse(qr);
@@ -125,11 +133,18 @@ class B74LiveTv {
     final token = q['token'];
     final fingerprint = q['sha256']?.toLowerCase();
     final port = int.tryParse(q['port'] ?? '');
-    if (uri.scheme != 'b74-live' || uri.host != 'pair' || q['v'] != '1' ||
-        host == null || InternetAddress.tryParse(host) == null ||
-        port == null || port < 1 || port > 65535 ||
-        token == null || token.isEmpty ||
-        fingerprint == null || !RegExp(r'^[0-9a-f]{64}$').hasMatch(fingerprint)) {
+    if (uri.scheme != 'b74-live' ||
+        uri.host != 'pair' ||
+        q['v'] != '1' ||
+        host == null ||
+        InternetAddress.tryParse(host) == null ||
+        port == null ||
+        port < 1 ||
+        port > 65535 ||
+        token == null ||
+        token.isEmpty ||
+        fingerprint == null ||
+        !RegExp(r'^[0-9a-f]{64}$').hasMatch(fingerprint)) {
       throw const FormatException('Ongeldige B74 Live QR-code');
     }
     await disconnect();
@@ -145,7 +160,8 @@ class B74LiveTv {
   }
 
   Future<void> _resume() async {
-    if (!_registrationValid || _connecting || connected || _manualDisconnect) return;
+    if (!_registrationValid || _connecting || connected || _manualDisconnect)
+      return;
     await _open('/resume', {'device': _deviceId!, 'secret': _secret!});
   }
 
@@ -153,7 +169,9 @@ class B74LiveTv {
     if (_connecting) return;
     _connecting = true;
     var certificateVerified = false;
-    final client = HttpClient(context: SecurityContext(withTrustedRoots: false));
+    final client = HttpClient(
+      context: SecurityContext(withTrustedRoots: false),
+    );
     client.badCertificateCallback = (cert, _, __) {
       final ok = sha256.convert(cert.der).toString() == _fingerprint;
       if (ok) certificateVerified = true;
@@ -161,8 +179,13 @@ class B74LiveTv {
     };
     try {
       final ws = await WebSocket.connect(
-        Uri(scheme: 'wss', host: _host, port: _port, path: path,
-          queryParameters: params).toString(),
+        Uri(
+          scheme: 'wss',
+          host: _host,
+          port: _port,
+          path: path,
+          queryParameters: params,
+        ).toString(),
         customClient: client,
       ).timeout(const Duration(seconds: 8));
       if (!certificateVerified) {
@@ -171,35 +194,50 @@ class B74LiveTv {
       }
       _reconnectTimer?.cancel();
       _socket = ws;
-      B74OnlineLive.instance.tvConnectionChanged(true);
       _session = DateTime.now().microsecondsSinceEpoch.toString();
       _sequence = 0;
       _last180ThrowId = null;
       _provider?.removeListener(_publish);
       _provider?.addListener(_publish);
-      _messages = ws.listen((message) async {
-        if (message is! String) return;
-        try {
-          final envelope = jsonDecode(message) as Map<String, dynamic>;
-          if (envelope['protocol'] != 'b74.live.score' ||
-              envelope['version'] != 1 ||
-              envelope['type'] != 'device.registration') return;
-          final payload = envelope['payload'] as Map<String, dynamic>;
-          final deviceId = payload['deviceId'] as String;
-          final secret = payload['secret'] as String;
-          final expiresAt = payload['expiresAt'] as int;
-          if (deviceId.isEmpty || secret.isEmpty ||
-              expiresAt <= DateTime.now().millisecondsSinceEpoch) return;
-          _deviceId = deviceId;
-          _secret = secret;
-          _expiresAt = expiresAt;
-          await _secure.write(key: _registrationKey, value: jsonEncode({
-            'host': _host, 'port': _port, 'fingerprint': _fingerprint,
-            'deviceId': deviceId, 'secret': secret, 'expiresAt': expiresAt,
-          }));
-        } catch (_) { /* Other messages (ACKs) are not registration messages. */ }
-      }, onDone: () => _onSocketClosed(ws),
-          onError: (_) => _onSocketClosed(ws), cancelOnError: true);
+      _messages = ws.listen(
+        (message) async {
+          if (message is! String) return;
+          try {
+            final envelope = jsonDecode(message) as Map<String, dynamic>;
+            if (envelope['protocol'] != 'b74.live.score' ||
+                envelope['version'] != 1 ||
+                envelope['type'] != 'device.registration')
+              return;
+            final payload = envelope['payload'] as Map<String, dynamic>;
+            final deviceId = payload['deviceId'] as String;
+            final secret = payload['secret'] as String;
+            final expiresAt = payload['expiresAt'] as int;
+            if (deviceId.isEmpty ||
+                secret.isEmpty ||
+                expiresAt <= DateTime.now().millisecondsSinceEpoch)
+              return;
+            _deviceId = deviceId;
+            _secret = secret;
+            _expiresAt = expiresAt;
+            await _secure.write(
+              key: _registrationKey,
+              value: jsonEncode({
+                'host': _host,
+                'port': _port,
+                'fingerprint': _fingerprint,
+                'deviceId': deviceId,
+                'secret': secret,
+                'expiresAt': expiresAt,
+              }),
+            );
+          } catch (_) {
+            /* Other messages (ACKs) are not registration messages. */
+          }
+        },
+        onDone: () => _onSocketClosed(ws),
+        onError: (_) => _onSocketClosed(ws),
+        cancelOnError: true,
+      );
       _doublesCelebrate180 = false;
       _publish(); // Full snapshot, new session/sequence after every reconnect.
     } finally {
@@ -211,13 +249,14 @@ class B74LiveTv {
   void _onSocketClosed(WebSocket ws) {
     if (!identical(_socket, ws)) return;
     _socket = null;
-    B74OnlineLive.instance.tvConnectionChanged(false);
     _provider?.removeListener(_publish);
     if (_manualDisconnect || !_registrationValid) return;
     _reconnectTimer?.cancel();
     _reconnectTimer = Timer(const Duration(seconds: 5), () async {
       if (_manualDisconnect) return;
-      try { await _resume(); } catch (_) {
+      try {
+        await _resume();
+      } catch (_) {
         if (!_manualDisconnect && _registrationValid) {
           _reconnectTimer?.cancel();
           _reconnectTimer = Timer(const Duration(seconds: 10), _retryResume);
@@ -228,7 +267,9 @@ class B74LiveTv {
 
   void _retryResume() async {
     if (_manualDisconnect || connected || !_registrationValid) return;
-    try { await _resume(); } catch (_) {
+    try {
+      await _resume();
+    } catch (_) {
       if (!_manualDisconnect && _registrationValid) {
         _reconnectTimer = Timer(const Duration(seconds: 10), _retryResume);
       }
@@ -249,27 +290,44 @@ class B74LiveTv {
     }
     final p = _provider;
     final ws = _socket;
-    if (p == null || ws == null || ws.readyState != WebSocket.open || p.game == null || p.playerStates.length != 2) return;
+    if (p == null ||
+        (ws?.readyState != WebSocket.open && !B74OnlineLive.instance.enabled) ||
+        p.game == null ||
+        p.playerStates.length != 2)
+      return;
     final game = p.game!;
     if (![501, 701, 1001].contains(game.startScore)) return;
     final states = p.playerStates;
     final active = p.currentPlayerIndex;
-    final latest = p.allThrows().where((t) => t.score == 180 && !t.bust).toList();
+    final latest = p
+        .allThrows()
+        .where((t) => t.score == 180 && !t.bust)
+        .toList();
     final last180 = latest.isEmpty ? null : latest.last;
-    final new180 = last180 != null && last180.id != null && last180.id != _last180ThrowId;
+    final new180 =
+        last180 != null && last180.id != null && last180.id != _last180ThrowId;
     // On initial connection show current state, never celebrate historical 180s.
-    final celebrate = _sequence > 0 && new180 &&
-        p.allThrows().isNotEmpty && p.allThrows().last.id == last180.id;
+    final celebrate =
+        _sequence > 0 &&
+        new180 &&
+        p.allThrows().isNotEmpty &&
+        p.allThrows().last.id == last180.id;
     _last180ThrowId = last180?.id;
-    final mode = switch (game.startScore) { 701 => 'DOUBLES_701', 1001 => 'BEERGAME_1001', _ => 'SINGLES_501' };
+    final mode = switch (game.startScore) {
+      701 => 'DOUBLES_701',
+      1001 => 'BEERGAME_1001',
+      _ => 'SINGLES_501',
+    };
     final sides = List.generate(2, (i) {
       final s = states[i];
       // These are slot-level visits: player for singles, combined for teams.
       // Busts count as zero points, but still consume darts.
       final visits = s.throws;
       final firstNine = _firstNineAverage(visits);
-      final lastThree = visits.reversed.take(3)
-          .map((t) => t.bust ? 0 : t.score).toList();
+      final lastThree = visits.reversed
+          .take(3)
+          .map((t) => t.bust ? 0 : t.score)
+          .toList();
       return {
         'id': i == 0 ? 'home' : 'away',
         'displayName': s.displayName,
@@ -286,7 +344,11 @@ class B74LiveTv {
           'firstNineAverage': firstNine,
           'lastThreeVisits': lastThree,
           'dartsThrown': s.totalDarts,
-          'highestVisit': visits.isEmpty ? null : visits.map((t) => t.bust ? 0 : t.score).reduce((a,b) => a > b ? a : b),
+          'highestVisit': visits.isEmpty
+              ? null
+              : visits
+                    .map((t) => t.bust ? 0 : t.score)
+                    .reduce((a, b) => a > b ? a : b),
           'oneEighties': visits.where((t) => !t.bust && t.score == 180).length,
           'oneForties': visits.where((t) => !t.bust && t.score >= 140).length,
           'hundreds': visits.where((t) => !t.bust && t.score >= 100).length,
@@ -294,50 +356,74 @@ class B74LiveTv {
       };
     });
     final snapshot = <String, dynamic>{
-      'protocol': 'b74.live.score', 'version': 1, 'type': 'score.snapshot',
-      'sessionId': _session, 'laneId': 'lane-1',
-      'matchId': 'x01-${game.id ?? 'current'}', 'sequence': ++_sequence,
+      'protocol': 'b74.live.score',
+      'version': 1,
+      'type': 'score.snapshot',
+      'sessionId': _session ?? 'online-session',
+      'laneId': 'lane-1',
+      'matchId': 'x01-${game.id ?? 'current'}',
+      'sequence': ++_sequence,
       'payload': {
-        'game': {'mode': mode}, 'displayState': p.gameOver ? 'MATCH_COMPLETE' : 'LIVE',
-        'sides': sides, 'activeSideId': active == 0 ? 'home' : 'away',
+        'game': {'mode': mode, 'bestOf': game.legs * 2 - 1},
+        'displayState': p.gameOver ? 'MATCH_COMPLETE' : 'LIVE',
+        'sides': sides,
+        'activeSideId': active == 0 ? 'home' : 'away',
         'activePlayerName': p.currentPlayerState.player.name,
         'statusText': '',
         if (celebrate) 'celebration': {'type': '180', 'trigger': true},
       },
     };
-    ws.add(jsonEncode(snapshot));
+    if (ws?.readyState == WebSocket.open) ws!.add(jsonEncode(snapshot));
     B74OnlineLive.instance.onTvSnapshot(snapshot);
   }
 
   void _publishDoubles() {
     final s = _doublesSession;
     final ws = _socket;
-    if (s == null || ws == null || ws.readyState != WebSocket.open) return;
+    if (s == null ||
+        (ws?.readyState != WebSocket.open && !B74OnlineLive.instance.enabled))
+      return;
     final engine = s.engine;
-    final stats = B74DoublesLiveStats.fromEvents(s.events,
-      startTeam: s.startTeam, bestOf: s.bestOf,
+    final stats = B74DoublesLiveStats.fromEvents(
+      s.events,
+      startTeam: s.startTeam,
+      bestOf: s.bestOf,
       openingBullRequired: s.openingBullRequired,
-      startingScore: s.startingScore, playersPerTeam: s.playersPerTeam,
-      checkIn: s.checkIn);
+      startingScore: s.startingScore,
+      playersPerTeam: s.playersPerTeam,
+      checkIn: s.checkIn,
+    );
     // Reconstruct team visits chronologically (also after undo/correction).
-    final decoded = s.events.map((e) => jsonDecode(e) as Map<String, dynamic>).toList();
+    final decoded = s.events
+        .map((e) => jsonDecode(e) as Map<String, dynamic>)
+        .toList();
     final revoked = <int>{};
     final corrections = <int, Map<String, dynamic>>{};
     for (final e in decoded) {
       if (e['type'] == 'undoVisit') {
         revoked.add(e['targetSequence'] as int);
-        if (e['starterSequence'] is int) revoked.add(e['starterSequence'] as int);
+        if (e['starterSequence'] is int)
+          revoked.add(e['starterSequence'] as int);
       } else if (e['type'] == 'correctVisit') {
         corrections[e['targetSequence'] as int] = e;
       }
     }
-    final replay = B74Doubles701(starterTeam: s.startTeam, bestOf: s.bestOf,
-      startingScore: s.startingScore, playersPerTeam: s.playersPerTeam,
-      checkIn: s.checkIn);
-    final teamVisits = [<({int score, int darts})>[], <({int score, int darts})>[]];
+    final replay = B74Doubles701(
+      starterTeam: s.startTeam,
+      bestOf: s.bestOf,
+      startingScore: s.startingScore,
+      playersPerTeam: s.playersPerTeam,
+      checkIn: s.checkIn,
+    );
+    final teamVisits = [
+      <({int score, int darts})>[],
+      <({int score, int darts})>[],
+    ];
     for (var i = 0; i < decoded.length; i++) {
       if (revoked.contains(i)) continue;
-      final e = corrections[i] == null ? decoded[i] : {...corrections[i]!, 'type': 'visit'};
+      final e = corrections[i] == null
+          ? decoded[i]
+          : {...corrections[i]!, 'type': 'visit'};
       switch (e['type']) {
         case 'starter':
           final team = e['team'] as int;
@@ -353,15 +439,27 @@ class B74LiveTv {
           final checkoutDart = e['checkoutDart'];
           final checkoutDarts = e['checkoutDarts'];
           final darts = e['validCheckout'] == true && checkoutDart is int
-              ? checkoutDart : e['validCheckout'] == true && checkoutDarts is List
-              ? checkoutDarts.length : 3;
-          teamVisits[turn.team].add((score: e['bust'] == true ? 0 : e['score'] as int, darts: darts));
-          replay.completeVisit(score: e['score'] as int, bust: e['bust'] as bool,
+              ? checkoutDart
+              : e['validCheckout'] == true && checkoutDarts is List
+              ? checkoutDarts.length
+              : 3;
+          teamVisits[turn.team].add((
+            score: e['bust'] == true ? 0 : e['score'] as int,
+            darts: darts,
+          ));
+          replay.completeVisit(
+            score: e['score'] as int,
+            bust: e['bust'] as bool,
             validCheckout: e['validCheckout'] as bool,
-            openingDouble: e['openingDouble'] as int?, openingDart: e['openingDart'] as int?);
+            openingDouble: e['openingDouble'] as int?,
+            openingDart: e['openingDart'] as int?,
+          );
       }
     }
-    final names = [_doublesNamesHome ?? <String>[], _doublesNamesAway ?? <String>[]];
+    final names = [
+      _doublesNamesHome ?? <String>[],
+      _doublesNamesAway ?? <String>[],
+    ];
     final teamNames = [_doublesHomeTeam ?? '', _doublesAwayTeam ?? ''];
     final sides = List.generate(2, (team) {
       final allScores = <int>[];
@@ -381,16 +479,23 @@ class B74LiveTv {
       }
       return {
         'id': team == 0 ? 'home' : 'away',
-        'displayName': s.playersPerTeam == 2 ? names[team].join(' + ') : teamNames[team],
+        'displayName': s.playersPerTeam == 2
+            ? names[team].join(' + ')
+            : teamNames[team],
         'playerNames': names[team],
         'remaining': engine.remaining[team],
         'legsWon': engine.legsWon[team],
         'stats': {
           'threeDartAverage': darts == 0 ? null : points * 3.0 / darts,
           'firstNineAverage': _teamFirstNine(teamVisits[team]),
-          'lastThreeVisits': teamVisits[team].reversed.take(3).map((v) => v.score).toList(),
+          'lastThreeVisits': teamVisits[team].reversed
+              .take(3)
+              .map((v) => v.score)
+              .toList(),
           'dartsThrown': darts,
-          'highestVisit': allScores.isEmpty ? null : allScores.reduce((a,b) => a > b ? a : b),
+          'highestVisit': allScores.isEmpty
+              ? null
+              : allScores.reduce((a, b) => a > b ? a : b),
           'oneEighties': oneEighties,
           'oneForties': oneForties,
           'hundreds': hundreds,
@@ -398,27 +503,43 @@ class B74LiveTv {
       };
     });
     final active = engine.winner == null && !engine.awaitingStarter
-        ? engine.currentVisit.team : null;
-    final activeName = active == null ? '' :
-      names[active].length > engine.currentVisit.player
-          ? names[active][engine.currentVisit.player] : '';
+        ? engine.currentVisit.team
+        : null;
+    final activeName = active == null
+        ? ''
+        : names[active].length > engine.currentVisit.player
+        ? names[active][engine.currentVisit.player]
+        : '';
     final celebrate = _doublesCelebrate180;
     _doublesCelebrate180 = false;
     final snapshot = <String, dynamic>{
-      'protocol': 'b74.live.score', 'version': 1, 'type': 'score.snapshot',
-      'sessionId': _session, 'laneId': 'lane-1',
-      'matchId': 'competition-${s.gameId}', 'sequence': ++_sequence,
+      'protocol': 'b74.live.score',
+      'version': 1,
+      'type': 'score.snapshot',
+      'sessionId': _session ?? 'online-session',
+      'laneId': 'lane-1',
+      'matchId': 'competition-${s.gameId}',
+      'sequence': ++_sequence,
       'payload': {
-        'game': {'mode': s.startingScore == 1001 ? 'BEERGAME_1001' : 'DOUBLES_701'},
+        'game': {
+          'mode': s.startingScore == 1001 ? 'BEERGAME_1001' : 'DOUBLES_701',
+          'bestOf': s.bestOf,
+        },
         'displayState': engine.winner != null ? 'MATCH_COMPLETE' : 'LIVE',
         'sides': sides,
-        'activeSideId': active == 0 ? 'home' : active == 1 ? 'away' : null,
+        'activeSideId': active == 0
+            ? 'home'
+            : active == 1
+            ? 'away'
+            : null,
         'activePlayerName': activeName,
-        'statusText': engine.awaitingStarter && engine.winner == null ? 'Kies starter' : '',
+        'statusText': engine.awaitingStarter && engine.winner == null
+            ? 'Kies starter'
+            : '',
         if (celebrate) 'celebration': {'type': '180', 'trigger': true},
       },
     };
-    ws.add(jsonEncode(snapshot));
+    if (ws?.readyState == WebSocket.open) ws!.add(jsonEncode(snapshot));
     B74OnlineLive.instance.onTvSnapshot(snapshot);
   }
 
@@ -455,14 +576,16 @@ class B74LiveTv {
   Future<void> disconnect() async {
     _manualDisconnect = true;
     _reconnectTimer?.cancel();
-    _provider?.removeListener(_publish);
-    _provider = null;
-    _doublesSession = null;
+    // Keep the current match attached for independent Online Live updates.
+    if (!B74OnlineLive.instance.enabled) {
+      _provider?.removeListener(_publish);
+      _provider = null;
+      _doublesSession = null;
+    }
     await _clearRegistration();
     await _messages?.cancel();
     _messages = null;
     await _socket?.close();
     _socket = null;
-    B74OnlineLive.instance.tvConnectionChanged(false);
   }
 }

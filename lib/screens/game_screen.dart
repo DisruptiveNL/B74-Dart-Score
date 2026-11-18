@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/b74_live_tv.dart';
+import '../services/b74_online_live.dart';
 import 'package:provider/provider.dart';
 import '../l10n/app_localizations.dart';
 import '../providers/game_provider.dart';
@@ -29,8 +30,9 @@ class _GameScreenState extends State<GameScreen> {
   Widget build(BuildContext context) {
     return Consumer<GameProvider>(
       builder: (context, provider, _) {
-        // A central TV pairing follows the active X01 match; do not re-pair.
-        if (B74LiveTv.instance.connected) {
+        // Reuse the existing snapshot publisher for TV and independent Online Live.
+        // A TV pairing is not required to publish an X01 score online.
+        if (B74LiveTv.instance.connected || B74OnlineLive.instance.enabled) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) B74LiveTv.instance.attachGame(provider);
           });
