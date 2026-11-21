@@ -20,6 +20,7 @@ import 'screens/onboarding_screen.dart';
 import 'screens/sync_screen.dart';
 import 'services/incoming_file.dart';
 import 'services/competition_result_sync_service.dart';
+import 'services/statistics_single_publish_service.dart';
 import 'utils/layout.dart';
 import 'utils/platform_notices.dart';
 
@@ -35,6 +36,7 @@ void main() async {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   }
   competitionResultSync.start();
+  statisticsSinglePublishService.start();
   runApp(const DartScoreApp());
 }
 

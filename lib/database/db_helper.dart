@@ -34,7 +34,7 @@ class DbHelper {
 
   /// Schema version this build knows how to open. A backup written at a higher
   /// version is refused rather than opened, see [inspectBackup].
-  static const int schemaVersion = 35;
+  static const int schemaVersion = 36;
 
   /// Where the database file lives, overriding the platform default. Only set
   /// by tests, which point it at an in-memory database so each case starts on
@@ -564,6 +564,12 @@ class DbHelper {
           whereArgs: [matchId, revision],
         );
       }
+      // Remove any pending/acknowledged local publication in the same transaction.
+      await txn.delete(
+        'statistics_single_outbox',
+        where: 'match_id = ?',
+        whereArgs: [matchId],
+      );
       // Intent remains as an immutable audit receipt; never delete players.
       return 'purged';
     });
@@ -1200,6 +1206,9 @@ class DbHelper {
     if (oldVersion < 35) {
       await _migrateCompetitionSingleResultsToMatchForeignKey(db);
     }
+    if (oldVersion < 36) {
+      await _createStatisticsSingleOutbox(db);
+    }
   }
 
   /// Recomputes `dart_throws.checkout_darts` for every visit already on the
@@ -1484,6 +1493,115 @@ class DbHelper {
       'PRIMARY KEY(match_id, slot), '
       'FOREIGN KEY(match_id) REFERENCES competition_inbox(match_id))',
     );
+  }
+
+  /// Independent Statistics Library delivery queue. Never stores credentials.
+  /// No foreign key: REMOVE/RETAIN is handled explicitly by its own workflow.
+  Future<void> _createStatisticsSingleOutbox(Database db) async {
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS statistics_single_outbox ('
+      'match_id TEXT NOT NULL, slot INTEGER NOT NULL, '
+      'revision INTEGER NOT NULL, payload TEXT NOT NULL, '
+      "status TEXT NOT NULL DEFAULT 'pending' "
+      "CHECK(status IN ('pending', 'acknowledged')), "
+      'created_at INTEGER NOT NULL, acknowledged_at INTEGER, '
+      'PRIMARY KEY(match_id, slot))',
+    );
+  }
+
+  /// Enqueue only a validated, eligible single payload. A duplicate with the
+  /// same revision must not turn an acknowledged row back into pending.
+  Future<void> enqueueStatisticsSingle({
+    required String matchId,
+    required int slot,
+    required int revision,
+    required String payload,
+  }) async {
+    if (matchId.isEmpty || slot < 1 || revision < 1 || payload.isEmpty) {
+      throw ArgumentError('Invalid statistics single outbox entry');
+    }
+    final database = await db;
+    await database.transaction((txn) async {
+      // An administrative deletion, including one still being processed,
+      // prevents publication. RETAIN does not erase previously queued rows.
+      final deletion = await txn.query(
+        'competition_deletion_tombstones',
+        columns: ['retain_official_statistics'],
+        where: 'match_id = ?',
+        whereArgs: [matchId],
+        limit: 1,
+      );
+      if (deletion.isNotEmpty) return;
+      final staged = await txn.query(
+        'competition_admin_deletion_intents',
+        columns: ['match_id'],
+        where: 'match_id = ?',
+        whereArgs: [matchId],
+        limit: 1,
+      );
+      if (staged.isNotEmpty) return;
+      final existing = await txn.query(
+        'statistics_single_outbox',
+        where: 'match_id = ? AND slot = ?',
+        whereArgs: [matchId, slot],
+      );
+      if (existing.isNotEmpty) {
+        final previousRevision = existing.single['revision'] as int;
+        if (previousRevision > revision) return;
+        if (previousRevision == revision) {
+          if (existing.single['payload'] != payload) {
+            throw StateError('Conflicting payload for existing revision');
+          }
+          return;
+        }
+      }
+      await txn.insert('statistics_single_outbox', {
+        'match_id': matchId,
+        'slot': slot,
+        'revision': revision,
+        'payload': payload,
+        'status': 'pending',
+        'created_at': DateTime.now().millisecondsSinceEpoch,
+        'acknowledged_at': null,
+      }, conflictAlgorithm: ConflictAlgorithm.replace);
+    });
+  }
+
+  Future<List<Map<String, Object?>>> pendingStatisticsSingles() async {
+    final database = await db;
+    return database.query(
+      'statistics_single_outbox',
+      where:
+          "status = 'pending' AND NOT EXISTS ("
+          'SELECT 1 FROM competition_deletion_tombstones t '
+          'WHERE t.match_id = statistics_single_outbox.match_id '
+          'AND t.retain_official_statistics = 0) '
+          'AND NOT EXISTS ('
+          'SELECT 1 FROM competition_admin_deletion_intents i '
+          'WHERE i.match_id = statistics_single_outbox.match_id '
+          "AND i.statistics_mode = 'remove')",
+      orderBy: 'created_at, match_id, slot',
+    );
+  }
+
+  /// A late ACK must never acknowledge a newer revision.
+  Future<bool> acknowledgeStatisticsSingle({
+    required String matchId,
+    required int slot,
+    required int revision,
+  }) async {
+    final database = await db;
+    final count = await database.update(
+      'statistics_single_outbox',
+      {
+        'status': 'acknowledged',
+        'acknowledged_at': DateTime.now().millisecondsSinceEpoch,
+      },
+      where:
+          "match_id = ? AND slot = ? AND revision = ? AND status = 'pending'",
+      whereArgs: [matchId, slot, revision],
+    );
+    return count == 1;
   }
 
   /// Version 35: a regulatory Dummy single has no X01 game link.
@@ -2065,6 +2183,7 @@ class DbHelper {
     await _createCompetitionInbox(db);
     await _createCompetitionGameLinks(db);
     await _createCompetitionSingleResults(db);
+    await _createStatisticsSingleOutbox(db);
     await _createCompetitionTeamInbox(db);
     await _createCompetitionDoublesEvents(db);
     await _createCompetitionDoublesResults(db);

@@ -66,7 +66,7 @@ void main() {
     await db.setVersion(34);
     await DbHelper.debugReset();
     final upgraded = await helper.db;
-    expect(await upgraded.getVersion(), 35);
+    expect(await upgraded.getVersion(), 36);
     final old = await helper.competitionSingleResult('old-match', 1);
     expect(old?['payload'], '{"preserved":true}');
     expect(old?['status'], 'archived');

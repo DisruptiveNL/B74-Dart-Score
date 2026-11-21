@@ -55,6 +55,7 @@ dev_dependencies:
   # cannot stand in: it paints with the test font instead of the system one.
   integration_test:
     sdk: flutter
+  test: ^1.31.1
 
 flutter_launcher_icons:
   android: true
